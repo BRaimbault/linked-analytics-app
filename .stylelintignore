@@ -1,0 +1,7 @@
+build
+.d2
+node_modules
+.pnpm-store
+src/locales
+# Third-party sources fetched for reference by `npx opensrc`
+opensrc

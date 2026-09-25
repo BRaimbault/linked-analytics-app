@@ -1,0 +1,8 @@
+# Prettier also reads .gitignore; list only what is tracked but must not be reformatted
+
+# GitHub's task-list checks expect a single space after a hyphen; Prettier produces 3
+.github/**/*.md
+.claude
+# pnpm rewrites these files itself
+pnpm-lock.yaml
+pnpm-workspace.yaml

@@ -5,38 +5,28 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-01-03T10:11:58.219Z\n"
-"PO-Revision-Date: 2026-01-03T10:11:58.220Z\n"
+"POT-Creation-Date: 2026-09-24T14:59:22.158Z\n"
+"PO-Revision-Date: 2026-09-24T14:59:22.159Z\n"
 
-msgid "ERROR"
-msgstr "ERROR"
+msgid "Could not load the app"
+msgstr "Could not load the app"
 
-msgid "Loading..."
-msgstr "Loading..."
+msgid "Welcome, {{name}}!"
+msgstr "Welcome, {{name}}!"
 
-msgid "Hello {{name}}"
-msgstr "Hello {{name}}"
+msgid ""
+"Your maps and charts are warming up. Soon they will sit side by side and "
+"finish each other’s sentences."
+msgstr ""
+"Your maps and charts are warming up. Soon they will sit side by side and "
+"finish each other’s sentences."
 
-msgid "Welcome to DHIS2 with TypeScript!"
-msgstr "Welcome to DHIS2 with TypeScript!"
+msgctxt "Application title"
+msgid "__MANIFEST_APP_TITLE"
+msgstr "Linked Analytics"
 
-msgid "Error"
-msgstr "Error"
-
-msgid "Error loading the data elements"
-msgstr "Error loading the data elements"
-
-msgid "ID"
-msgstr "ID"
-
-msgid "Name"
-msgstr "Name"
-
-msgid "Domain"
-msgstr "Domain"
-
-msgid "Value Type"
-msgstr "Value Type"
-
-msgid "Created by"
-msgstr "Created by"
+msgctxt "Application description"
+msgid "__MANIFEST_APP_DESCRIPTION"
+msgstr ""
+"View DHIS2 Maps, Data Visualizer and other analytics plugins side by side "
+"in a flexible grid, and link them so selections in one update the others."

@@ -1,17 +1,24 @@
-# These hoists are needed for @dhis2/app-shell since it uses directly some libraries that were hoisted by yarn 1
-# This is a better alternative than pnpm's shamefullyHoist https://pnpm.io/settings#shamefullyhoist until we update the way that @dhis2/app-shell works
+allowBuilds:
+  '@dhis2/cli-helpers-engine': true
+  '@parcel/watcher': true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  unrs-resolver: true
+# Fail fast on an unsupported Node version (see engines in package.json)
+engineStrict: true
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - '@dhis2/*'
+  - '@dhis2-ui/*'
+# @dhis2/app-shell imports these without declaring them as dependencies, so they must be hoisted
+# (a narrower alternative to pnpm's shamefullyHoist: https://pnpm.io/settings#shamefullyhoist)
 publicHoistPattern:
-    - '@dhis2/ui'
-    - 'typeface-roboto'
-    - '@dhis2/app-adapter'
-    - 'prop-types'
-    - '@dhis2/d2-i18n'
-    - 'post-robot'
-    - 'styled-jsx'
-    - '@dhis2/app-adapter'
-    - '@dhis2/pwa'
-
-onlyBuiltDependencies:
-    - '@dhis2/cli-helpers-engine'
-    - core-js-pure
-    - esbuild
+  - '@dhis2/ui'
+  - 'typeface-roboto'
+  - '@dhis2/app-adapter'
+  - 'prop-types'
+  - '@dhis2/d2-i18n'
+  - 'post-robot'
+  - 'styled-jsx'
+  - '@dhis2/pwa'

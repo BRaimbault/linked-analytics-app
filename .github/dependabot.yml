@@ -1,0 +1,62 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 5
+      versioning-strategy: increase
+      # PR titles must pass commitlint: "chore(deps): bump …"
+      commit-message:
+          prefix: chore
+          include: scope
+      # Matches minimumReleaseAge (3 days) and its exclusions in pnpm-workspace.yaml, which pnpm enforces on install
+      cooldown:
+          default-days: 3
+          exclude:
+              - '@dhis2/*'
+              - '@dhis2-ui/*'
+      ignore:
+          # @dhis2/ui does not support React 19, so React and its types stay on v18
+          - dependency-name: react
+            versions:
+                - '>=19'
+          - dependency-name: react-dom
+            versions:
+                - '>=19'
+          - dependency-name: '@types/react'
+            versions:
+                - '>=19'
+          - dependency-name: '@types/react-dom'
+            versions:
+                - '>=19'
+          # TypeScript 7.0 ships no compiler API, which openapi-typescript (our type generator) needs
+          - dependency-name: typescript
+            versions:
+                - '7.0.x'
+      groups:
+          security:
+              applies-to: security-updates
+              update-types:
+                  - minor
+                  - patch
+          dependencies:
+              applies-to: version-updates
+              update-types:
+                  - minor
+                  - patch
+              exclude-patterns:
+                  - '*@dhis2*'
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
+      # PR titles must pass commitlint: "ci(deps): bump …"
+      commit-message:
+          prefix: ci
+          include: scope
+      groups:
+          actions:
+              patterns:
+                  - '*'
