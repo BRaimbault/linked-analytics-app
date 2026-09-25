@@ -16,37 +16,29 @@ describe('customBaseQuery', () => {
     }
 
     const { signal } = new AbortController()
-    let engine: DataEngine
+    const query = vi.fn()
+    const mutate = vi.fn()
+    let api: BaseQueryApiWithExtraArg
 
     beforeEach(() => {
-        engine = {
-            query: vi.fn().mockResolvedValue(mockQueryResult),
-            mutate: vi.fn().mockResolvedValue(mockMutationResult),
-        } as unknown as DataEngine
+        query.mockResolvedValue(mockQueryResult)
+        mutate.mockResolvedValue(mockMutationResult)
+        const engine = { query, mutate } as unknown as DataEngine
+        api = { extra: { engine }, signal } as BaseQueryApiWithExtraArg
     })
 
     it('returns data for a successful query', async () => {
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
         const result = await customBaseQuery(queryArgs, api, {})
-        expect(engine.query).toHaveBeenCalledWith(queryArgs, { signal })
+        expect(query).toHaveBeenCalledWith(queryArgs, { signal })
         expect(result).toEqual({ data: mockQueryResult })
     })
 
     it('returns data for a successful query with a non-nested query object', async () => {
         const singleQueryArgs = { resource: 'organisationUnits', id: 'abc123' }
         const singleQueryResult = { data: { orgUnit: 'abc123' } }
-        // Mock engine.query to resolve with an object containing a data property
-        const queryMock = engine.query as ReturnType<typeof vi.fn>
-        queryMock.mockResolvedValueOnce(singleQueryResult)
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        query.mockResolvedValueOnce(singleQueryResult)
         const result = await customBaseQuery(singleQueryArgs, api, {})
-        expect(engine.query).toHaveBeenCalledWith(
+        expect(query).toHaveBeenCalledWith(
             { data: singleQueryArgs },
             { signal }
         )
@@ -54,33 +46,19 @@ describe('customBaseQuery', () => {
     })
 
     it('returns data for a successful mutation', async () => {
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
         const result = await customBaseQuery(mutationArgs, api, {})
-        expect(engine.mutate).toHaveBeenCalledWith(mutationArgs, { signal })
+        expect(mutate).toHaveBeenCalledWith(mutationArgs, { signal })
         expect(result).toEqual({ data: mockMutationResult })
     })
 
     it('returns empty object if result is nullish', async () => {
-        const queryMock = engine.query as ReturnType<typeof vi.fn>
-        queryMock.mockResolvedValueOnce(undefined)
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        query.mockResolvedValueOnce(undefined)
         const result = await customBaseQuery(queryArgs, api, {})
         expect(result).toEqual({ data: {} })
     })
 
     it('returns empty object if a single query has no data', async () => {
-        const queryMock = engine.query as ReturnType<typeof vi.fn>
-        queryMock.mockResolvedValueOnce({})
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        query.mockResolvedValueOnce({})
         const result = await customBaseQuery(
             { resource: 'organisationUnits' },
             api,
@@ -90,40 +68,24 @@ describe('customBaseQuery', () => {
     })
 
     it('returns empty object if mutation result is nullish', async () => {
-        const mutateMock = engine.mutate as ReturnType<typeof vi.fn>
-        mutateMock.mockResolvedValueOnce(undefined)
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        mutate.mockResolvedValueOnce(undefined)
         const result = await customBaseQuery(mutationArgs, api, {})
         expect(result).toEqual({ data: {} })
     })
 
     it('returns error if query throws', async () => {
-        const errorMsg = 'Query failed'
-        const queryMock = engine.query as ReturnType<typeof vi.fn>
-        queryMock.mockRejectedValueOnce(new Error(errorMsg))
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        query.mockRejectedValueOnce(new Error('Query failed'))
         const result = await customBaseQuery(queryArgs, api, {})
         expect(result).toEqual({
             error: {
                 type: 'runtime',
-                message: errorMsg,
+                message: 'Query failed',
             },
         })
     })
 
     it('returns error if mutation throws non-Error', async () => {
-        const mutateMock = engine.mutate as ReturnType<typeof vi.fn>
-        mutateMock.mockRejectedValueOnce('fail')
-        const api = {
-            extra: { engine },
-            signal,
-        } as unknown as BaseQueryApiWithExtraArg
+        mutate.mockRejectedValueOnce('fail')
         const result = await customBaseQuery(mutationArgs, api, {})
         expect(result).toEqual({
             error: {

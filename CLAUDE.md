@@ -21,7 +21,7 @@ This is an unreleased app under active development. Some defaults that suit stab
 
 ## Environment
 
-- **Node**: 24 (see `.nvmrc`). `engines` in `package.json` requires ≥ 22.22.2 (jsdom/undici need it) and `engineStrict` makes pnpm refuse to install or run scripts on older versions. Run `nvm use` in the project dir if your default is older.
+- **Node**: 24 (see `.nvmrc`). `engines` in `package.json` requires ≥ 22.22.2 (jsdom/undici need it) and `engineStrict` makes pnpm refuse to install or run scripts on older versions. Run `nvm use` in the project dir if your default is older. The git hooks and the Claude Code format hook source `scripts/use-project-node.sh`, which does this for them when nvm is installed.
 - **pnpm**: version pinned via `packageManager` in `package.json`.
 - **Dev server**: `pnpm start --proxy https://dev.im.dhis2.org/analytics-dev`, then open `http://localhost:3000`. The login form asks for Server, Username and Password — use the server URL and credentials from `dhis2.env.json`.
 - **`dhis2.env.json`** (gitignored, copied from `dhis2.env.template.json` on install) holds the dev server URL and credentials. Read it for API lookups and browser testing.
@@ -148,7 +148,7 @@ Drive the running app with the Chrome DevTools MCP (or claude-in-chrome). Verify
 **Golden rule**: during development, lint/test only the files you touched. Before finishing, always run `pnpm test` and `pnpm lint`.
 
 - **Vitest**: `pnpm exec vitest run <file-path>`
-- **Coverage**: `pnpm test:coverage` (HTML report in `coverage/`)
+- **Coverage**: `pnpm test:coverage` (HTML report in `coverage/`). Thresholds are 100% for lines, functions, branches and statements, and CI fails below that, so run it before finishing.
 - **ESLint**: `pnpm exec eslint <file-path>` (add `--fix`)
 - **Stylelint**: `pnpm exec stylelint <file-path> --max-warnings=0` (add `--fix`)
 - **Prettier**: `pnpm exec prettier --write <file-path>`
