@@ -1,4 +1,10 @@
 import type {
+    GridNode,
+    GridTree,
+    SerializedGrid,
+    SerializedGridNode,
+} from '@modules/workspace/grid-tree'
+import type {
     DockviewApi,
     DockviewGroupPanel,
     IDockviewPanel,
@@ -8,7 +14,8 @@ import { vi, type Mock } from 'vitest'
 /* An in-memory stand-in for the parts of the dockview api the workspace
  * controller uses. jsdom has no layout, so the real dockview cannot
  * exercise size- and position-dependent code; here tests set each cell's
- * size and position themselves. */
+ * size and position themselves, and the layout tree dockview would
+ * serialize. */
 
 type Rect = { left: number; top: number; width: number; height: number }
 type Location =
@@ -23,7 +30,7 @@ export type FakePanel = {
     api: {
         component: string
         setActive: Mock<() => void>
-        moveTo: Mock<(options: { group: FakeGroup }) => void>
+        moveTo: Mock<(options: { group: FakeGroup; position?: string }) => void>
     }
 }
 
@@ -45,6 +52,7 @@ export type FakeGroup = {
         collapse: Mock<() => void>
         expand: Mock<() => void>
         setSize: Mock<(size: { width?: number; height?: number }) => void>
+        moveTo: Mock<(options: { position?: string }) => void>
     }
 }
 
@@ -69,6 +77,24 @@ type EventName =
     | 'onWillShowOverlay'
     | 'onWillDrop'
     | 'onDidDrop'
+    | 'onWillMutateLayout'
+    | 'onDidMutateLayout'
+
+const toSerializedNode = (node: GridNode): SerializedGridNode =>
+    node.type === 'leaf'
+        ? { type: 'leaf', data: { id: node.id }, size: node.size }
+        : {
+              type: 'branch',
+              data: node.children.map(toSerializedNode),
+              size: node.size,
+          }
+
+const EMPTY_GRID: SerializedGrid = {
+    orientation: 'HORIZONTAL',
+    width: 0,
+    height: 0,
+    root: { type: 'branch', data: [], size: 0 },
+}
 
 export const createFakeDockview = () => {
     const listeners = new Map<EventName, Set<(event: unknown) => void>>()
@@ -76,6 +102,41 @@ export const createFakeDockview = () => {
     const groups: FakeGroup[] = []
     const edgeGroups = new Map<string, FakeGroup>()
     let groupCount = 0
+    let grid = EMPTY_GRID
+    let maximized = false
+    let mutationDepth = 0
+    /* The layout the next change leaves, as dockview would lay it out */
+    let nextLayout: (() => GridTree) | null = null
+
+    const setLayout = (tree: GridTree) => {
+        grid = {
+            orientation: tree.orientation,
+            width: tree.width,
+            height: tree.height,
+            root: toSerializedNode(tree.root),
+        }
+    }
+
+    /* Like dockview, brackets a structural change with will/did events,
+     * once for nested changes */
+    const mutate = <T>(change: () => T): T => {
+        if (mutationDepth === 0) {
+            emit('onWillMutateLayout', { kind: 'test' })
+        }
+        mutationDepth++
+        try {
+            return change()
+        } finally {
+            mutationDepth--
+            if (mutationDepth === 0) {
+                if (nextLayout) {
+                    setLayout(nextLayout())
+                    nextLayout = null
+                }
+                emit('onDidMutateLayout', { kind: 'test' })
+            }
+        }
+    }
 
     const emit = (name: EventName, event: unknown) =>
         listeners.get(name)?.forEach((listener) => listener(event))
@@ -119,6 +180,7 @@ export const createFakeDockview = () => {
                     collapsed = false
                 }),
                 setSize: vi.fn(),
+                moveTo: vi.fn(),
             },
         }
         groups.push(group)
@@ -160,7 +222,7 @@ export const createFakeDockview = () => {
                     emit('onDidActivePanelChange', { panel, origin: 'api' })
                 }),
                 moveTo: vi.fn(({ group: target }: { group: FakeGroup }) =>
-                    placePanel(panel, target)
+                    mutate(() => placePanel(panel, target))
                 ),
             },
         }
@@ -188,34 +250,48 @@ export const createFakeDockview = () => {
                 title?: string
                 params?: unknown
                 inactive?: boolean
-                position?: { referenceGroup?: unknown; index?: number }
-            }) => {
-                const group =
-                    findGroup(options.position?.referenceGroup) ??
-                    createGroup({ type: 'grid' })
-                const panel = createPanel({
-                    id: options.id,
-                    component: options.component,
-                    group,
-                    title: options.title,
-                    params: options.params,
-                    index: options.position?.index,
-                })
-                emit('onDidAddPanel', panel)
-                if (!options.inactive) {
-                    panel.api.setActive()
+                position?: {
+                    referenceGroup?: unknown
+                    index?: number
+                    direction?: string
                 }
-                return panel
-            }
+            }) =>
+                mutate(() => {
+                    /* A direction splits the reference cell into a new one */
+                    const isSplit = Boolean(options.position?.direction)
+                    const group =
+                        (!isSplit &&
+                            findGroup(options.position?.referenceGroup)) ||
+                        createGroup({ type: 'grid' })
+                    const panel = createPanel({
+                        id: options.id,
+                        component: options.component,
+                        group,
+                        title: options.title,
+                        params: options.params,
+                        index: options.position?.index,
+                    })
+                    emit('onDidAddPanel', panel)
+                    if (!options.inactive) {
+                        panel.api.setActive()
+                    }
+                    return panel
+                })
         ),
-        removePanel: vi.fn((panel: FakePanel) => {
-            panels.splice(panels.indexOf(panel), 1)
-            panel.group.panels = panel.group.panels.filter((p) => p !== panel)
-            if (panel.group.activePanel === panel) {
-                panel.group.activePanel = panel.group.panels[0]
-            }
-            emit('onDidRemovePanel', panel)
-        }),
+        removePanel: vi.fn((panel: FakePanel) =>
+            mutate(() => {
+                panels.splice(panels.indexOf(panel), 1)
+                panel.group.panels = panel.group.panels.filter(
+                    (p) => p !== panel
+                )
+                if (panel.group.activePanel === panel) {
+                    panel.group.activePanel = panel.group.panels[0]
+                }
+                emit('onDidRemovePanel', panel)
+            })
+        ),
+        toJSON: vi.fn(() => ({ grid })),
+        hasMaximizedGroup: () => maximized,
         getEdgeGroup: (position: string) => edgeGroups.get(position)?.api,
         addEdgeGroup: vi.fn(
             (
@@ -242,6 +318,8 @@ export const createFakeDockview = () => {
         onWillShowOverlay: on('onWillShowOverlay'),
         onWillDrop: on('onWillDrop'),
         onDidDrop: on('onDidDrop'),
+        onWillMutateLayout: on('onWillMutateLayout'),
+        onDidMutateLayout: on('onDidMutateLayout'),
     }
 
     /* A view already laid out in its own grid cell, without firing events */
@@ -270,6 +348,15 @@ export const createFakeDockview = () => {
         edgeGroups,
         createGroup,
         addLaidOutView,
+        setLayout,
+        mutate,
+        /* The layout the next change (add, remove, move) leaves */
+        changeLayoutTo: (layout: () => GridTree) => {
+            nextLayout = layout
+        },
+        setMaximized: (value: boolean) => {
+            maximized = value
+        },
         listenerCount: () =>
             [...listeners.values()].reduce((sum, set) => sum + set.size, 0),
     }

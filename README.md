@@ -39,6 +39,10 @@ Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.
 
 Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. It fails if coverage drops below 100%, so new code needs tests. On pull requests, CI posts the coverage as a PR comment.
 
+### `pnpm cy:comp:run` / `pnpm cy:comp:open`
+
+Runs the Cypress component tests, headless or in the interactive runner. They mount components in a real browser to check what unit tests can't: layout, CSS and drag and drop. CI runs them on every pull request.
+
 ### `pnpm lint` / `pnpm format`
 
 `pnpm lint` runs TypeScript, ESLint, Stylelint, ls-lint and Prettier checks. `pnpm format` fixes what can be fixed automatically.

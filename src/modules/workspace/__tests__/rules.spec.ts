@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest'
+import { VIEW_MIN_SIZE } from '../grid-tree'
 import {
     canAddView,
-    getEdgeDockLength,
     getNextViewNumber,
     getSplitAxis,
-    hasRoomToDockAtEdge,
+    hasRoomToInsertLine,
     hasRoomToSplitCell,
     isAllowedDrop,
+    isNoOpMove,
     isSwapDrop,
     MAX_VIEWS,
-    VIEW_MIN_SIZE,
     type DropContext,
 } from '../rules'
+import { buildTree, column, row, view } from './grid-tree-builders'
 
 describe('canAddView', () => {
     it('allows views up to the maximum', () => {
@@ -46,6 +47,7 @@ describe('isAllowedDrop', () => {
         targetHoldsSource: false,
         source: 'external',
         gridIsEmpty: false,
+        isNoOpMove: false,
     }
 
     it('lets a new view split an existing one', () => {
@@ -106,6 +108,12 @@ describe('isAllowedDrop', () => {
         ).toBe(true)
     })
 
+    it('offers no drop that would leave the layout as it is', () => {
+        expect(
+            isAllowedDrop({ ...base, source: 'view', isNoOpMove: true })
+        ).toBe(false)
+    })
+
     it('keeps views out of the tool edge groups', () => {
         for (const source of ['external', 'view'] as const) {
             expect(
@@ -146,22 +154,144 @@ describe('room to split', () => {
         expect(hasRoomToSplitCell(height * 2 - 1, 'vertical')).toBe(false)
     })
 
-    it('docks at the grid edge only when the narrowest line stays readable', () => {
-        // two columns, the narrowest shrinking to 2/3 of its width
-        expect(hasRoomToDockAtEdge(width * 1.5, 2, 'horizontal')).toBe(true)
-        expect(hasRoomToDockAtEdge(width * 1.4, 2, 'horizontal')).toBe(false)
-        // a single full-height row halves when a second one docks below
-        expect(hasRoomToDockAtEdge(height * 2, 1, 'vertical')).toBe(true)
+    it('inserts a line only when every line keeps its minimum size', () => {
+        expect(
+            hasRoomToInsertLine({
+                minLength: width * 2,
+                length: width * 3,
+                axis: 'horizontal',
+            })
+        ).toBe(true)
+        expect(
+            hasRoomToInsertLine({
+                minLength: width * 2,
+                length: width * 3 - 1,
+                axis: 'horizontal',
+            })
+        ).toBe(false)
+        expect(
+            hasRoomToInsertLine({
+                minLength: height,
+                length: height * 2,
+                axis: 'vertical',
+            })
+        ).toBe(true)
     })
 })
 
-describe('getEdgeDockLength', () => {
-    it('gives a view docked at the outer edge its share of the grid', () => {
-        expect(getEdgeDockLength(720, 3)).toBe(240)
-        expect(getEdgeDockLength(1280, 4)).toBe(320)
+describe('isNoOpMove', () => {
+    /* a | (b over c) */
+    const layout = buildTree(
+        1200,
+        800,
+        row(1, view('a'), column(1, view('b'), view('c')))
+    )
+
+    it('refuses a view its own cell', () => {
+        for (const position of ['left', 'center', 'bottom'] as const) {
+            expect(
+                isNoOpMove(layout, 'b', { type: 'cell', id: 'b', position })
+            ).toBe(true)
+        }
     })
 
-    it('never divides by zero', () => {
-        expect(getEdgeDockLength(900, 0)).toBe(900)
+    it('refuses the edge of the neighbour facing the view', () => {
+        expect(
+            isNoOpMove(layout, 'b', {
+                type: 'cell',
+                id: 'c',
+                position: 'top',
+            })
+        ).toBe(true)
+        expect(
+            isNoOpMove(layout, 'c', {
+                type: 'cell',
+                id: 'b',
+                position: 'bottom',
+            })
+        ).toBe(true)
+    })
+
+    it('allows the other edges of a neighbour', () => {
+        expect(
+            isNoOpMove(layout, 'b', {
+                type: 'cell',
+                id: 'c',
+                position: 'bottom',
+            })
+        ).toBe(false)
+        expect(
+            isNoOpMove(layout, 'b', {
+                type: 'cell',
+                id: 'c',
+                position: 'left',
+            })
+        ).toBe(false)
+        expect(
+            isNoOpMove(layout, 'b', {
+                type: 'cell',
+                id: 'a',
+                position: 'right',
+            })
+        ).toBe(false)
+    })
+
+    it('refuses the outer edge a view already runs along', () => {
+        expect(
+            isNoOpMove(layout, 'a', { type: 'edge', position: 'left' })
+        ).toBe(true)
+        expect(
+            isNoOpMove(layout, 'a', { type: 'edge', position: 'right' })
+        ).toBe(false)
+        expect(isNoOpMove(layout, 'a', { type: 'edge', position: 'top' })).toBe(
+            false
+        )
+        expect(
+            isNoOpMove(layout, 'c', { type: 'edge', position: 'bottom' })
+        ).toBe(false)
+    })
+
+    it('lets a short row spanning part of the grid move to the top or bottom', () => {
+        /* map 1 | ((vis 2 | vis 1) over map 2) */
+        const capture = buildTree(
+            1200,
+            800,
+            row(
+                1,
+                view('map-1'),
+                column(
+                    1,
+                    row(4, view('vis-2'), view('vis-1')),
+                    view('map-2', 1)
+                )
+            )
+        )
+
+        for (const position of ['top', 'bottom'] as const) {
+            expect(
+                isNoOpMove(capture, 'map-2', { type: 'edge', position })
+            ).toBe(false)
+        }
+    })
+
+    it('refuses every move of the only view', () => {
+        const single = buildTree(1200, 800, row(1, view('a')))
+
+        expect(
+            isNoOpMove(single, 'a', { type: 'edge', position: 'bottom' })
+        ).toBe(true)
+    })
+
+    it('does not judge swaps or unknown views', () => {
+        expect(
+            isNoOpMove(layout, 'b', {
+                type: 'cell',
+                id: 'a',
+                position: 'center',
+            })
+        ).toBe(false)
+        expect(
+            isNoOpMove(layout, 'gone', { type: 'edge', position: 'left' })
+        ).toBe(false)
     })
 })

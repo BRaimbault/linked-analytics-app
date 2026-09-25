@@ -11,6 +11,12 @@ import {
     swapViews,
     swapViewsById,
 } from '@components/workspace/workspace-controller'
+import {
+    buildTree,
+    column,
+    row,
+    view,
+} from '@modules/workspace/__tests__/grid-tree-builders'
 import { VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -51,6 +57,11 @@ const existing = (fake: ReturnType<typeof createFakeDockview>, id: string) => {
     }
     return panel
 }
+
+/* The cell of the view dockview is adding, once it exists */
+const newViewGroupId = (fake: ReturnType<typeof createFakeDockview>) =>
+    fake.api.panels.filter((panel) => panel.api.component === 'view').at(-1)
+        ?.group.id ?? ''
 
 const overlayEvent = (overrides: Record<string, unknown>) => ({
     kind: 'content',
@@ -259,26 +270,126 @@ describe('drop overlay', () => {
 
     it('checks the room left for a new line at the outer edges', () => {
         const fake = setup()
-        twoColumns(fake)
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(1000, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
         const column = overlayEvent({ kind: 'edge', position: 'left' })
-        const row = overlayEvent({ kind: 'edge', position: 'bottom' })
+        const row3 = overlayEvent({ kind: 'edge', position: 'bottom' })
 
         fake.emit('onWillShowOverlay', column)
-        fake.emit('onWillShowOverlay', row)
+        fake.emit('onWillShowOverlay', row3)
 
-        // columns shrink to 2/3 of 500 (>= 240); a row halves 800 (>= 160)
         expect(column.preventDefault).not.toHaveBeenCalled()
-        expect(row.preventDefault).not.toHaveBeenCalled()
+        expect(row3.preventDefault).not.toHaveBeenCalled()
 
-        fake.addLaidOutView('narrow', {
-            left: 1000,
-            top: 0,
-            width: 250,
-            height: 800,
-        })
+        fake.setLayout(
+            buildTree(700, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
         const tooNarrow = overlayEvent({ kind: 'edge', position: 'right' })
         fake.emit('onWillShowOverlay', tooNarrow)
         expect(tooNarrow.preventDefault).toHaveBeenCalled()
+    })
+
+    it('leaves the dragged view out of the room it needs at the outer edges', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        const short = fake.addLaidOutView('short', {
+            left: 500,
+            top: 640,
+            width: 500,
+            height: 160,
+        })
+        /* map | (vis over a short view): a new row would leave the short
+         * view below its minimum, unless it is the one moving */
+        fake.setLayout(
+            buildTree(
+                1000,
+                479,
+                row(
+                    1,
+                    view(map.group.id),
+                    column(1, view(vis.group.id, 2), view(short.group.id, 1))
+                )
+            )
+        )
+        const moveShort = overlayEvent({
+            kind: 'edge',
+            position: 'top',
+            getData: () => ({ panelId: short.id }),
+        })
+        const addNew = overlayEvent({ kind: 'edge', position: 'top' })
+
+        fake.emit('onWillShowOverlay', moveShort)
+        fake.emit('onWillShowOverlay', addNew)
+
+        expect(moveShort.preventDefault).not.toHaveBeenCalled()
+        expect(addNew.preventDefault).toHaveBeenCalled()
+    })
+
+    it('offers no drop that would leave a view where it is', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(1000, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+        const drag = { getData: () => ({ panelId: map.id, groupId: '' }) }
+        const ownCell = overlayEvent({ ...drag, group: map.group })
+        const facingEdge = overlayEvent({
+            ...drag,
+            group: vis.group,
+            position: 'left',
+        })
+        const ownOuterEdge = overlayEvent({
+            ...drag,
+            kind: 'edge',
+            position: 'left',
+        })
+        const realMove = overlayEvent({
+            ...drag,
+            kind: 'edge',
+            position: 'right',
+        })
+
+        for (const event of [ownCell, facingEdge, ownOuterEdge, realMove]) {
+            fake.emit('onWillShowOverlay', event)
+        }
+
+        expect(ownCell.preventDefault).toHaveBeenCalled()
+        expect(facingEdge.preventDefault).toHaveBeenCalled()
+        expect(ownOuterEdge.preventDefault).toHaveBeenCalled()
+        expect(realMove.preventDefault).not.toHaveBeenCalled()
+    })
+
+    it('judges a dragged view that is gone as taking no room', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(1000, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+        const event = overlayEvent({
+            kind: 'edge',
+            position: 'bottom',
+            getData: () => ({ panelId: 'map-gone', groupId: '' }),
+        })
+
+        fake.emit('onWillShowOverlay', event)
+
+        expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+
+    it('recognises a view dragged by its group rather than its tab', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        const event = overlayEvent({
+            group: vis.group,
+            position: 'center',
+            getData: () => ({ panelId: null, groupId: map.group.id }),
+        })
+
+        fake.emit('onWillShowOverlay', event)
+
+        expect(event.preventDefault).not.toHaveBeenCalled()
     })
 
     it('fills an empty grid from its outer edge or centre', () => {
@@ -386,89 +497,339 @@ describe('drops', () => {
         )
     })
 
-    it('gives every single-view column 1/n of the grid after an outer-edge drop', () => {
+    it('keeps the proportions of the other views when a palette drop adds a column', () => {
         const fake = setup()
         const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id),
+                    view(vis.group.id),
+                    view(newViewGroupId(fake))
+                )
+            )
+        )
         const event = dropEvent({ kind: 'edge', position: 'right' })
 
         fake.emit('onWillDrop', event)
         fake.emit('onDidDrop', event)
 
-        const third = 1000 / 3
-        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: third })
-        expect(vis.group.api.setSize).toHaveBeenCalledWith({ width: third })
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 560 })
+        expect(vis.group.api.setSize).toHaveBeenCalledWith({ width: 240 })
     })
 
-    it('sizes rows after a view is moved to the outer bottom edge', () => {
+    it('reads the layout when a tab is dropped, before dockview reshapes it', () => {
         const fake = setup()
-        const [map] = twoColumns(fake)
-        const row = fake.addLaidOutView('row', {
-            left: 0,
-            top: 800,
-            width: 1000,
+        const [map, vis] = twoColumns(fake)
+        const moved = fake.addLaidOutView('moved', {
+            left: 420,
+            top: 400,
+            width: 780,
             height: 400,
         })
+        const before = buildTree(
+            1200,
+            800,
+            row(
+                1,
+                view(map.group.id, 35),
+                column(65, view(vis.group.id), view(moved.group.id))
+            )
+        )
+        fake.setLayout(before)
 
         fake.emit(
             'onWillDrop',
             dropEvent({
                 kind: 'edge',
-                position: 'bottom',
-                getData: () => ({ panelId: row.id }),
+                position: 'right',
+                getData: () => ({ panelId: moved.id, groupId: '' }),
             })
         )
-        fake.emit('onDidMovePanel', { panel: row })
+        /* dockview wraps the grid for an outer-edge drop before it
+         * announces the change */
+        fake.setLayout(buildTree(1200, 800, row(1, view('wrapper'))))
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id),
+                    view(vis.group.id),
+                    view(moved.group.id)
+                )
+            )
+        )
+        moved.api.moveTo({ group: moved.group, position: 'right' })
 
-        expect(row.group.api.setSize).toHaveBeenCalledWith({ height: 1200 / 3 })
-        expect(map.group.api.setSize).not.toHaveBeenCalled()
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 280 })
+        expect(vis.group.api.setSize).toHaveBeenCalledWith({ width: 520 })
     })
 
-    it('only resizes after an outer-edge drop, and only for views', () => {
+    it('keeps the expected change across a move dockview makes in two steps', () => {
         const fake = setup()
-        const [map] = twoColumns(fake)
-
-        fake.emit('onDidMovePanel', { panel: map })
-        fake.emit('onWillDrop', dropEvent({ kind: 'edge', position: 'left' }))
-        fake.emit('onDidMovePanel', {
-            panel: fake.api.getPanel(ADD_VIEWS_PANEL_ID),
-        })
-
-        expect(map.group.api.setSize).not.toHaveBeenCalled()
-    })
-
-    it('skips resizing when there is nothing to resize or measure', () => {
-        const fake = setup()
-        const lonely = fake.addLaidOutView('lonely', {
-            left: 0,
-            top: 0,
-            width: 1000,
-            height: 800,
-        })
-        const edgeDrop = dropEvent({ kind: 'edge', position: 'left' })
-
-        fake.emit('onWillDrop', edgeDrop)
-        fake.emit('onDidMovePanel', { panel: lonely })
-
-        fake.emit('onWillDrop', edgeDrop)
-        fake.emit('onDidMovePanel', {
-            panel: { ...lonely, id: 'gone' },
-        })
-
-        const unmeasured = createFakeDockview()
-        const cleanup = setupWorkspace(unmeasured.asApi, vi.fn(), titles)
-        const a = unmeasured.addLaidOutView('a', {
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+        const moved = fake.addLaidOutView('moved', {
             left: 0,
             top: 0,
             width: 0,
             height: 0,
         })
-        unmeasured.addLaidOutView('b', { left: 0, top: 0, width: 0, height: 0 })
-        unmeasured.emit('onWillDrop', edgeDrop)
-        unmeasured.emit('onDidMovePanel', { panel: a })
-        cleanup()
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                column(
+                    1,
+                    row(3, view(map.group.id, 70), view(vis.group.id, 30)),
+                    view(moved.group.id, 1)
+                )
+            )
+        )
 
-        expect(lonely.group.api.setSize).not.toHaveBeenCalled()
-        expect(a.group.api.setSize).not.toHaveBeenCalled()
+        fake.emit(
+            'onWillDrop',
+            dropEvent({
+                kind: 'edge',
+                position: 'right',
+                getData: () => ({ panelId: moved.id, groupId: '' }),
+            })
+        )
+        /* First a new, empty cell at the edge, then the view moving in */
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    column(3, row(1, view(map.group.id), view(vis.group.id))),
+                    view('new-cell')
+                )
+            )
+        )
+        fake.mutate(() => undefined)
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id),
+                    view(vis.group.id),
+                    view(moved.group.id)
+                )
+            )
+        )
+        fake.mutate(() => undefined)
+
+        expect(map.group.api.setSize).toHaveBeenLastCalledWith({ width: 560 })
+        expect(vis.group.api.setSize).toHaveBeenLastCalledWith({ width: 240 })
+    })
+
+    it('halves the cell a tab is dropped on', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        const moved = fake.addLaidOutView('moved', {
+            left: 0,
+            top: 600,
+            width: 1200,
+            height: 200,
+        })
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                column(
+                    1,
+                    row(3, view(map.group.id, 70), view(vis.group.id, 30)),
+                    view(moved.group.id, 1)
+                )
+            )
+        )
+
+        fake.emit(
+            'onWillDrop',
+            dropEvent({
+                group: map.group,
+                position: 'right',
+                getData: () => ({ panelId: moved.id, groupId: '' }),
+            })
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id),
+                    view(moved.group.id),
+                    view(vis.group.id)
+                )
+            )
+        )
+        moved.api.moveTo({ group: moved.group, position: 'right' })
+
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 420 })
+        expect(moved.group.api.setSize).toHaveBeenCalledWith({ width: 420 })
+    })
+
+    it('halves a cell given by its id', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id),
+                    view(newViewGroupId(fake)),
+                    view(vis.group.id)
+                )
+            )
+        )
+
+        addView(fake.asApi, 'map', {
+            placement: { referenceGroup: map.group.id, direction: 'right' },
+        })
+
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 420 })
+    })
+
+    it('shares the space of a closed view among its neighbours in proportion', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        const closed = fake.addLaidOutView('closed', {
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
+        })
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(
+                    1,
+                    view(map.group.id, 48),
+                    view(closed.group.id, 19),
+                    view(vis.group.id, 33)
+                )
+            )
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(1200, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+
+        fake.api.removePanel(closed)
+
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 711 })
+    })
+
+    it('leaves sizes alone while a view is maximized, and puts them back after', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+
+        fake.mutate(() => fake.setMaximized(true))
+        expect(map.group.api.setSize).not.toHaveBeenCalled()
+
+        fake.changeLayoutTo(() =>
+            buildTree(1200, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+        fake.mutate(() => fake.setMaximized(false))
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 840 })
+    })
+
+    it('forgets an expected change dockview never made', async () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        const layout = buildTree(
+            1200,
+            800,
+            row(1, view(map.group.id, 70), view(vis.group.id, 30))
+        )
+        fake.setLayout(layout)
+
+        fake.emit(
+            'onWillDrop',
+            dropEvent({
+                kind: 'edge',
+                position: 'left',
+                getData: () => ({ panelId: vis.id, groupId: '' }),
+            })
+        )
+        await Promise.resolve()
+        fake.mutate(() => undefined)
+
+        expect(map.group.api.setSize).not.toHaveBeenCalled()
+    })
+
+    it('ignores a moved view that is gone and cells that are gone', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+        fake.emit(
+            'onWillDrop',
+            dropEvent({
+                kind: 'edge',
+                position: 'left',
+                getData: () => ({ panelId: vis.id, groupId: '' }),
+            })
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(1200, 800, row(1, view('gone'), view(map.group.id)))
+        )
+
+        fake.api.removePanel(vis)
+
+        expect(map.group.api.setSize).not.toHaveBeenCalled()
+    })
+
+    it('does nothing before the grid is measured', () => {
+        const fake = setup()
+        const [map] = twoColumns(fake)
+
+        fake.api.removePanel(fake.api.getPanel('vis-a') as never)
+
+        expect(map.group.api.setSize).not.toHaveBeenCalled()
     })
 
     it('does nothing for drops without a valid view payload', () => {
@@ -488,26 +849,6 @@ describe('drops', () => {
         )
 
         expect(fake.api.addPanel).toHaveBeenCalledTimes(addCalls)
-    })
-
-    it('does not resize after an outer-edge drop into a full workspace', () => {
-        const fake = setup()
-        const views = ['a', 'b', 'c', 'd'].map((id, index) =>
-            fake.addLaidOutView(id, {
-                left: index * 250,
-                top: 0,
-                width: 250,
-                height: 800,
-            })
-        )
-        const event = dropEvent({ kind: 'edge', position: 'left' })
-
-        fake.emit('onWillDrop', event)
-        fake.emit('onDidDrop', event)
-
-        views.forEach((view) =>
-            expect(view.group.api.setSize).not.toHaveBeenCalled()
-        )
     })
 
     it('swaps views dropped onto each other', () => {

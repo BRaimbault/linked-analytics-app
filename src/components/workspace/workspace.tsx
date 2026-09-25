@@ -1,4 +1,5 @@
 import { HeaderActions } from '@components/workspace/header-actions'
+import { InsertZones } from '@components/workspace/insert-zones'
 import { AddViewsPanel } from '@components/workspace/panels/add-views-panel'
 import { InteractionsPanel } from '@components/workspace/panels/interactions-panel'
 import { SettingsPanel } from '@components/workspace/panels/settings-panel'
@@ -40,6 +41,15 @@ const OUTER_EDGE_DROP_MODEL: DroptargetOverlayModel = {
     activationSize: { type: 'pixels', value: 48 },
     size: { type: 'percentage', value: 25 },
 }
+
+/* The outer edges are InsertZones, like the lines between views, but those
+ * only take mouse drags. On a touch screen dockview drags with pointer
+ * events (it checks the same media queries), so its own outer edges stay. */
+export const getOuterEdgeDropModel = (): DroptargetOverlayModel | false =>
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches &&
+    !window.matchMedia('(pointer: fine)').matches &&
+    OUTER_EDGE_DROP_MODEL
 const CELL_DROP_MODEL: DroptargetOverlayModel = {
     activationSize: { type: 'percentage', value: 33 },
 }
@@ -93,11 +103,12 @@ export const Workspace: FC = () => {
                     watermarkComponent={Watermark}
                     singleTabMode="fullwidth"
                     defaultRenderer="always"
-                    dndEdges={OUTER_EDGE_DROP_MODEL}
+                    dndEdges={getOuterEdgeDropModel()}
                     dropOverlayModel={getDropOverlayModel}
                     getAnnouncement={getWorkspaceAnnouncement}
                     onReady={(event: DockviewReadyEvent) => setApi(event.api)}
                 />
+                <InsertZones api={api} isDragging={isDragging} />
             </div>
         </WorkspaceApiContext.Provider>
     )

@@ -1,16 +1,16 @@
+import {
+    axisOf,
+    findLeafLocation,
+    getLeaves,
+    minLengthOf,
+    type GridTree,
+    type SplitAxis,
+} from './grid-tree'
 import type { ViewType } from './view-types'
 
 export const MAX_VIEWS = 4
 
 export const canAddView = (viewCount: number): boolean => viewCount < MAX_VIEWS
-
-/* Below this a plugin has no room to be readable */
-export const VIEW_MIN_SIZE = { width: 240, height: 160 }
-
-export type SplitAxis = 'horizontal' | 'vertical'
-
-const minLengthOf = (axis: SplitAxis): number =>
-    axis === 'horizontal' ? VIEW_MIN_SIZE.width : VIEW_MIN_SIZE.height
 
 export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
     if (position === 'left' || position === 'right') {
@@ -22,28 +22,24 @@ export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
     return null
 }
 
-/* Splitting a cell halves it; docking at the outer edge of the grid adds a
- * row or column and shrinks the existing ones proportionally, so the
- * narrowest one is what must stay readable. */
+/* Splitting a cell halves it. A new line (a row or column added at the
+ * grid's outer edge or between two lines) takes its share from the others,
+ * so it fits as long as every line can keep its minimum length. */
 export const hasRoomToSplitCell = (
     cellLength: number,
     axis: SplitAxis
 ): boolean => cellLength / 2 >= minLengthOf(axis)
 
-export const hasRoomToDockAtEdge = (
-    narrowestLength: number,
-    lineCount: number,
+export const hasRoomToInsertLine = ({
+    minLength,
+    length,
+    axis,
+}: {
+    /* The smallest length the existing lines can shrink to */
+    minLength: number
+    length: number
     axis: SplitAxis
-): boolean =>
-    (narrowestLength * lineCount) / (lineCount + 1) >= minLengthOf(axis)
-
-/* A view docked at the outer edge spans the whole grid, so it gets 1/n of
- * the grid along that axis (n views in total), like every other line;
- * left alone, docking across the current layout would give it half. */
-export const getEdgeDockLength = (
-    gridLength: number,
-    viewCount: number
-): number => gridLength / Math.max(viewCount, 1)
+}): boolean => minLength + minLengthOf(axis) <= length
 
 /* Numbers freed by closing a view are reused, so titles stay short */
 export const getNextViewNumber = (
@@ -72,6 +68,43 @@ export type DropContext = {
     targetHoldsSource: boolean
     source: DragSource
     gridIsEmpty: boolean
+    /* Dropping the dragged view there would leave the layout as it is */
+    isNoOpMove: boolean
+}
+
+export type MoveTarget =
+    | { type: 'cell'; id: string; position: DropPosition }
+    | { type: 'edge'; position: DropPosition }
+
+/* A move changes nothing when the view lands where it already is: in its
+ * own cell, against the facing edge of the view next to it, or at the
+ * outer edge it already runs along. */
+export const isNoOpMove = (
+    tree: GridTree,
+    sourceId: string,
+    target: MoveTarget
+): boolean => {
+    if (target.type === 'cell' && target.id === sourceId) {
+        return true
+    }
+    if (getLeaves(tree.root).length <= 1) {
+        return true
+    }
+    const axis = getSplitAxis(target.position)
+    const source = findLeafLocation(tree, sourceId)
+    if (!axis || !source || axisOf(source.orientation) !== axis) {
+        return false
+    }
+    const siblings = source.parent.children
+    const towardsStart = target.position === 'left' || target.position === 'top'
+    if (target.type === 'edge') {
+        return (
+            source.parent === tree.root &&
+            source.index === (towardsStart ? 0 : siblings.length - 1)
+        )
+    }
+    const neighbour = siblings[source.index + (towardsStart ? 1 : -1)]
+    return neighbour?.type === 'leaf' && neighbour.id === target.id
 }
 
 /* A view dropped onto the middle (or the tab) of another view swaps the
@@ -96,7 +129,7 @@ export const isAllowedDrop = (context: DropContext): boolean => {
     if (source === 'tool') {
         return targetIsEdgeGroup
     }
-    if (targetIsEdgeGroup) {
+    if (targetIsEdgeGroup || context.isNoOpMove) {
         return false
     }
     if (position === 'center') {

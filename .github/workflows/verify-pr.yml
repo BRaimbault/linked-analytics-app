@@ -46,5 +46,24 @@ jobs:
               if: always() && steps.unit-tests.outcome != 'skipped'
               uses: davelosert/vitest-coverage-report-action@c4bbc33a89b7ace0e63d35f1f7d4bcee31155a73 # v2.13.0
 
+            - name: Cypress component tests
+              id: component-tests
+              uses: cypress-io/github-action@01e3b659a495b41649cdd0aa82e1d1624e26520b # v7.4.4
+              with:
+                  # Dependencies and the Cypress binary come from the install step
+                  install: false
+                  component: true
+                  browser: chrome
+                  # Results stay in the job log; nothing goes to Cypress Cloud
+                  record: false
+
+            - name: Cypress screenshots
+              if: failure() && steps.component-tests.outcome == 'failure'
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: cypress-screenshots
+                  path: cypress/screenshots
+                  if-no-files-found: ignore
+
             - name: Build
               run: pnpm d2-app-scripts build

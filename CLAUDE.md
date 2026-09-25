@@ -73,18 +73,27 @@ From reading `dhis2/dashboard-app` (`src/components/Item/VisualizationItem/Visua
 
 ### Workspace (dockview)
 
-- `dockview-react`, one view per cell (no tabs in the grid), at most 4 views. Drop rules live in `src/modules/workspace/rules.ts`; every dockview call lives in `src/components/workspace/workspace-controller.ts`.
+- `dockview-react`, one view per cell (no tabs in the grid), at most 4 views. Pure layout logic lives in `src/modules/workspace/` (`rules.ts` for drops, `grid-tree.ts` for the layout tree, `layout-sizing.ts`, `insert-zones.ts`); every dockview call lives in `src/components/workspace/workspace-controller.ts`.
 - A tools edge group (top by default, movable to any edge from its ⋯ menu, collapsible) holds "Add views", one settings tab per view, and "Interactions". Selecting a view by hand brings its settings tab forward; adding one keeps the palette open.
-- Views keep a minimum size (`VIEW_MIN_SIZE`). A split or edge drop that would go below it is refused, and a click-add falls back from "right of the selected view" to "below it", then to other cells, before alerting that there is no room.
-- Docking a view at an outer edge sizes the grid proportionally: every line along that axis holding a single view gets 1/n of the grid (n = number of views), a line of stacked views keeps the rest. Without this, docking across the current layout gives the new view half the grid.
+- Views keep a minimum size (`VIEW_MIN_SIZE`). A drop that would push a view below it is refused (a moved view's own space counts as free), and a click-add falls back from "right of the selected view" to "below it", then to other cells, before alerting that there is no room.
+- **Sizes keep the user's proportions** (`computeLayoutSizes`). dockview spreads space evenly after every add, move or close; after each change the controller puts the sizes back:
+    - splitting a cell halves it, the others keep their size;
+    - a new line (outer edge, or between two lines) gets `1 / (lines + 1)` of its branch, where lines is the most views a straight line across meets in that direction, so it matches its neighbours; the others shrink in proportion;
+    - space a view leaves goes to its neighbours in proportion; a swap changes nothing.
+- **New lines show as a line**: while dragging, `InsertZones` lays strips over the dividers between lines (dockview has no such target) and along the grid's outer edges, and the hovered one shows the blue insertion line. A divider drop adds the view next to a reference view on one side of it; an outer-edge drop adds it at the root. Cell edges keep dockview's shaded half, since that drop halves the cell.
+- **Touch fallback**: the strips only take HTML5 (mouse) drags. On a touch-first device dockview drags with pointer events, so `getOuterEdgeDropModel` turns dockview's own outer-edge targets back on there (same media queries dockview uses); elsewhere `dndEdges` is off.
+- **No pointless previews**: `isNoOpMove` hides drops that would leave a view where it is (its own cell, the facing edge of its neighbour, the outer edge it already runs along).
 - Dropping a view onto the middle or the tab of another view swaps them; the view's ⋯ menu does the same from the keyboard.
 - Selecting a view by hand (click or tab, including one that is already active) brings its settings tab forward. Closing the selected view selects a neighbour; an empty grid brings back "Add views".
 - The layout is mirrored into the `workspace` Redux slice from dockview events; dockview stays the source of truth. The dockview api is shared through `WorkspaceApiContext`, not Redux.
 - **Dockview facts that matter here:**
     - `renderer: 'always'` keeps iframes alive when panels move; moving an iframe in the DOM otherwise reloads it.
-    - With `renderer: 'always'`, view bodies live in an overlay (`.dv-render-overlay`) above the grid that catches the pointer, so during a drag only tab bars would reach the drop zones. The workspace turns off pointer events on that overlay and on iframes while any drag is in progress (`useIsDragging`).
-    - Drop zones: dockview's defaults (a 10px band at the outer edges, 20% per side in a cell) are widened with `dndEdges` and `dropOverlayModel`, leaving the middle third of a cell for swapping.
+    - With `renderer: 'always'`, view bodies live in an overlay (`.dv-render-overlay`) above the grid that catches the pointer, so during a drag only tab bars would reach the drop zones. While any drag is in progress (`useIsDragging`), the workspace turns off pointer events on the overlays of views (`.dv-render-overlay:has([data-view-id])`) and on iframes. Never on all overlays: the tools live in overlays too, and Chrome cancels a drag whose source (a palette tile) stops taking the pointer. A view's body must keep `data-view-id` when the plugins replace the placeholders. jsdom cannot evaluate this CSS, so check real drags in the browser.
+    - Drop zones: dockview's default of 20% per side in a cell is widened with `dropOverlayModel`, leaving the middle third of a cell for swapping. Its outer-edge band (widened to 48px with `dndEdges`) is used on touch only.
+    - A tab moved to an outer edge goes through the group's `moveTo` without a target, which dockview runs as two layout changes (a new cell, then the view moving in). The expected change therefore lasts until the current task ends, and sizes are fixed after each change.
     - Screen-reader announcements go through `getWorkspaceAnnouncement`: only view changes are spoken, translated.
+    - Sizing reads `api.toJSON().grid` before each change (`onWillMutateLayout`) and fixes sizes after it (`onDidMutateLayout`) through `group.api.setSize`, parents first. Exception: a tab dropped at the outer edge reshapes the grid before `onWillMutateLayout`, so the layout is read in `onWillDrop`.
+    - `setSize` is stored and re-applied when a group becomes visible again, e.g. when a maximized view is restored, which would undo sash drags made since. So the grid is never read while a view is maximized (`toJSON` then briefly restores it), and sizes are put back from the layout read before maximizing.
         - `onReady` runs twice under StrictMode; setup must be idempotent and disposable.
         - No RTL support (dockview issue #388).
         - Docking a panel to an edge by dragging, and full keyboard docking, are paid (Enterprise) features.
@@ -150,6 +159,7 @@ A helper lives in the domain of what it **produces**, not the domains it reads f
 - **Cover new functionality** in the same change, including edge cases and error conditions.
 - **Vitest** unit tests: `*.spec.ts(x)`, co-located or in `__tests__` directories; import `describe`/`it`/`expect` from `vitest`; use `@testing-library/react` for components; test ids use the `data-test` attribute.
 - `clearMocks`, `unstubEnvs` and `unstubGlobals` are on, so don't hand-write a `beforeEach` to reset mocks.
+- **Cypress component tests** (`*.cy.tsx` in `__tests__`, mounted with `cy.mount`) cover only what jsdom cannot: real layout, CSS and drag and drop, e.g. the workspace scenarios in `workspace.cy.tsx`. They run in CI and on demand (`pnpm cy:comp:run`), not in the git hooks. Logic stays in Vitest, which owns the 100% coverage.
 
 ## Understanding the DHIS2 Web API
 
@@ -174,6 +184,7 @@ Drive the running app with the Chrome DevTools MCP (or claude-in-chrome). Verify
 **Golden rule**: during development, lint/test only the files you touched. Before finishing, always run `pnpm test` and `pnpm lint`.
 
 - **Vitest**: `pnpm exec vitest run <file-path>`
+- **Cypress**: `pnpm cy:comp:run` (all specs; `pnpm cy:comp:open` for the interactive runner). From VS Code's terminal, run it as `env -u ELECTRON_RUN_AS_NODE pnpm cy:comp:run`: VS Code sets that variable, and Cypress then fails to start with "bad option: --no-sandbox".
 - **Coverage**: `pnpm test:coverage` (HTML report in `coverage/`). Thresholds are 100% for lines, functions, branches and statements, and CI fails below that, so run it before finishing.
 - **ESLint**: `pnpm exec eslint <file-path>` (add `--fix`)
 - **Stylelint**: `pnpm exec stylelint <file-path> --max-warnings=0` (add `--fix`)

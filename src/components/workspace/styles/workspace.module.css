@@ -1,4 +1,5 @@
 .workspace {
+    position: relative;
     flex: 1;
     min-block-size: 0;
 }
@@ -108,8 +109,64 @@
 
 /* View bodies (and plugin iframes) are rendered in an overlay above the
  * grid, so during a drag they would catch the pointer and hide the drop
- * zones underneath; only the tab bar would stay reachable. */
-.workspace[data-dragging] :global(.dv-render-overlay),
+ * zones underneath; only the tab bar would stay reachable. Only view
+ * overlays are affected: the tools live in the same kind of overlay, and a
+ * drag is cancelled when its source (a palette tile) stops taking the
+ * pointer. */
+.workspace[data-dragging] :global(.dv-render-overlay:has([data-view-id])),
 .workspace[data-dragging] iframe {
     pointer-events: none;
+}
+
+/* Above the view overlays and sashes, but only the zones take the pointer */
+.insertZones {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.insertZone {
+    position: absolute;
+    pointer-events: auto;
+}
+
+/* The insertion line, drawn along the middle of the divider */
+.insertZone[data-active]::after {
+    content: '';
+    position: absolute;
+    border-radius: 2px;
+    background: var(--colors-blue500);
+    box-shadow: 0 0 0 2px var(--colors-white);
+}
+
+.insertZone[data-axis='horizontal'][data-active]::after {
+    inset-block: 4px;
+    inset-inline-start: calc(50% - 2px);
+    inline-size: 4px;
+}
+
+.insertZone[data-axis='vertical'][data-active]::after {
+    inset-inline: 4px;
+    inset-block-start: calc(50% - 2px);
+    block-size: 4px;
+}
+
+/* At an outer edge the new line goes along the edge itself */
+.insertZone[data-edge='left'][data-active]::after {
+    inset-inline-start: 2px;
+}
+
+.insertZone[data-edge='right'][data-active]::after {
+    inset-inline-start: auto;
+    inset-inline-end: 2px;
+}
+
+.insertZone[data-edge='top'][data-active]::after {
+    inset-block-start: 2px;
+}
+
+.insertZone[data-edge='bottom'][data-active]::after {
+    inset-block-start: auto;
+    inset-block-end: 2px;
 }

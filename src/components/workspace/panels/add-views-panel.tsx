@@ -60,7 +60,7 @@ export const AddViewsPanel: FC = () => {
         <div className={classes.tool}>
             <p className={classes.toolHint}>
                 {i18n.t(
-                    'Drag a view onto an edge of the grid or of another view, or click to add it next to the selected view. To swap two views, drag one by its tab onto the middle of the other.'
+                    'Drag a view onto an edge of the grid, an edge of another view or the line between two views, or click to add it next to the selected view. To swap two views, drag one by its tab onto the middle of the other.'
                 )}
             </p>
             {isFull ? (

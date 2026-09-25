@@ -13,6 +13,8 @@ const createApi = () =>
         panels: [],
         activeGroup: undefined,
         addPanel: vi.fn(),
+        hasMaximizedGroup: () => false,
+        toJSON: () => ({ grid: { root: { type: 'branch', data: [] } } }),
     }) as unknown as DockviewApi & { addPanel: ReturnType<typeof vi.fn> }
 
 describe('AddViewsPanel', () => {
