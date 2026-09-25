@@ -35,6 +35,10 @@ Sign in with the server and credentials from `dhis2.env.json`.
 
 Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.
 
+### `pnpm test:coverage`
+
+Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. On pull requests, CI posts the coverage as a PR comment.
+
 ### `pnpm lint` / `pnpm format`
 
 `pnpm lint` runs TypeScript, ESLint, Stylelint, ls-lint and Prettier checks. `pnpm format` fixes what can be fixed automatically.

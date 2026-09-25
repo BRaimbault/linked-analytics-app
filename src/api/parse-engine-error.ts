@@ -55,7 +55,7 @@ const parseFetchError = (error: FetchError): EngineError => {
         : 'unknown'
     const parsedError: EngineError = {
         type: errorType,
-        message: typeof message === 'string' ? message : 'Unknown error',
+        message: message || 'Unknown error',
         httpStatusCode:
             typeof details?.httpStatusCode === 'number'
                 ? details.httpStatusCode

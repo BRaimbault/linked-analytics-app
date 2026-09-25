@@ -60,6 +60,14 @@ describe('parseEngineError', () => {
         })
     })
 
+    it('falls back to a generic message for a FetchError without one', () => {
+        const err = new FetchError({ type: 'network', message: '' })
+        expect(parseEngineError(err)).toEqual({
+            type: 'network',
+            message: 'Unknown error',
+        })
+    })
+
     it('parses Error as runtime', () => {
         const err = new Error('Some runtime error')
         expect(parseEngineError(err)).toEqual({
