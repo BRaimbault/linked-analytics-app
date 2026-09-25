@@ -74,6 +74,32 @@ describe('customBaseQuery', () => {
         expect(result).toEqual({ data: {} })
     })
 
+    it('returns empty object if a single query has no data', async () => {
+        const queryMock = engine.query as ReturnType<typeof vi.fn>
+        queryMock.mockResolvedValueOnce({})
+        const api = {
+            extra: { engine },
+            signal,
+        } as unknown as BaseQueryApiWithExtraArg
+        const result = await customBaseQuery(
+            { resource: 'organisationUnits' },
+            api,
+            {}
+        )
+        expect(result).toEqual({ data: {} })
+    })
+
+    it('returns empty object if mutation result is nullish', async () => {
+        const mutateMock = engine.mutate as ReturnType<typeof vi.fn>
+        mutateMock.mockResolvedValueOnce(undefined)
+        const api = {
+            extra: { engine },
+            signal,
+        } as unknown as BaseQueryApiWithExtraArg
+        const result = await customBaseQuery(mutationArgs, api, {})
+        expect(result).toEqual({ data: {} })
+    })
+
     it('returns error if query throws', async () => {
         const errorMsg = 'Query failed'
         const queryMock = engine.query as ReturnType<typeof vi.fn>

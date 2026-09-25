@@ -19,6 +19,19 @@ export default defineConfig({
             // Third-party sources fetched for reference by `npx opensrc`
             '**/opensrc/**',
         ],
+        coverage: {
+            provider: 'v8',
+            include: ['src/**/*.{ts,tsx}'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.spec.{ts,tsx}',
+                'src/types/**',
+                'src/locales/**',
+            ],
+            // json-summary and json feed the PR coverage comment in CI
+            reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],
+            reportOnFailure: true,
+        },
         onConsoleLog(log, type) {
             // Suppress styled-jsx StyleSheet warnings from DHIS2 UI components
             if (type === 'stderr' && log.includes('StyleSheet: illegal rule')) {
