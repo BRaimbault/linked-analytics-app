@@ -23,7 +23,7 @@
         "@commitlint/config-conventional": "^21.2.0",
         "@dhis2/app-service-data": "^3.17.4",
         "@dhis2/cli-app-scripts": "^12.11.5",
-        "@dhis2/config-eslint": "^0.2.2",
+        "@dhis2/config-eslint": "^0.4.0",
         "@dhis2/config-prettier": "^0.4.0",
         "@eslint/compat": "^2.1.1",
         "@ls-lint/ls-lint": "^2.3.1",
