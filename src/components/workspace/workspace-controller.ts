@@ -282,10 +282,22 @@ export const swapViews = (
     showViewSettings(api, first.id)
 }
 
-export const getSwapTargets = (
+/* For callers that only know the ids (e.g. from the store); does nothing
+ * if either view is gone by then. */
+export const swapViewsById = (
     api: DockviewApi,
-    viewId: string
-): IDockviewPanel[] => getViewPanels(api).filter((panel) => panel.id !== viewId)
+    firstId: string,
+    secondId: string
+): void => {
+    const first = api.getPanel(firstId)
+    const second = api.getPanel(secondId)
+    if (first && second) {
+        swapViews(api, first, second)
+    }
+}
+
+/* Swap spacers are added and removed within one call, so they never paint */
+export const SwapSpacer = (): null => null
 
 /* Brings a view's settings tab forward without making the tools strip the
  * active group or expanding it when collapsed. */
@@ -532,8 +544,9 @@ export const setupWorkspace = (
             }
             dispatch(viewRemoved(panel.id))
             const settings = api.getPanel(getSettingsPanelId(panel.id))
-            const settingsWasShown =
-                settings?.group.activePanel?.id === settings?.id
+            const settingsWasShown = Boolean(
+                settings && settings.group.activePanel?.id === settings.id
+            )
             if (settings) {
                 api.removePanel(settings)
             }
@@ -580,10 +593,10 @@ export const setupWorkspace = (
                 return
             }
             event.preventDefault()
-            const dragged = api.getPanel(event.getData()?.panelId ?? '')
-            const target = event.group?.activePanel
-            if (dragged && target) {
-                swapViews(api, dragged, target)
+            const draggedId = event.getData()?.panelId
+            const targetId = event.group?.activePanel?.id
+            if (draggedId && targetId) {
+                swapViewsById(api, draggedId, targetId)
             }
         }),
         api.onDidDrop((event) => {

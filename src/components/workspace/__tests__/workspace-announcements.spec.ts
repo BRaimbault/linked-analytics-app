@@ -22,6 +22,18 @@ describe('getWorkspaceAnnouncement', () => {
         )
     })
 
+    it('says nothing for other layout changes, and copes without a title', () => {
+        const untitled = {
+            api: { component: 'view' },
+        } as unknown as IDockviewPanel
+        expect(
+            getWorkspaceAnnouncement({ kind: 'float', panel: untitled })
+        ).toBeNull()
+        expect(
+            getWorkspaceAnnouncement({ kind: 'open', panel: untitled })
+        ).toBe(' added')
+    })
+
     it('stays silent about tool, settings and swap-spacer tabs', () => {
         for (const component of [
             'interactions',

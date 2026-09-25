@@ -2,7 +2,7 @@ import {
     EDGE_POSITIONS,
     getEdgePosition,
     moveTools,
-    swapViews,
+    swapViewsById,
     type EdgePosition,
 } from '@components/workspace/workspace-controller'
 import i18n from '@dhis2/d2-i18n'
@@ -162,12 +162,7 @@ const SwapMenu: FC<{ api: DockviewApi; view: IDockviewPanel }> = ({
                     interpolation: { escapeValue: false },
                 }),
                 dataTest: `swap-with-${target.id}`,
-                onClick: () => {
-                    const targetPanel = api.getPanel(target.id)
-                    if (targetPanel) {
-                        swapViews(api, view, targetPanel)
-                    }
-                },
+                onClick: () => swapViewsById(api, view.id, target.id),
             }))}
         />
     )

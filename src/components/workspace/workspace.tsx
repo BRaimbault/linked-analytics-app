@@ -12,6 +12,7 @@ import {
     getWorkspaceAnnouncement,
     setupWorkspace,
     SWAP_SPACER_COMPONENT,
+    SwapSpacer,
     showSettingsForTarget,
     VIEW_COMPONENT,
     VIEW_SETTINGS_COMPONENT,
@@ -51,7 +52,7 @@ const components = {
     [ADD_VIEWS_PANEL_ID]: AddViewsPanel,
     [VIEW_SETTINGS_COMPONENT]: SettingsPanel,
     [INTERACTIONS_PANEL_ID]: InteractionsPanel,
-    [SWAP_SPACER_COMPONENT]: () => null,
+    [SWAP_SPACER_COMPONENT]: SwapSpacer,
 }
 
 export const Workspace: FC = () => {
