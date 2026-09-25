@@ -7,6 +7,8 @@ if [ "$RUN_PRE_COMMIT_HOOK" = "0" ]; then
     exit 0
 fi
 
+. ./scripts/use-project-node.sh
+
 OVERALL_FAILED=false
 
 if pnpm d2-app-scripts i18n extract; then

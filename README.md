@@ -6,7 +6,7 @@ This project was bootstrapped with [DHIS2 Application Platform](https://github.c
 
 ## Requirements
 
-- Node.js 24 (see `.nvmrc`; `engines` in `package.json` requires 22.22.2 or newer, and pnpm refuses to run on older versions). With nvm: `nvm install && nvm use`, or `nvm alias default 24` to make it your default
+- Node.js 24 (see `.nvmrc`; `engines` in `package.json` requires 22.22.2 or newer, and pnpm refuses to run on older versions). With nvm: `nvm install && nvm use`. The git hooks switch to the `.nvmrc` version themselves when nvm is installed, so committing from an IDE works even if your default Node is older
 - pnpm (the version is pinned in `package.json` under `packageManager`)
 - `jq`, only if you use Claude Code (its format hook needs it)
 
@@ -37,7 +37,7 @@ Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.
 
 ### `pnpm test:coverage`
 
-Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. On pull requests, CI posts the coverage as a PR comment.
+Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. It fails if coverage drops below 100%, so new code needs tests. On pull requests, CI posts the coverage as a PR comment.
 
 ### `pnpm lint` / `pnpm format`
 

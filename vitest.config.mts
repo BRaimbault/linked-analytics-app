@@ -31,6 +31,7 @@ export default defineConfig({
             // json-summary and json feed the PR coverage comment in CI
             reporter: ['text', 'html', 'lcov', 'json-summary', 'json'],
             reportOnFailure: true,
+            thresholds: { 100: true },
         },
         onConsoleLog(log, type) {
             // Suppress styled-jsx StyleSheet warnings from DHIS2 UI components
