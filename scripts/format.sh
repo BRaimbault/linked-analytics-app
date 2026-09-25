@@ -29,7 +29,7 @@ echo ""
 
 # Prettier fix
 echo "🔧 Running Prettier --write..."
-if ! pnpm exec prettier --write . > /dev/null 2>&1; then
+if ! pnpm exec prettier --write . --log-level warn; then
     echo "❌ Prettier formatting failed"
     EXIT_CODE=1
 else

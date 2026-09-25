@@ -6,9 +6,18 @@ updates:
           interval: weekly
       open-pull-requests-limit: 5
       versioning-strategy: increase
+      # PR titles must pass commitlint: "chore(deps): bump …"
+      commit-message:
+          prefix: chore
+          include: scope
+      # Matches minimumReleaseAge (3 days) and its exclusions in pnpm-workspace.yaml, which pnpm enforces on install
+      cooldown:
+          default-days: 3
+          exclude:
+              - '@dhis2/*'
+              - '@dhis2-ui/*'
       ignore:
-          # @dhis2/ui does not support React 19 — cap React and its types at
-          # the v18 major until it does.
+          # @dhis2/ui does not support React 19, so React and its types stay on v18
           - dependency-name: react
             versions:
                 - '>=19'
@@ -21,10 +30,7 @@ updates:
           - dependency-name: '@types/react-dom'
             versions:
                 - '>=19'
-          # TypeScript 7.0 is the native rewrite and ships no compiler API, so
-          # openapi-typescript (our type generator) can't run under it. The API
-          # returns in 7.1 — bound the ignore to the 7.0 line so Dependabot
-          # resumes proposing upgrades automatically once 7.1 lands.
+          # TypeScript 7.0 ships no compiler API, which openapi-typescript (our type generator) needs
           - dependency-name: typescript
             versions:
                 - '7.0.x'
@@ -46,6 +52,10 @@ updates:
       directory: /
       schedule:
           interval: weekly
+      # PR titles must pass commitlint: "ci(deps): bump …"
+      commit-message:
+          prefix: ci
+          include: scope
       groups:
           actions:
               patterns:

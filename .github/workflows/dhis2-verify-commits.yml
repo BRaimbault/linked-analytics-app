@@ -4,10 +4,8 @@ on:
     pull_request:
         types: ['opened', 'edited', 'reopened', 'synchronize']
 
-# lint-commits reads the PR's commits through the API
 permissions:
     contents: read
-    pull-requests: read
 
 jobs:
     lint-pr-title:
@@ -40,4 +38,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --ignore-scripts
 
-            - uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6.2.1
+            # Same commitlint version and config as the local commit-msg hook
+            - name: Lint commits
+              run: pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha }}

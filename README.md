@@ -8,6 +8,7 @@ This project was bootstrapped with [DHIS2 Application Platform](https://github.c
 
 - Node.js 24 (see `.nvmrc`; `engines` in `package.json` requires 22.22.2 or newer, and pnpm refuses to run on older versions). With nvm: `nvm install && nvm use`, or `nvm alias default 24` to make it your default
 - pnpm (the version is pinned in `package.json` under `packageManager`)
+- `jq`, only if you use Claude Code (its format hook needs it)
 
 ## Available Scripts
 

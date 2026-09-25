@@ -7,10 +7,14 @@ if [ "$RUN_PRE_COMMIT_HOOK" = "0" ]; then
     exit 0
 fi
 
-pnpm d2-app-scripts i18n extract
-git add i18n
-
 OVERALL_FAILED=false
+
+if pnpm d2-app-scripts i18n extract; then
+    git add i18n
+else
+    echo "❌ i18n extract failed"
+    OVERALL_FAILED=true
+fi
 
 # A staged change can break files that are not staged (or a rename), so any error fails the commit, as in CI
 if ! bash ./scripts/check-typescript.sh; then

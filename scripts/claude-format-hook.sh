@@ -9,6 +9,11 @@
 
 set -uo pipefail
 
+if ! command -v jq >/dev/null 2>&1; then
+    echo "claude-format-hook: jq is not installed, so files are not auto-formatted or linted" >&2
+    exit 0
+fi
+
 input=$(cat)
 file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')
 [ -n "$file" ] && [ -f "$file" ] || exit 0
