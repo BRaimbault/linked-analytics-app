@@ -132,7 +132,7 @@ A helper lives in the domain of what it **produces**, not the domains it reads f
 - **Redux hooks**: use the typed `useAppDispatch` / `useAppSelector` / `useAppStore` from `@hooks`.
 - **DHIS2 UI** components wherever possible so the app looks native.
 - **Styling**: CSS modules, with logical properties (`margin-block`, `inline-size`, …; enforced by Stylelint).
-- **i18n**: all user-facing strings through `i18n.t()` from `@dhis2/d2-i18n`.
+- **i18n**: all user-facing strings through `i18n.t()` from `@dhis2/d2-i18n`. No `:` in a string: i18next reads it as a namespace separator and the scanner warns (`"X" does not exist in the namespaces`).
 
 ### State Management
 

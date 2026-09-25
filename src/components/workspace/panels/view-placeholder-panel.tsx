@@ -28,7 +28,7 @@ export const ViewPlaceholderPanel: FC<IDockviewPanelProps<ViewPanelParams>> = ({
                 {getViewTypeLabel(params.type)}
             </span>
             <span className={classes.placeholderHint}>
-                {i18n.t('Placeholder: the plugin will render here')}
+                {i18n.t('The plugin will render here')}
             </span>
             <div className={classes.placeholderActions}>
                 <Button
