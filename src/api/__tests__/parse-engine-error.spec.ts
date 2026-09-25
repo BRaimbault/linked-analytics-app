@@ -1,9 +1,23 @@
 import { FetchError } from '@dhis2/app-runtime'
 import { describe, it, expect } from 'vitest'
 import { parseEngineError } from '../parse-engine-error'
+import type { ResponseErrorReport } from '../parse-engine-error'
+
+const createErrorReport = (
+    errorCode: string,
+    message: string
+): ResponseErrorReport => ({
+    errorCode,
+    errorKlass: 'org.hisp.dhis.dashboard.Dashboard',
+    errorProperty: 'name',
+    errorProperties: ['name'],
+    mainKlass: 'org.hisp.dhis.dashboard.Dashboard',
+    message,
+    args: ['name'],
+})
 
 describe('parseEngineError', () => {
-    it('parses network FetchError', () => {
+    it('parses a network FetchError', () => {
         const err = new FetchError({ type: 'network', message: 'Network down' })
         expect(parseEngineError(err)).toEqual({
             type: 'network',
@@ -11,7 +25,7 @@ describe('parseEngineError', () => {
         })
     })
 
-    it('parses access FetchError with details', () => {
+    it('parses an access FetchError with details', () => {
         const err = new FetchError({
             type: 'access',
             message: 'Access denied',
@@ -30,10 +44,10 @@ describe('parseEngineError', () => {
         })
     })
 
-    it('parses unknown FetchError', () => {
+    it('parses an unknown FetchError', () => {
         const err = new FetchError({
             type: 'unknown',
-            message: 'Unknown error',
+            message: 'Internal server error',
             details: {
                 httpStatusCode: 500,
                 httpStatus: 'ERROR',
@@ -42,14 +56,14 @@ describe('parseEngineError', () => {
         })
         expect(parseEngineError(err)).toEqual({
             type: 'unknown',
-            message: 'Unknown error',
+            message: 'Internal server error',
             httpStatusCode: 500,
             httpStatus: 'ERROR',
             errorCode: 'E500',
         })
     })
 
-    it('parses FetchError with unknown type', () => {
+    it('parses a FetchError with an unrecognised type as unknown', () => {
         const err = new FetchError({
             type: 'somethingElse',
             message: 'Oops',
@@ -68,7 +82,7 @@ describe('parseEngineError', () => {
         })
     })
 
-    it('parses Error as runtime', () => {
+    it('parses an Error as runtime', () => {
         const err = new Error('Some runtime error')
         expect(parseEngineError(err)).toEqual({
             type: 'runtime',
@@ -76,61 +90,54 @@ describe('parseEngineError', () => {
         })
     })
 
-    it('parses non-Error as runtime', () => {
+    it('parses a non-Error as runtime', () => {
         expect(parseEngineError('fail')).toEqual({
             type: 'runtime',
             message: 'An unexpected runtime error occurred',
         })
     })
 
-    it('should extract uid and errorReports from details', () => {
+    it('keeps the uid and only the relevant error report fields', () => {
         const err = new FetchError({
             type: 'access',
             message: 'Access denied',
             details: {
                 httpStatusCode: 403,
                 httpStatus: 'FORBIDDEN',
+                errorCode: 'E4000',
                 response: {
                     uid: 'abc123',
                     errorReports: [
-                        {
-                            errorCode: 'E123',
-                            errorKlass: 'klass',
-                            errorProperty: 'prop',
-                            errorProperties: ['prop'],
-                            mainKlass: 'main',
-                            message: 'Some error',
-                            args: [],
-                        },
+                        createErrorReport('E4000', 'Missing required name'),
                     ],
                 },
             },
         })
-        const result = parseEngineError(err)
-        expect(result.uid).toBe('abc123')
-        expect(result.errorReports).toHaveLength(1)
-        expect(result.errorReports?.[0].errorCode).toBe('E123')
+        expect(parseEngineError(err)).toEqual({
+            type: 'access',
+            message: 'Access denied',
+            httpStatusCode: 403,
+            httpStatus: 'FORBIDDEN',
+            errorCode: 'E4000',
+            uid: 'abc123',
+            errorReports: [
+                {
+                    errorCode: 'E4000',
+                    errorProperty: 'name',
+                    errorProperties: ['name'],
+                    message: 'Missing required name',
+                },
+            ],
+        })
     })
 
-    it('should set errorCode from a single errorReport if errorCode is missing', () => {
+    it('takes the errorCode from a single error report when it is missing', () => {
         const err = new FetchError({
             type: 'access',
             message: 'Access denied',
             details: {
-                httpStatusCode: 403,
-                httpStatus: 'FORBIDDEN',
                 response: {
-                    errorReports: [
-                        {
-                            errorCode: 'E456',
-                            errorKlass: 'klass',
-                            errorProperty: 'prop',
-                            errorProperties: ['prop'],
-                            mainKlass: 'main',
-                            message: 'Another error',
-                            args: [],
-                        },
-                    ],
+                    errorReports: [createErrorReport('E456', 'Another error')],
                 },
             },
         })
@@ -139,33 +146,15 @@ describe('parseEngineError', () => {
         expect(result.errorCodes).toBeUndefined()
     })
 
-    it('should set errorCodes from multiple errorReports if errorCode is missing', () => {
+    it('collects errorCodes from multiple error reports when errorCode is missing', () => {
         const err = new FetchError({
             type: 'access',
             message: 'Access denied',
             details: {
-                httpStatusCode: 403,
-                httpStatus: 'FORBIDDEN',
                 response: {
                     errorReports: [
-                        {
-                            errorCode: 'E789',
-                            errorKlass: 'klass',
-                            errorProperty: 'prop',
-                            errorProperties: ['prop'],
-                            mainKlass: 'main',
-                            message: 'Error 1',
-                            args: [],
-                        },
-                        {
-                            errorCode: 'E101',
-                            errorKlass: 'klass',
-                            errorProperty: 'prop',
-                            errorProperties: ['prop'],
-                            mainKlass: 'main',
-                            message: 'Error 2',
-                            args: [],
-                        },
+                        createErrorReport('E789', 'Error 1'),
+                        createErrorReport('E101', 'Error 2'),
                     ],
                 },
             },
