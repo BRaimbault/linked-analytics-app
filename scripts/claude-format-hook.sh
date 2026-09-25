@@ -19,6 +19,7 @@ file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty')
 [ -n "$file" ] && [ -f "$file" ] || exit 0
 
 cd "${CLAUDE_PROJECT_DIR:-.}" || exit 0
+. ./scripts/use-project-node.sh
 
 notes=""
 append() { notes="${notes:+$notes$'\n'}$1"; }

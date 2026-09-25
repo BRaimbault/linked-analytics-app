@@ -21,7 +21,7 @@ This is an unreleased app under active development. Some defaults that suit stab
 
 ## Environment
 
-- **Node**: 24 (see `.nvmrc`). `engines` in `package.json` requires ≥ 22.22.2 (jsdom/undici need it) and `engineStrict` makes pnpm refuse to install or run scripts on older versions. Run `nvm use` in the project dir if your default is older.
+- **Node**: 24 (see `.nvmrc`). `engines` in `package.json` requires ≥ 22.22.2 (jsdom/undici need it) and `engineStrict` makes pnpm refuse to install or run scripts on older versions. Run `nvm use` in the project dir if your default is older. The git hooks and the Claude Code format hook source `scripts/use-project-node.sh`, which does this for them when nvm is installed.
 - **pnpm**: version pinned via `packageManager` in `package.json`.
 - **Dev server**: `pnpm start --proxy https://dev.im.dhis2.org/analytics-dev`, then open `http://localhost:3000`. The login form asks for Server, Username and Password — use the server URL and credentials from `dhis2.env.json`.
 - **`dhis2.env.json`** (gitignored, copied from `dhis2.env.template.json` on install) holds the dev server URL and credentials. Read it for API lookups and browser testing.
