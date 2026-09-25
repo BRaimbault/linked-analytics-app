@@ -8,6 +8,12 @@ Short description: View DHIS2 Maps, Data Visualizer and other analytics plugins 
 
 Target: App Hub community app. Repo lives on a personal GitHub account for now and may move to an org later, so never hardcode the owner name.
 
+### Frame of reference
+
+- **Aggregate data first**: Data Visualizer visualizations, and Maps with thematic, org unit, facility and Earth Engine layers.
+- **Create and edit inside the app**: each view gets its own settings tab (like DV's ribbon) where a saved item is picked or a new one is configured, not only imported.
+- **Interactions between views are the new part**, and still need research (see Plan and Open design questions).
+
 ### Reference project
 
 The tooling, conventions and architecture follow [dhis2/event-visualizer-app](https://github.com/dhis2/event-visualizer-app) (EV). When in doubt about how to set something up, check how EV does it and follow that.
@@ -32,6 +38,7 @@ This is an unreleased app under active development. Some defaults that suit stab
 
 - `.d2/shell/` contains the generated App Shell; `src/` is copied into it and wrapped with DHIS2 providers (auth, data engine, config, alerts).
 - **Don't run `pnpm build` while `pnpm start` is running**: both regenerate `.d2/shell`, and the dev server then serves broken files (e.g. HTML for `manifest.json`). Restart the dev server if it happens.
+- **The dev server crashes when a file is replaced through a temporary file** (atomic saves: `sed -i`, scripted rewrites, some editors). d2-app-scripts' watcher copies `src` into `.d2/shell` without error handling, and an `ENOENT` kills the process. Restart `pnpm start` when it happens.
 - **Never write or modify files in `.d2/`**. If the shell looks stale after a dependency upgrade, delete `.d2` and restart the dev server.
 
 ### Generated TypeScript Types (DO NOT EDIT)
@@ -58,12 +65,31 @@ From reading `dhis2/dashboard-app` (`src/components/Item/VisualizationItem/Visua
 ## Plan
 
 1. **Tooling** (done): EV setup — Vitest, strict TS, path aliases, ESLint/Stylelint/ls-lint/Prettier, commitlint + git hooks, RTK Query data layer, generated API types, CI.
-2. **Render plugins** (next): `AnalyticsPlugin` component rendering one DV visualization and one map side by side, with hardcoded ids. Verify in the browser before building further.
-3. **Grid**: `react-grid-layout` with drag, drop, resize; up to 4 panels, each with a header (title, remove).
-4. **Picker**: "Add panel" modal listing saved visualizations and maps from the API.
-5. **Persistence**: save layouts in the dataStore.
-6. **Linked filter groups (MVP of interactions)**: app-level org unit and period controls applied to chosen panels by rewriting their visualization objects (Grafana-style linked panels). Pure, unit-tested `getFilteredVisualization`.
-7. **Event-driven interactions (later)**: generic event schema (e.g. `orgUnitSelected`, `periodSelected`) and a mapping UI ("when panel X emits, apply to panel Y"). Needs upstream plugin changes; raise on the DHIS2 Community of Practice.
+2. **Workspace grid with placeholders** (in progress): dockview workspace, see "Workspace" below.
+3. **Render plugins**: replace the placeholders with the DV and Maps plugins (`Plugin` from app-runtime), and check performance with 4 at once. Keep iframes alive across moves (`renderer: 'always'`) and disable their pointer events during palette drags.
+4. **View settings**: pick a saved visualization or map, or create one, in each view's settings tab.
+5. **Interactions**: shared org unit and period filters applied by rewriting visualization objects (pure, unit-tested `getFilteredVisualization`), then click-driven links once plugins emit events (needs upstream plugin changes; raise on the DHIS2 Community of Practice).
+6. **Persistence**: save workspaces (URL first, then the dataStore).
+
+### Workspace (dockview)
+
+- `dockview-react`, one view per cell (no tabs in the grid), at most 4 views. Drop rules live in `src/modules/workspace/rules.ts`; every dockview call lives in `src/components/workspace/workspace-controller.ts`.
+- A tools edge group (top by default, movable to any edge from its ⋯ menu, collapsible) holds "Add views", one settings tab per view, and "Interactions". Selecting a view by hand brings its settings tab forward; adding one keeps the palette open.
+- Views keep a minimum size (`VIEW_MIN_SIZE`). A split or edge drop that would go below it is refused, and a click-add falls back from "right of the selected view" to "below it", then to other cells, before alerting that there is no room.
+- Docking a view at an outer edge sizes the grid proportionally: every line along that axis holding a single view gets 1/n of the grid (n = number of views), a line of stacked views keeps the rest. Without this, docking across the current layout gives the new view half the grid.
+- Dropping a view onto the middle or the tab of another view swaps them; the view's ⋯ menu does the same from the keyboard.
+- Selecting a view by hand (click or tab, including one that is already active) brings its settings tab forward. Closing the selected view selects a neighbour; an empty grid brings back "Add views".
+- The layout is mirrored into the `workspace` Redux slice from dockview events; dockview stays the source of truth. The dockview api is shared through `WorkspaceApiContext`, not Redux.
+- **Dockview facts that matter here:**
+    - `renderer: 'always'` keeps iframes alive when panels move; moving an iframe in the DOM otherwise reloads it.
+    - With `renderer: 'always'`, view bodies live in an overlay (`.dv-render-overlay`) above the grid that catches the pointer, so during a drag only tab bars would reach the drop zones. The workspace turns off pointer events on that overlay and on iframes while any drag is in progress (`useIsDragging`).
+    - Drop zones: dockview's defaults (a 10px band at the outer edges, 20% per side in a cell) are widened with `dndEdges` and `dropOverlayModel`, leaving the middle third of a cell for swapping.
+    - Screen-reader announcements go through `getWorkspaceAnnouncement`: only view changes are spoken, translated.
+        - `onReady` runs twice under StrictMode; setup must be idempotent and disposable.
+        - No RTL support (dockview issue #388).
+        - Docking a panel to an edge by dragging, and full keyboard docking, are paid (Enterprise) features.
+        - There is no built-in swap. `swapViews` moves the two panels through temporary spacer tabs, because dockview removes a group as soon as it is empty; moves are what keep iframes alive.
+        - `DockviewDefaultTab` overrides `className`; mark tabs with `data-*` attributes instead.
 
 ### Open design questions
 

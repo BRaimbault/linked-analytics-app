@@ -5,21 +5,127 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-24T14:59:22.158Z\n"
-"PO-Revision-Date: 2026-09-24T14:59:22.159Z\n"
+"POT-Creation-Date: 2026-09-25T09:32:36.753Z\n"
+"PO-Revision-Date: 2026-09-25T09:32:36.753Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
 
-msgid "Welcome, {{name}}!"
-msgstr "Welcome, {{name}}!"
+msgid "Move to top"
+msgstr "Move to top"
+
+msgid "Move to left"
+msgstr "Move to left"
+
+msgid "Move to right"
+msgstr "Move to right"
+
+msgid "Move to bottom"
+msgstr "Move to bottom"
+
+msgid "Move these panels"
+msgstr "Move these panels"
+
+msgid "View actions"
+msgstr "View actions"
+
+msgid "Swap with {{title}}"
+msgstr "Swap with {{title}}"
+
+msgid "Expand"
+msgstr "Expand"
+
+msgid "Collapse"
+msgstr "Collapse"
+
+msgid "Restore"
+msgstr "Restore"
+
+msgid "Maximize"
+msgstr "Maximize"
 
 msgid ""
-"Your maps and charts are warming up. Soon they will sit side by side and "
-"finish each other’s sentences."
+"Drag a view onto an edge of the grid or of another view, or click to add it "
+"next to the selected view. To swap two views, drag one by its tab onto the "
+"middle of the other."
 msgstr ""
-"Your maps and charts are warming up. Soon they will sit side by side and "
-"finish each other’s sentences."
+"Drag a view onto an edge of the grid or of another view, or click to add it "
+"next to the selected view. To swap two views, drag one by its tab onto the "
+"middle of the other."
+
+msgid "A workspace holds up to {{max}} views"
+msgstr "A workspace holds up to {{max}} views"
+
+msgid "Interactions between these views will be configured here."
+msgstr "Interactions between these views will be configured here."
+
+msgid "No views yet."
+msgstr "No views yet."
+
+msgid "Choosing a saved map, or creating one with layers, will happen here."
+msgstr "Choosing a saved map, or creating one with layers, will happen here."
+
+msgid ""
+"Choosing a saved visualization, or creating one with its data, periods and "
+"org units, will happen here."
+msgstr ""
+"Choosing a saved visualization, or creating one with its data, periods and "
+"org units, will happen here."
+
+msgid "Edit settings"
+msgstr "Edit settings"
+
+msgid ""
+"There is no room for another view. Make the window larger, or close or "
+"resize a view."
+msgstr ""
+"There is no room for another view. Make the window larger, or close or "
+"resize a view."
+
+msgid "Add a map"
+msgstr "Add a map"
+
+msgid "Add a visualization"
+msgstr "Add a visualization"
+
+msgid "Drag a map or visualization here"
+msgstr "Drag a map or visualization here"
+
+msgid "Views tile side by side, up to {{max}} at a time."
+msgstr "Views tile side by side, up to {{max}} at a time."
+
+msgid "{{title}} added"
+msgstr "{{title}} added"
+
+msgid "{{title}} closed"
+msgstr "{{title}} closed"
+
+msgid "{{title}} maximized"
+msgstr "{{title}} maximized"
+
+msgid "{{title}} restored"
+msgstr "{{title}} restored"
+
+msgid "Add views"
+msgstr "Add views"
+
+msgid "{{title}} settings"
+msgstr "{{title}} settings"
+
+msgid "Interactions"
+msgstr "Interactions"
+
+msgid "Map"
+msgstr "Map"
+
+msgid "Visualization"
+msgstr "Visualization"
+
+msgid "Map {{number}}"
+msgstr "Map {{number}}"
+
+msgid "Visualization {{number}}"
+msgstr "Visualization {{number}}"
 
 msgctxt "Application title"
 msgid "__MANIFEST_APP_TITLE"

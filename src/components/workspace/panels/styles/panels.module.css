@@ -1,0 +1,103 @@
+.placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    background: var(--colors-grey050);
+    color: var(--colors-grey600);
+}
+
+.placeholderType {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey800);
+}
+
+.placeholderHint {
+    font-size: 13px;
+}
+
+.tool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+    overflow: auto;
+    background: var(--colors-white);
+    font-size: 13px;
+    color: var(--colors-grey800);
+}
+
+.toolHint {
+    margin-block: 0;
+    color: var(--colors-grey700);
+}
+
+.tiles {
+    display: grid;
+    /* Equal tiles, stacking when the strip is too narrow for two */
+    grid-template-columns: repeat(auto-fill, 160px);
+    gap: var(--spacers-dp8);
+}
+
+.tile {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+    border: 1px solid var(--colors-grey400);
+    border-radius: 4px;
+    background: var(--colors-white);
+    color: var(--colors-grey900);
+    font-size: 14px;
+    cursor: grab;
+}
+
+.tile:hover:not(:disabled) {
+    background: var(--colors-grey100);
+    border-color: var(--colors-grey500);
+}
+
+.tile:focus-visible {
+    outline: 3px solid var(--theme-focus);
+    outline-offset: -3px;
+}
+
+.tile:disabled {
+    color: var(--colors-grey500);
+    cursor: not-allowed;
+}
+
+.viewList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8);
+    margin-block: 0;
+    padding-inline-start: 0;
+    list-style: none;
+}
+
+.viewListItem {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacers-dp4);
+}
+
+.settingsTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    margin-block: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+.placeholderActions {
+    margin-block-start: var(--spacers-dp8);
+}

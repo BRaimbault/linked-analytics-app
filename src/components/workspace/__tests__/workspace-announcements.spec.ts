@@ -1,0 +1,39 @@
+import { getWorkspaceAnnouncement } from '@components/workspace/workspace-controller'
+import type { IDockviewPanel } from 'dockview-react'
+import { describe, expect, it } from 'vitest'
+
+const panel = (component: string, title: string) =>
+    ({ title, api: { component } }) as unknown as IDockviewPanel
+
+describe('getWorkspaceAnnouncement', () => {
+    it('announces what happens to views, by their title', () => {
+        const map = panel('view', 'Map 1')
+        expect(getWorkspaceAnnouncement({ kind: 'open', panel: map })).toBe(
+            'Map 1 added'
+        )
+        expect(getWorkspaceAnnouncement({ kind: 'close', panel: map })).toBe(
+            'Map 1 closed'
+        )
+        expect(getWorkspaceAnnouncement({ kind: 'maximize', panel: map })).toBe(
+            'Map 1 maximized'
+        )
+        expect(getWorkspaceAnnouncement({ kind: 'restore', panel: map })).toBe(
+            'Map 1 restored'
+        )
+    })
+
+    it('stays silent about tool, settings and swap-spacer tabs', () => {
+        for (const component of [
+            'interactions',
+            'view-settings',
+            'swap-spacer',
+        ]) {
+            expect(
+                getWorkspaceAnnouncement({
+                    kind: 'open',
+                    panel: panel(component, 'x'),
+                })
+            ).toBeNull()
+        }
+    })
+})

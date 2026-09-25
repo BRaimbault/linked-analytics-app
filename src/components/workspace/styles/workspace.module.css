@@ -1,0 +1,115 @@
+.workspace {
+    flex: 1;
+    min-block-size: 0;
+}
+
+/* dockview defines its colours as variables on the theme element; these
+ * map them onto the DHIS2 palette. */
+.workspace :global(.dockview-theme-light) {
+    --dv-group-view-background-color: var(--colors-white);
+    --dv-tabs-and-actions-container-background-color: var(--colors-grey100);
+    --dv-tabs-and-actions-container-font-size: 13px;
+    --dv-activegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-activegroup-visiblepanel-tab-color: var(--colors-grey900);
+    --dv-activegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-activegroup-hiddenpanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-inactivegroup-visiblepanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-inactivegroup-hiddenpanel-tab-color: var(--colors-grey600);
+    --dv-separator-border: var(--colors-grey400);
+    --dv-paneview-header-border-color: var(--colors-grey400);
+    --dv-active-sash-color: var(--colors-blue500);
+    --dv-drag-over-background-color: rgba(33, 150, 243, 0.15);
+    --dv-drag-over-border-color: var(--colors-blue500);
+
+    font-family: inherit;
+}
+
+.workspace :global(.dv-default-tab) {
+    padding-inline: var(--spacers-dp8);
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp2);
+    block-size: 100%;
+    padding-inline: var(--spacers-dp4);
+}
+
+.watermark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    block-size: 100%;
+    background: var(--colors-grey200);
+    color: var(--colors-grey700);
+    font-size: 14px;
+    text-align: center;
+}
+
+.watermark p {
+    margin-block: var(--spacers-dp4);
+}
+
+.watermarkTitle {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* Equal columns, so neither choice looks like the default */
+.watermarkActions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacers-dp8);
+    margin-block-start: var(--spacers-dp12);
+}
+
+.workspace :global(.dv-default-tab[data-selected='true']) {
+    box-shadow: inset 0 2px 0 var(--colors-blue600);
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+.iconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 24px;
+    block-size: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--colors-grey700);
+    cursor: pointer;
+}
+
+.iconButton:hover {
+    background: var(--colors-grey200);
+    color: var(--colors-grey900);
+}
+
+.iconButton:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}
+
+/* In a vertical tab strip (tools docked left or right) the actions stack */
+:global(.dv-right-actions-container-vertical) .headerActions {
+    flex-direction: column;
+    block-size: auto;
+    padding-block: var(--spacers-dp4);
+    padding-inline: 0;
+}
+
+/* View bodies (and plugin iframes) are rendered in an overlay above the
+ * grid, so during a drag they would catch the pointer and hide the drop
+ * zones underneath; only the tab bar would stay reachable. */
+.workspace[data-dragging] :global(.dv-render-overlay),
+.workspace[data-dragging] iframe {
+    pointer-events: none;
+}
