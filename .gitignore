@@ -4,6 +4,7 @@ node_modules
 .d2
 src/locales/*
 build
+coverage
 src/types/dhis2-openapi-schemas
 dhis2.env.json
 .claude/settings.local.json

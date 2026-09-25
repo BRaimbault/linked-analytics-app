@@ -3,5 +3,6 @@ build
 node_modules
 .pnpm-store
 src/locales
+coverage
 # Third-party sources fetched for reference by `npx opensrc`
 opensrc
