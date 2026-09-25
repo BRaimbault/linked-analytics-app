@@ -46,8 +46,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(eslint@9.39.5(jiti@2.6.1)(supports-color@10.2.2))(supports-color@10.2.2)
       '@dhis2/config-prettier':
-        specifier: ^0.2.2
-        version: 0.2.2(prettier@3.9.8)
+        specifier: ^0.4.0
+        version: 0.4.0(prettier@3.9.8)
       '@eslint/compat':
         specifier: ^2.1.1
         version: 2.1.1(eslint@9.39.5(jiti@2.6.1)(supports-color@10.2.2))
@@ -1364,8 +1364,8 @@ packages:
     peerDependencies:
       eslint: '>= 9'
 
-  '@dhis2/config-prettier@0.2.2':
-    resolution: {integrity: sha512-2r0lfD3sUZa2WYYIyi76XyDmI5hemP1Yaz9bfjKBvEW4kQFAnQcf+d1lB0i97+Jnj17TtfMABLjQZgWdhXK6LA==}
+  '@dhis2/config-prettier@0.4.0':
+    resolution: {integrity: sha512-pjxn/TarqJmIWj7r5UomwurInncoguIqMuR89OlDxRZeJuI/+cyuIpvTiR2u6a+1X1UEbhD7sRLFDbD7BHHbag==}
     peerDependencies:
       prettier: '>=3.0.0'
 
@@ -9034,7 +9034,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  '@dhis2/config-prettier@0.2.2(prettier@3.9.8)':
+  '@dhis2/config-prettier@0.4.0(prettier@3.9.8)':
     dependencies:
       prettier: 3.9.8
 
