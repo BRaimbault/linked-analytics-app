@@ -148,7 +148,7 @@ Drive the running app with the Chrome DevTools MCP (or claude-in-chrome). Verify
 **Golden rule**: during development, lint/test only the files you touched. Before finishing, always run `pnpm test` and `pnpm lint`.
 
 - **Vitest**: `pnpm exec vitest run <file-path>`
-- **Coverage**: `pnpm test:coverage` (HTML report in `coverage/`)
+- **Coverage**: `pnpm test:coverage` (HTML report in `coverage/`). Thresholds are 100% for lines, functions, branches and statements, and CI fails below that, so run it before finishing.
 - **ESLint**: `pnpm exec eslint <file-path>` (add `--fix`)
 - **Stylelint**: `pnpm exec stylelint <file-path> --max-warnings=0` (add `--fix`)
 - **Prettier**: `pnpm exec prettier --write <file-path>`

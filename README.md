@@ -37,7 +37,7 @@ Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.
 
 ### `pnpm test:coverage`
 
-Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. On pull requests, CI posts the coverage as a PR comment.
+Runs the unit tests and reports coverage: a summary in the terminal, plus an HTML report in `coverage/index.html` and an `lcov.info` file for CI tools. It fails if coverage drops below 100%, so new code needs tests. On pull requests, CI posts the coverage as a PR comment.
 
 ### `pnpm lint` / `pnpm format`
 
