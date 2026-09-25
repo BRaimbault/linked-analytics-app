@@ -1,5 +1,6 @@
 import { Workspace } from '@components/workspace/workspace'
 import { CssVariables } from '@dhis2/ui'
+import type { ViewType } from '@modules/workspace/view-types'
 import { createStore } from '@store/store'
 import type { DataEngine } from '@types'
 import { Provider } from 'react-redux'
@@ -80,6 +81,13 @@ const readLayout = (doc: Document): Record<string, Box> => {
     )
 }
 
+/* A view's size on screen, in pixels */
+const cellSize = (title: string) =>
+    cy.document().then((doc) => {
+        const rect = getCell(doc, title).getBoundingClientRect()
+        return { width: rect.width, height: rect.height }
+    })
+
 const expectLayout = (expected: Record<string, Partial<Box>>) =>
     cy.document().then((doc) => {
         const layout = readLayout(doc)
@@ -118,7 +126,7 @@ const outerEdge = (
     }[side] as Point
 }
 
-type DragSource = { tile: 'map' | 'visualization' } | { tab: string }
+type DragSource = { tile: ViewType } | { tab: string }
 
 const getSource = (doc: Document, source: DragSource): HTMLElement => {
     if ('tile' in source) {
@@ -225,7 +233,7 @@ const dragDivider = (title: string, side: 'right' | 'bottom', to: number) =>
         await sleep(50)
     })
 
-const clickTile = (tile: 'map' | 'visualization') =>
+const clickTile = (tile: ViewType) =>
     cy.get(`[data-test="add-view-${tile}"]`).click()
 
 /* Map 1 | Visualization 1, split 70/30 by the user */
@@ -407,5 +415,42 @@ describe('workspace grid', () => {
         dragTo({ tile: 'map' }, (doc) =>
             pointIn(doc, 'Map 1', [1, 0.5])
         ).should('deep.equal', { preview: false, insertLine: false })
+    })
+
+    it('still takes a selector once four plugins are open', () => {
+        mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
+        clickTile('map')
+        clickTile('visualization')
+
+        dragTo({ tile: 'org-unit-selector' }, (doc) =>
+            outerEdge(doc, 'top')
+        ).should('deep.equal', { preview: false, insertLine: true })
+
+        cellSize('Org unit selector 1')
+            .its('height')
+            .should('be.closeTo', 120, 2)
+    })
+
+    it('gives a selector row at the top edge its preferred height, within its maximum', () => {
+        setUpSeventyThirty()
+
+        dragTo({ tile: 'org-unit-selector' }, (doc) => outerEdge(doc, 'top'))
+
+        cellSize('Org unit selector 1')
+            .its('height')
+            .should('be.closeTo', 120, 2)
+        expectLayout({
+            'Org unit selector 1': { w: 100 },
+            'Map 1': { w: 70 },
+            'Visualization 1': { w: 30 },
+        })
+
+        dragDivider('Org unit selector 1', 'bottom', 0.9)
+
+        cellSize('Org unit selector 1')
+            .its('height')
+            .should('be.closeTo', 240, 2)
     })
 })

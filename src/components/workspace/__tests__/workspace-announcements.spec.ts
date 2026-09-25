@@ -35,11 +35,7 @@ describe('getWorkspaceAnnouncement', () => {
     })
 
     it('stays silent about tool, settings and swap-spacer tabs', () => {
-        for (const component of [
-            'interactions',
-            'view-settings',
-            'swap-spacer',
-        ]) {
+        for (const component of ['add-views', 'view-settings', 'swap-spacer']) {
             expect(
                 getWorkspaceAnnouncement({
                     kind: 'open',

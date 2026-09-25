@@ -13,15 +13,16 @@ import classes from './styles/workspace.module.css'
  * and along the grid's outer edges, so both show the same insertion line. */
 export const InsertZones: FC<{
     api: DockviewApi | null
-    isDragging: boolean
-}> = ({ api, isDragging }) => {
+    /* The formats of the drag in progress, null when there is none */
+    dragFormats: readonly string[] | null
+}> = ({ api, dragFormats }) => {
     const containerRef = useRef<HTMLDivElement>(null)
     const [zones, setZones] = useState<InsertZone[]>([])
     const [activeZone, setActiveZone] = useState<InsertZone | null>(null)
 
     useEffect(() => {
         const container = containerRef.current
-        if (!isDragging || !api || !container) {
+        if (!dragFormats || !api || !container) {
             setZones([])
             setActiveZone(null)
             return
@@ -29,10 +30,10 @@ export const InsertZones: FC<{
         /* Read once the drag has started, when dockview knows which tab
          * is being dragged */
         const timeout = window.setTimeout(() =>
-            setZones(getInsertZonesForDrag(api, container))
+            setZones(getInsertZonesForDrag(api, container, dragFormats))
         )
         return () => window.clearTimeout(timeout)
-    }, [api, isDragging])
+    }, [api, dragFormats])
 
     const onDragOver = (event: DragEvent, zone: InsertZone) => {
         if (api && canDropOnInsertZone(api, event.dataTransfer)) {

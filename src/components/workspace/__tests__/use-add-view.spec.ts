@@ -59,7 +59,9 @@ describe('useAddView', () => {
 
         addWith(fake.asApi)
 
-        expect(show).toHaveBeenCalledWith('A workspace holds up to 4 views')
+        expect(show).toHaveBeenCalledWith(
+            'A workspace holds up to 4 maps and visualizations'
+        )
     })
 
     it('does nothing before the workspace is ready', () => {

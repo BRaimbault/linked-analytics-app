@@ -1,5 +1,6 @@
 import {
     axisOf,
+    along,
     getGridLength,
     getLeaves,
     getMinLength,
@@ -12,6 +13,8 @@ import {
     type GridTree,
     type Rect,
     type SplitAxis,
+    PLUGIN_SIZES,
+    type ViewSizes,
 } from './grid-tree'
 import { getSplitAxis, hasRoomToInsertLine, isNoOpMove } from './rules'
 
@@ -37,7 +40,15 @@ const OUTER_POSITIONS: InsertPosition[] = ['left', 'right', 'top', 'bottom']
 
 const getOuterZones = (
     tree: GridTree,
-    { sourceId, thickness }: { sourceId: string | null; thickness: number }
+    {
+        sourceId,
+        placedSizes,
+        thickness,
+    }: {
+        sourceId: string | null
+        placedSizes: ViewSizes
+        thickness: number
+    }
 ): InsertZone[] => {
     const { width, height } = tree
     const rects: Record<InsertPosition, Rect> = {
@@ -54,7 +65,7 @@ const getOuterZones = (
                 excludeId: sourceId,
             }),
             length: getGridLength(tree, axis),
-            axis,
+            placedMin: along(placedSizes.min, axis),
         })
         const isNoOp =
             sourceId !== null &&
@@ -93,10 +104,13 @@ export const getInsertZones = (
     tree: GridTree,
     {
         sourceId = null,
+        placedSizes = PLUGIN_SIZES,
         thickness = INSERT_ZONE_THICKNESS,
         outerThickness = OUTER_ZONE_THICKNESS,
     }: {
+        /* The dragged view's cell, null for a view from the palette */
         sourceId?: string | null
+        placedSizes?: ViewSizes
         thickness?: number
         outerThickness?: number
     } = {}
@@ -120,7 +134,7 @@ export const getInsertZones = (
                 excludeId: sourceId,
             }),
             length: lengthOf(branchRect, axis),
-            axis,
+            placedMin: along(placedSizes.min, axis),
         })
 
         node.children.forEach((after, index) => {
@@ -169,6 +183,10 @@ export const getInsertZones = (
     /* Last, so they sit above the ends of the dividers' strips */
     return [
         ...zones,
-        ...getOuterZones(tree, { sourceId, thickness: outerThickness }),
+        ...getOuterZones(tree, {
+            sourceId,
+            placedSizes,
+            thickness: outerThickness,
+        }),
     ]
 }

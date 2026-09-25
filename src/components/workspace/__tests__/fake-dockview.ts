@@ -41,7 +41,14 @@ export type FakeGroup = {
     element: {
         getBoundingClientRect: () => DOMRect
         contains: (node: unknown) => boolean
+        /* The dockview shell the grid lives in */
+        closest: (selector: string) => {
+            clientWidth: number
+            clientHeight: number
+        }
     }
+    maximumWidth: number
+    maximumHeight: number
     model: { openPanel: Mock<(panel: FakePanel) => void> }
     api: {
         id: string
@@ -53,6 +60,12 @@ export type FakeGroup = {
         expand: Mock<() => void>
         setSize: Mock<(size: { width?: number; height?: number }) => void>
         moveTo: Mock<(options: { position?: string }) => void>
+        setConstraints: Mock<
+            (constraints: {
+                maximumWidth?: number
+                maximumHeight?: number
+            }) => void
+        >
     }
 }
 
@@ -88,6 +101,8 @@ const toSerializedNode = (node: GridNode): SerializedGridNode =>
               data: node.children.map(toSerializedNode),
               size: node.size,
           }
+
+const SHELL = { clientWidth: 1200, clientHeight: 900 }
 
 const EMPTY_GRID: SerializedGrid = {
     orientation: 'HORIZONTAL',
@@ -161,7 +176,10 @@ export const createFakeDockview = () => {
             element: {
                 getBoundingClientRect: () => toDomRect(rect),
                 contains: () => false,
+                closest: () => SHELL,
             },
+            maximumWidth: Number.MAX_SAFE_INTEGER,
+            maximumHeight: Number.MAX_SAFE_INTEGER,
             model: {
                 openPanel: vi.fn((panel: FakePanel) => {
                     group.activePanel = panel
@@ -181,6 +199,15 @@ export const createFakeDockview = () => {
                 }),
                 setSize: vi.fn(),
                 moveTo: vi.fn(),
+                setConstraints: vi.fn(
+                    ({
+                        maximumWidth = group.maximumWidth,
+                        maximumHeight = group.maximumHeight,
+                    }) => {
+                        group.maximumWidth = maximumWidth
+                        group.maximumHeight = maximumHeight
+                    }
+                ),
             },
         }
         groups.push(group)
@@ -291,6 +318,7 @@ export const createFakeDockview = () => {
             })
         ),
         toJSON: vi.fn(() => ({ grid })),
+        layout: vi.fn(),
         hasMaximizedGroup: () => maximized,
         getEdgeGroup: (position: string) => edgeGroups.get(position)?.api,
         addEdgeGroup: vi.fn(

@@ -1,16 +1,43 @@
+import i18n from '@dhis2/d2-i18n'
 import {
     axisOf,
     findLeafLocation,
     getLeaves,
-    minLengthOf,
     type GridTree,
     type SplitAxis,
 } from './grid-tree'
-import type { ViewType } from './view-types'
+import { getViewKind, getViewTypeLabel, type ViewType } from './view-types'
 
-export const MAX_VIEWS = 4
+/* Each plugin loads a whole app in an iframe, so their number is capped.
+ * Selectors are light, but each drives plugins, so a workspace holds at most
+ * one more selector of a type than it has plugins. */
+export const MAX_PLUGIN_VIEWS = 4
 
-export const canAddView = (viewCount: number): boolean => viewCount < MAX_VIEWS
+const countPlugins = (views: ReadonlyArray<{ type: ViewType }>): number =>
+    views.filter((view) => getViewKind(view.type) === 'plugin').length
+
+export const canAddView = (
+    type: ViewType,
+    views: ReadonlyArray<{ type: ViewType }>
+): boolean => {
+    const plugins = countPlugins(views)
+    if (getViewKind(type) === 'plugin') {
+        return plugins < MAX_PLUGIN_VIEWS
+    }
+    const sameType = views.filter((view) => view.type === type).length
+    return sameType + 1 <= plugins + 1
+}
+
+/* Why a view of this type can't be added */
+export const getViewLimitMessage = (type: ViewType): string =>
+    getViewKind(type) === 'plugin'
+        ? i18n.t('A workspace holds up to {{max}} maps and visualizations', {
+              max: MAX_PLUGIN_VIEWS,
+          })
+        : i18n.t(
+              'A workspace holds at most one more {{selector}} selector than it has maps and visualizations',
+              { selector: getViewTypeLabel(type).toLowerCase() }
+          )
 
 export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
     if (position === 'left' || position === 'right') {
@@ -22,24 +49,37 @@ export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
     return null
 }
 
-/* Splitting a cell halves it. A new line (a row or column added at the
- * grid's outer edge or between two lines) takes its share from the others,
- * so it fits as long as every line can keep its minimum length. */
-export const hasRoomToSplitCell = (
-    cellLength: number,
-    axis: SplitAxis
-): boolean => cellLength / 2 >= minLengthOf(axis)
+/* Splitting a cell halves it, unless the placed view is a selector, which
+ * takes its preferred size and leaves the rest; either way both views keep
+ * their minimum length. */
+export const hasRoomToSplitCell = ({
+    length,
+    targetMin,
+    placedMin,
+    halves,
+}: {
+    length: number
+    targetMin: number
+    placedMin: number
+    halves: boolean
+}): boolean =>
+    halves
+        ? length / 2 >= Math.max(targetMin, placedMin)
+        : targetMin + placedMin <= length
 
+/* A new line (a row or column added at the grid's outer edge or between
+ * two lines) takes its room from the others, so it fits as long as every
+ * line keeps its minimum length. */
 export const hasRoomToInsertLine = ({
     minLength,
     length,
-    axis,
+    placedMin,
 }: {
     /* The smallest length the existing lines can shrink to */
     minLength: number
     length: number
-    axis: SplitAxis
-}): boolean => minLength + minLengthOf(axis) <= length
+    placedMin: number
+}): boolean => minLength + placedMin <= length
 
 /* Numbers freed by closing a view are reused, so titles stay short */
 export const getNextViewNumber = (

@@ -1,7 +1,7 @@
 import { addView } from '@components/workspace/workspace-controller'
 import { useAlert } from '@dhis2/app-runtime'
 import i18n from '@dhis2/d2-i18n'
-import { MAX_VIEWS } from '@modules/workspace/rules'
+import { getViewLimitMessage } from '@modules/workspace/rules'
 import type { ViewType } from '@modules/workspace/view-types'
 import type { DockviewApi } from 'dockview-react'
 import { useCallback } from 'react'
@@ -25,11 +25,7 @@ export const useAddView = (
                     )
                 )
             } else if (result.status === 'full') {
-                show(
-                    i18n.t('A workspace holds up to {{max}} views', {
-                        max: MAX_VIEWS,
-                    })
-                )
+                show(getViewLimitMessage(type))
             }
         },
         [api, nextToViewId, show]

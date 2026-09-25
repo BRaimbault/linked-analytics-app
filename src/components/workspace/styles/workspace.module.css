@@ -40,6 +40,7 @@
 }
 
 .watermark {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -49,6 +50,16 @@
     color: var(--colors-grey700);
     font-size: 14px;
     text-align: center;
+}
+
+/* The same preview dockview draws over a cell a view can be dropped on */
+.watermark[data-drop-target]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--dv-drag-over-border);
+    background-color: var(--dv-drag-over-background-color);
+    pointer-events: none;
 }
 
 .watermark p {
@@ -169,4 +180,36 @@
 .insertZone[data-edge='bottom'][data-active]::after {
     inset-block-start: auto;
     inset-block-end: 2px;
+}
+
+/* A view's only tab fills its header (singleTabMode="fullwidth"). The
+ * tools strip keeps its tabs at their own size, so "Add views" looks the
+ * same alone or next to settings tabs. */
+.workspace
+    :global(.dv-edge-group .dv-single-tab.dv-full-width-single-tab)
+    :is(
+        :global(.dv-scrollable),
+        :global(.dv-tabs-container),
+        :global(.dv-tab)
+    ) {
+    flex-grow: 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-tabs-container
+            .dv-tab
+    ) {
+    padding: 4px 8px;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-void-container
+    ) {
+    flex-grow: 1;
 }

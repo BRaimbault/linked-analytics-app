@@ -4,11 +4,17 @@ import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import i18n from '@dhis2/d2-i18n'
 import { Tooltip } from '@dhis2/ui'
 import { useAppSelector } from '@hooks'
-import { encodeViewDrag, VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
-import { canAddView, MAX_VIEWS } from '@modules/workspace/rules'
 import {
+    encodeViewDrag,
+    getViewTypeMime,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
+import { canAddView, getViewLimitMessage } from '@modules/workspace/rules'
+import {
+    getViewKind,
     getViewTypeLabel,
     VIEW_TYPES,
+    type ViewKind,
     type ViewType,
 } from '@modules/workspace/view-types'
 import { selectActiveView, selectViews } from '@store/workspace-slice'
@@ -25,10 +31,11 @@ const ViewTile: FC<{ type: ViewType; disabled: boolean }> = ({
 
     const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
         event.dataTransfer.setData(VIEW_DRAG_MIME, encodeViewDrag(type))
+        event.dataTransfer.setData(getViewTypeMime(type), '')
         event.dataTransfer.effectAllowed = 'copy'
     }
 
-    return (
+    const tile = (
         <button
             type="button"
             className={classes.tile}
@@ -42,38 +49,49 @@ const ViewTile: FC<{ type: ViewType; disabled: boolean }> = ({
             {getViewTypeLabel(type)}
         </button>
     )
+
+    return disabled ? (
+        <Tooltip content={getViewLimitMessage(type)}>{tile}</Tooltip>
+    ) : (
+        tile
+    )
 }
 
-export const AddViewsPanel: FC = () => {
-    const viewCount = useAppSelector(selectViews).length
-    const isFull = !canAddView(viewCount)
+const TILE_GROUPS: { kind: ViewKind; heading: () => string }[] = [
+    { kind: 'plugin', heading: () => i18n.t('Analytics') },
+    { kind: 'selector', heading: () => i18n.t('Selectors') },
+]
 
-    const tiles = (
-        <div className={classes.tiles}>
-            {VIEW_TYPES.map((type) => (
-                <ViewTile key={type} type={type} disabled={isFull} />
-            ))}
-        </div>
-    )
+export const AddViewsPanel: FC = () => {
+    const views = useAppSelector(selectViews)
 
     return (
         <div className={classes.tool}>
-            <p className={classes.toolHint}>
-                {i18n.t(
-                    'Drag a view onto an edge of the grid, an edge of another view or the line between two views, or click to add it next to the selected view. To swap two views, drag one by its tab onto the middle of the other.'
-                )}
-            </p>
-            {isFull ? (
-                <Tooltip
-                    content={i18n.t('A workspace holds up to {{max}} views', {
-                        max: MAX_VIEWS,
-                    })}
-                >
-                    {tiles}
-                </Tooltip>
-            ) : (
-                tiles
-            )}
+            <div className={classes.tileGroups}>
+                {TILE_GROUPS.map(({ kind, heading }) => (
+                    <section
+                        key={kind}
+                        className={classes.tileGroup}
+                        aria-label={heading()}
+                        data-test={`add-views-${kind}s`}
+                    >
+                        <h3 className={classes.tileGroupHeading}>
+                            {heading()}
+                        </h3>
+                        <div className={classes.tiles}>
+                            {VIEW_TYPES.filter(
+                                (type) => getViewKind(type) === kind
+                            ).map((type) => (
+                                <ViewTile
+                                    key={type}
+                                    type={type}
+                                    disabled={!canAddView(type, views)}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                ))}
+            </div>
         </div>
     )
 }

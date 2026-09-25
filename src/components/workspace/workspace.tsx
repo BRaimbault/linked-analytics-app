@@ -1,15 +1,13 @@
 import { HeaderActions } from '@components/workspace/header-actions'
 import { InsertZones } from '@components/workspace/insert-zones'
 import { AddViewsPanel } from '@components/workspace/panels/add-views-panel'
-import { InteractionsPanel } from '@components/workspace/panels/interactions-panel'
 import { SettingsPanel } from '@components/workspace/panels/settings-panel'
 import { ViewPlaceholderPanel } from '@components/workspace/panels/view-placeholder-panel'
-import { useIsDragging } from '@components/workspace/use-is-dragging'
+import { useCurrentDrag } from '@components/workspace/use-current-drag'
 import { Watermark } from '@components/workspace/watermark'
 import { WorkspaceApiContext } from '@components/workspace/workspace-api-context'
 import {
     ADD_VIEWS_PANEL_ID,
-    INTERACTIONS_PANEL_ID,
     getWorkspaceAnnouncement,
     setupWorkspace,
     SWAP_SPACER_COMPONENT,
@@ -61,14 +59,13 @@ const components = {
     [VIEW_COMPONENT]: ViewPlaceholderPanel,
     [ADD_VIEWS_PANEL_ID]: AddViewsPanel,
     [VIEW_SETTINGS_COMPONENT]: SettingsPanel,
-    [INTERACTIONS_PANEL_ID]: InteractionsPanel,
     [SWAP_SPACER_COMPONENT]: SwapSpacer,
 }
 
 export const Workspace: FC = () => {
     const dispatch = useAppDispatch()
     const [api, setApi] = useState<DockviewApi | null>(null)
-    const isDragging = useIsDragging()
+    const dragFormats = useCurrentDrag()
 
     useEffect(() => {
         if (!api) {
@@ -81,7 +78,6 @@ export const Workspace: FC = () => {
                     title: viewTitle,
                     interpolation: { escapeValue: false },
                 }),
-            interactions: i18n.t('Interactions'),
         })
     }, [api, dispatch])
 
@@ -90,7 +86,7 @@ export const Workspace: FC = () => {
             <div
                 className={classes.workspace}
                 data-test="workspace"
-                data-dragging={isDragging || undefined}
+                data-dragging={dragFormats ? true : undefined}
                 onPointerDownCapture={(event) =>
                     api && showSettingsForTarget(api, event.target)
                 }
@@ -108,7 +104,7 @@ export const Workspace: FC = () => {
                     getAnnouncement={getWorkspaceAnnouncement}
                     onReady={(event: DockviewReadyEvent) => setApi(event.api)}
                 />
-                <InsertZones api={api} isDragging={isDragging} />
+                <InsertZones api={api} dragFormats={dragFormats} />
             </div>
         </WorkspaceApiContext.Provider>
     )

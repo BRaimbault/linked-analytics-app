@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-25T11:26:24.908Z\n"
-"PO-Revision-Date: 2026-09-25T11:26:24.908Z\n"
+"POT-Creation-Date: 2026-09-25T13:14:44.111Z\n"
+"PO-Revision-Date: 2026-09-25T13:14:44.112Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -44,23 +44,11 @@ msgstr "Restore"
 msgid "Maximize"
 msgstr "Maximize"
 
-msgid ""
-"Drag a view onto an edge of the grid, an edge of another view or the line "
-"between two views, or click to add it next to the selected view. To swap "
-"two views, drag one by its tab onto the middle of the other."
-msgstr ""
-"Drag a view onto an edge of the grid, an edge of another view or the line "
-"between two views, or click to add it next to the selected view. To swap "
-"two views, drag one by its tab onto the middle of the other."
+msgid "Analytics"
+msgstr "Analytics"
 
-msgid "A workspace holds up to {{max}} views"
-msgstr "A workspace holds up to {{max}} views"
-
-msgid "Interactions between these views will be configured here."
-msgstr "Interactions between these views will be configured here."
-
-msgid "No views yet."
-msgstr "No views yet."
+msgid "Selectors"
+msgstr "Selectors"
 
 msgid "Choosing a saved map, or creating one with layers, will happen here."
 msgstr "Choosing a saved map, or creating one with layers, will happen here."
@@ -71,6 +59,21 @@ msgid ""
 msgstr ""
 "Choosing a saved visualization, or creating one with its data, periods and "
 "org units, will happen here."
+
+msgid "Choosing the periods this selector offers will happen here."
+msgstr "Choosing the periods this selector offers will happen here."
+
+msgid "Choosing the org units this selector offers will happen here."
+msgstr "Choosing the org units this selector offers will happen here."
+
+msgid "Choosing the data items this selector offers will happen here."
+msgstr "Choosing the data items this selector offers will happen here."
+
+msgid "Links to other views will be set here."
+msgstr "Links to other views will be set here."
+
+msgid "The picker will render here"
+msgstr "The picker will render here"
 
 msgid "The plugin will render here"
 msgstr "The plugin will render here"
@@ -94,8 +97,12 @@ msgstr "Add a visualization"
 msgid "Drag a map or visualization here"
 msgstr "Drag a map or visualization here"
 
-msgid "Views tile side by side, up to {{max}} at a time."
-msgstr "Views tile side by side, up to {{max}} at a time."
+msgid ""
+"Views tile side by side, with up to {{max}} maps and visualizations at a "
+"time."
+msgstr ""
+"Views tile side by side, with up to {{max}} maps and visualizations at a "
+"time."
 
 msgid "{{title}} added"
 msgstr "{{title}} added"
@@ -115,20 +122,45 @@ msgstr "Add views"
 msgid "{{title}} settings"
 msgstr "{{title}} settings"
 
-msgid "Interactions"
-msgstr "Interactions"
+msgid "A workspace holds up to {{max}} maps and visualizations"
+msgstr "A workspace holds up to {{max}} maps and visualizations"
+
+msgid ""
+"A workspace holds at most one more {{selector}} selector than it has maps "
+"and visualizations"
+msgstr ""
+"A workspace holds at most one more {{selector}} selector than it has maps "
+"and visualizations"
 
 msgid "Map"
 msgstr "Map"
 
-msgid "Visualization"
-msgstr "Visualization"
-
 msgid "Map {{number}}"
 msgstr "Map {{number}}"
 
+msgid "Visualization"
+msgstr "Visualization"
+
 msgid "Visualization {{number}}"
 msgstr "Visualization {{number}}"
+
+msgid "Period"
+msgstr "Period"
+
+msgid "Period selector {{number}}"
+msgstr "Period selector {{number}}"
+
+msgid "Org unit"
+msgstr "Org unit"
+
+msgid "Org unit selector {{number}}"
+msgstr "Org unit selector {{number}}"
+
+msgid "Data"
+msgstr "Data"
+
+msgid "Data selector {{number}}"
+msgstr "Data selector {{number}}"
 
 msgctxt "Application title"
 msgid "__MANIFEST_APP_TITLE"

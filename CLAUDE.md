@@ -12,7 +12,7 @@ Target: App Hub community app. Repo lives on a personal GitHub account for now a
 
 - **Aggregate data first**: Data Visualizer visualizations, and Maps with thematic, org unit, facility and Earth Engine layers.
 - **Create and edit inside the app**: each view gets its own settings tab (like DV's ribbon) where a saved item is picked or a new one is configured, not only imported.
-- **Interactions between views are the new part**, and still need research (see Plan and Open design questions).
+- **Interactions between views are the new part**. Research and design are in [docs/interactions.md](docs/interactions.md): keep it in sync when the design changes.
 
 ### Reference project
 
@@ -57,9 +57,13 @@ From reading `dhis2/dashboard-app` (`src/components/Item/VisualizationItem/Visua
 - **Plugin URL**: look up the app in `/api/apps` by key (`data-visualizer`, `maps`, `line-listing`) and use `pluginLaunchUrl`; fall back to `${baseUrl}/dhis-web-data-visualizer/plugin.html` or `${baseUrl}/dhis-web-maps/plugin.html`. Reference: `plugin.js` (`getPluginLaunchUrl`).
 - **Props the dashboard passes**: `visualization` (full object), `isVisualizationLoaded: true`, `forDashboard: true`, `displayProperty` (user setting `keyAnalysisDisplayProperty`), `onError`, `onInstallationStatusChange`, `cacheId`, `isParentCached`, plus `width` / `height`. Without a fixed height some plugins render 0×0.
 - **Fetching the visualization**: DV and Maps plugins expect the full object, fetched with specific fields. Reference: dashboard-app `src/api/metadata.js` (`getFavoriteFields`, `getMapFields`) and `src/api/fetchVisualization.js`.
-- **EV / Line Listing plugins fetch their own visualization by id** and do **not** apply dashboard `filters` (they only show a "filters not applied" notice).
+- **EV / Line Listing plugins fetch their own visualization by id** and do **not** apply dashboard `filters` (they only show a "filters not applied" notice). The one exception is `filters.relativePeriodDate` (relative periods evaluated as of a date), which DV, LL and EV all apply and the Maps plugin drops.
 - **Filtering DV and Maps works by rewriting the visualization object**, not through a filter prop: replace `items` of the matching dimension in rows/columns/filters (or add it to filters). For maps, apply this to each thematic/event `mapView`. Reference: `getFilteredVisualization.js` (still current on dashboard-app master). Linked org unit/period filters for DV and Maps need no upstream changes; for EV/LL they do.
-- Plugins do **not** emit events (map feature clicks, chart point clicks). True plugin-to-plugin interactions need upstream contributions (e.g. an `onOrgUnitClick`-style callback prop). `Plugin` can pass callbacks across the iframe boundary.
+- **Plugin events are limited** (`Plugin` can pass callbacks across the iframe boundary):
+    - DV forwards every prop. Passing `onDrill` turns on its "Change org unit" menu, which calls `onDrill({ ou: { id, path?, level? } })`, for org units only. It also has `onLoadingComplete`.
+    - The Maps plugin forwards only `visualization` and `displayProperty`, so no callback reaches it. Its `didViewsChange` also misses Earth Engine layers, date ranges and a changed number of map views.
+    - LL and EV have no click callback.
+    - The planned upstream contract (`onDataClick`, `highlight`, `onLoadingComplete`) is in [docs/interactions.md](docs/interactions.md), section 6.
 - Each plugin loads a full app bundle in its own iframe, so four at once is heavy. Watch performance.
 
 ## Plan
@@ -68,18 +72,31 @@ From reading `dhis2/dashboard-app` (`src/components/Item/VisualizationItem/Visua
 2. **Workspace grid with placeholders** (in progress): dockview workspace, see "Workspace" below.
 3. **Render plugins**: replace the placeholders with the DV and Maps plugins (`Plugin` from app-runtime), and check performance with 4 at once. Keep iframes alive across moves (`renderer: 'always'`) and disable their pointer events during palette drags.
 4. **View settings**: pick a saved visualization or map, or create one, in each view's settings tab.
-5. **Interactions**: shared org unit and period filters applied by rewriting visualization objects (pure, unit-tested `getFilteredVisualization`), then click-driven links once plugins emit events (needs upstream plugin changes; raise on the DHIS2 Community of Practice).
+5. **Interactions** (design in [docs/interactions.md](docs/interactions.md)):
+    - **Channels**: one shared value per dimension, with views as senders and/or receivers.
+    - **Selectors**: period, org unit, data and dynamic dimension pickers, in grid cells.
+    - **Link mode**: rewire the channels on the grid itself.
+    - A pure, unit-tested `applyLinks` rewrites visualization objects, following the axis rules.
+    - Then click-driven links through upstream `onDataClick` / `highlight` props in DV and Maps.
+    - First, during the grid milestone: view kinds (plugin or selector) with per-type sizes.
 6. **Persistence**: save workspaces (URL first, then the dataStore).
 
 ### Workspace (dockview)
 
-- `dockview-react`, one view per cell (no tabs in the grid), at most 4 views. Pure layout logic lives in `src/modules/workspace/` (`rules.ts` for drops, `grid-tree.ts` for the layout tree, `layout-sizing.ts`, `insert-zones.ts`); every dockview call lives in `src/components/workspace/workspace-controller.ts`.
-- A tools edge group (top by default, movable to any edge from its ⋯ menu, collapsible) holds "Add views", one settings tab per view, and "Interactions". Selecting a view by hand brings its settings tab forward; adding one keeps the palette open.
+- `dockview-react`, one view per cell (no tabs in the grid). Pure layout logic lives in `src/modules/workspace/` (`view-types.ts` for the view type registry, `rules.ts` for limits and drops, `grid-tree.ts` for the layout tree and its sizes, `layout-sizing.ts`, `insert-zones.ts`); every dockview call lives in `src/components/workspace/workspace-controller.ts`.
+- **View kinds**: each view type in the registry is a **plugin** (map, visualization: an app in an iframe) or a **selector** (light pickers that drive plugins, e.g. the placeholder `org-unit-selector`).
+    - At most 4 plugins (`MAX_PLUGIN_VIEWS`). Selectors don't count toward it, but each selector type is capped at the number of plugins + 1. Palette tiles are disabled per type, with the reason in a tooltip.
+    - Each type has its own minimum size; selectors also have a preferred size and a maximum (2× preferred). The room checks use the minimum of the view being dropped.
+    - A selector keeps the tab header like a plugin (the header is 35px).
+- A tools edge group (top by default, movable to any edge from its ⋯ menu, collapsible) holds "Add views", then one settings tab per view in the order they were added. Selecting a view by hand brings its settings tab forward; adding one keeps the palette open.
 - Views keep a minimum size (`VIEW_MIN_SIZE`). A drop that would push a view below it is refused (a moved view's own space counts as free), and a click-add falls back from "right of the selected view" to "below it", then to other cells, before alerting that there is no room.
 - **Sizes keep the user's proportions** (`computeLayoutSizes`). dockview spreads space evenly after every add, move or close; after each change the controller puts the sizes back:
     - splitting a cell halves it, the others keep their size;
-    - a new line (outer edge, or between two lines) gets `1 / (lines + 1)` of its branch, where lines is the most views a straight line across meets in that direction, so it matches its neighbours; the others shrink in proportion;
-    - space a view leaves goes to its neighbours in proportion; a swap changes nothing.
+    - a line of selectors alone keeps its length, or gets its preferred length when new; a selector splitting a cell takes its preferred length and leaves the rest;
+    - a new line with a plugin shares what the selector lines leave, one share per view met along it (so it matches its neighbours); the others shrink in proportion. A selector next to a plugin in a line counts like a plugin;
+    - space a view leaves goes to its neighbours in proportion; a swap changes nothing;
+    - no line goes below its views' minimums or above their maximums (`fitToLimits`).
+- **Selector maximums** (`getViewMaxSizes`): a cell's maximum caps every view sharing its length (a row shares its height), and a stack with nothing unbounded in it can't fill its line. So a selector's maximum applies only along an axis where it shares its length with selectors alone, and where its stack has a view with no maximum to take the rest. The controller sets every cell's maximum after each layout change (`group.api.setConstraints`), and asks dockview for a new layout when one changed, since dockview lays out before we lift a cap.
 - **New lines show as a line**: while dragging, `InsertZones` lays strips over the dividers between lines (dockview has no such target) and along the grid's outer edges, and the hovered one shows the blue insertion line. A divider drop adds the view next to a reference view on one side of it; an outer-edge drop adds it at the root. Cell edges keep dockview's shaded half, since that drop halves the cell.
 - **Touch fallback**: the strips only take HTML5 (mouse) drags. On a touch-first device dockview drags with pointer events, so `getOuterEdgeDropModel` turns dockview's own outer-edge targets back on there (same media queries dockview uses); elsewhere `dndEdges` is off.
 - **No pointless previews**: `isNoOpMove` hides drops that would leave a view where it is (its own cell, the facing edge of its neighbour, the outer edge it already runs along).
@@ -99,11 +116,21 @@ From reading `dhis2/dashboard-app` (`src/components/Item/VisualizationItem/Visua
         - Docking a panel to an edge by dragging, and full keyboard docking, are paid (Enterprise) features.
         - There is no built-in swap. `swapViews` moves the two panels through temporary spacer tabs, because dockview removes a group as soon as it is empty; moves are what keep iframes alive.
         - `DockviewDefaultTab` overrides `className`; mark tabs with `data-*` attributes instead.
+        - `singleTabMode="fullwidth"` applies to every group, so the tools strip's CSS undoes it (`.dv-edge-group .dv-single-tab`): "Add views" keeps its own size when it is the only tab.
 
 ### Open design questions
 
-- Drill semantics: clicking a district sets the target to that district, or to its children?
-- Cycles and reset when panels drive each other.
+Decided, see [docs/interactions.md](docs/interactions.md):
+
+- **Drill semantics** are a rule per receiving view: `ou` on an axis → the children of the selection; `ou` only as a filter → the selection itself. Periods follow the same idea.
+- **Cycles**: a sender never applies its own clicks. **Reset**: clear the channel from its selector or header badge.
+- **Views send clicks by default**, with workspace settings to change that.
+- **No Maps timelines**: the period selector's play mode steps through periods instead.
+
+Still open:
+
+- The upstream prop names (`onDataClick`, `highlight`), to agree with the maintainers.
+- How to show "not supported" for EV and LL.
 - Positioning vs. the Dashboard app: focus on ad hoc exploration + interactions.
 
 ## Where helpers live in `src/modules`

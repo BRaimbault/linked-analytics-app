@@ -5,6 +5,7 @@ import {
     OUTER_ZONE_THICKNESS,
     type InsertZone,
 } from '../insert-zones'
+import { getViewTypeSizes } from '../view-types'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 const half = INSERT_ZONE_THICKNESS / 2
@@ -203,5 +204,19 @@ describe('getInsertZones', () => {
 
     it('offers nothing on an empty grid, which takes a view anywhere', () => {
         expect(getInsertZones(buildTree(1200, 800, row(1)))).toEqual([])
+    })
+
+    it('offers a selector a line where a plugin would not fit', () => {
+        /* Two plugin rows need 320px; a selector row only 96px more */
+        const layout = buildTree(1200, 300, row(1, view('a'), view('b')))
+
+        expect(outerEdges(getInsertZones(layout))).toEqual(['left', 'right'])
+        expect(
+            outerEdges(
+                getInsertZones(layout, {
+                    placedSizes: getViewTypeSizes('org-unit-selector'),
+                })
+            )
+        ).toEqual(['left', 'right', 'top', 'bottom'])
     })
 })

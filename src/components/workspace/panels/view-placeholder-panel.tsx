@@ -6,7 +6,7 @@ import {
 } from '@components/workspace/workspace-controller'
 import i18n from '@dhis2/d2-i18n'
 import { Button, IconSettings16 } from '@dhis2/ui'
-import { getViewTypeLabel } from '@modules/workspace/view-types'
+import { getViewKind, getViewTypeLabel } from '@modules/workspace/view-types'
 import type { IDockviewPanelProps } from 'dockview-react'
 import type { FC } from 'react'
 import classes from './styles/panels.module.css'
@@ -28,7 +28,9 @@ export const ViewPlaceholderPanel: FC<IDockviewPanelProps<ViewPanelParams>> = ({
                 {getViewTypeLabel(params.type)}
             </span>
             <span className={classes.placeholderHint}>
-                {i18n.t('The plugin will render here')}
+                {getViewKind(params.type) === 'selector'
+                    ? i18n.t('The picker will render here')
+                    : i18n.t('The plugin will render here')}
             </span>
             <div className={classes.placeholderActions}>
                 <Button

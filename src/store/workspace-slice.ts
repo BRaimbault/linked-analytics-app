@@ -1,9 +1,18 @@
-import type { ViewType } from '@modules/workspace/view-types'
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import {
+    getViewKind,
+    type ViewKind,
+    type ViewType,
+} from '@modules/workspace/view-types'
+import {
+    createSelector,
+    createSlice,
+    type PayloadAction,
+} from '@reduxjs/toolkit'
 
 export type WorkspaceView = {
     id: string
     type: ViewType
+    kind: ViewKind
     number: number
 }
 
@@ -23,10 +32,17 @@ export const workspaceSlice = createSlice({
     name: 'workspace',
     initialState,
     reducers: {
-        viewAdded(state, action: PayloadAction<WorkspaceView>) {
-            if (!state.views.some((view) => view.id === action.payload.id)) {
-                state.views.push(action.payload)
-            }
+        viewAdded: {
+            reducer(state, action: PayloadAction<WorkspaceView>) {
+                if (
+                    !state.views.some((view) => view.id === action.payload.id)
+                ) {
+                    state.views.push(action.payload)
+                }
+            },
+            prepare: (view: Omit<WorkspaceView, 'kind'>) => ({
+                payload: { ...view, kind: getViewKind(view.type) },
+            }),
         },
         viewRemoved(state, action: PayloadAction<string>) {
             state.views = state.views.filter(
@@ -50,3 +66,7 @@ export const workspaceSlice = createSlice({
 export const { viewAdded, viewRemoved, activeViewChanged } =
     workspaceSlice.actions
 export const { selectViews, selectActiveView } = workspaceSlice.selectors
+
+export const selectPluginViews = createSelector([selectViews], (views) =>
+    views.filter((view) => view.kind === 'plugin')
+)

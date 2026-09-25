@@ -1,8 +1,8 @@
 import {
     ADD_VIEWS_PANEL_ID,
     addView,
+    closeView,
     getEdgePosition,
-    INTERACTIONS_PANEL_ID,
     moveTools,
     openSettings,
     setupWorkspace,
@@ -17,7 +17,11 @@ import {
     row,
     view,
 } from '@modules/workspace/__tests__/grid-tree-builders'
-import { VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
+import {
+    getViewTypeMime,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
+import type { ViewType } from '@modules/workspace/view-types'
 import { describe, expect, it, vi } from 'vitest'
 import {
     asGroup,
@@ -28,7 +32,6 @@ import {
 
 const titles = {
     addViews: 'Add views',
-    interactions: 'Interactions',
     viewSettings: (title: string) => `${title} settings`,
 }
 
@@ -68,13 +71,14 @@ const overlayEvent = (overrides: Record<string, unknown>) => ({
     position: 'right',
     group: undefined,
     getData: () => undefined,
+    nativeEvent: {},
     preventDefault: vi.fn(),
     ...overrides,
 })
 
-const payload = (type: string) => ({
+const payload = (type: ViewType) => ({
     dataTransfer: {
-        types: [VIEW_DRAG_MIME],
+        types: [VIEW_DRAG_MIME, getViewTypeMime(type)],
         getData: () => JSON.stringify({ type }),
     },
 })
@@ -247,6 +251,32 @@ describe('drop overlay', () => {
         expect(fromPalette.preventDefault).toHaveBeenCalled()
         expect(fromTab.preventDefault).not.toHaveBeenCalled()
         expect(ontoItself.preventDefault).toHaveBeenCalled()
+    })
+
+    it('fits a selector from the palette where a plugin has no room', () => {
+        const fake = setup()
+        const short = fake.addLaidOutView('short', {
+            left: 0,
+            top: 0,
+            width: 1000,
+            height: 300,
+        })
+        const plugin = overlayEvent({
+            group: short.group,
+            position: 'bottom',
+            nativeEvent: payload('map'),
+        })
+        const selectorDrop = overlayEvent({
+            group: short.group,
+            position: 'bottom',
+            nativeEvent: payload('org-unit-selector'),
+        })
+
+        fake.emit('onWillShowOverlay', plugin)
+        fake.emit('onWillShowOverlay', selectorDrop)
+
+        expect(plugin.preventDefault).toHaveBeenCalled()
+        expect(selectorDrop.preventDefault).not.toHaveBeenCalled()
     })
 
     it('keeps tools out of the grid and views out of the tools strip', () => {
@@ -823,6 +853,59 @@ describe('drops', () => {
         expect(map.group.api.setSize).not.toHaveBeenCalled()
     })
 
+    it('caps a selector\u2019s cell only where no plugin shares its length', () => {
+        const fake = setup()
+        const [map] = twoColumns(fake)
+        const selectorView = fake.addLaidOutView(
+            'ou-a',
+            { left: 0, top: 0, width: 0, height: 0 },
+            { type: 'org-unit-selector' }
+        )
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                column(1, view(selectorView.group.id), view(map.group.id))
+            )
+        )
+        fake.changeLayoutTo(() =>
+            buildTree(
+                1200,
+                800,
+                column(1, view(selectorView.group.id, 1), view(map.group.id, 5))
+            )
+        )
+
+        fake.mutate(() => undefined)
+
+        /* Its height is its own; its width is the plugin's too */
+        expect(selectorView.group.api.setConstraints).toHaveBeenCalledWith({
+            maximumWidth: Number.MAX_SAFE_INTEGER,
+            maximumHeight: 240,
+        })
+        /* The plugin's cell has no maximum to change */
+        expect(map.group.api.setConstraints).not.toHaveBeenCalled()
+        /* The grid is laid out again once, at the shell's size */
+        expect(fake.api.layout).toHaveBeenCalledWith(1200, 900, true)
+
+        fake.api.layout.mockClear()
+        fake.mutate(() => undefined)
+        expect(fake.api.layout).not.toHaveBeenCalled()
+    })
+
+    it('sets the maximums even before there is a layout to compare with', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.changeLayoutTo(() =>
+            buildTree(1200, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+
+        fake.mutate(() => undefined)
+
+        expect(fake.api.toJSON).toHaveBeenCalled()
+        expect(map.group.api.setSize).not.toHaveBeenCalled()
+    })
+
     it('does nothing before the grid is measured', () => {
         const fake = setup()
         const [map] = twoColumns(fake)
@@ -942,10 +1025,11 @@ describe('selection and settings', () => {
             params: { type: 'map', number: 1 },
         })
 
-    it('mirrors views in the store and gives each a settings tab before Interactions', () => {
+    it('mirrors views in the store and gives each a settings tab after Add views', () => {
         const fake = setup()
 
         addView(fake, 'map-a')
+        addView(fake, 'map-b')
 
         expect(fake.dispatch).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'workspace/viewAdded' })
@@ -953,14 +1037,14 @@ describe('selection and settings', () => {
         expect(fake.toolGroup.panels.map(({ id }) => id)).toEqual([
             ADD_VIEWS_PANEL_ID,
             'settings-map-a',
-            INTERACTIONS_PANEL_ID,
+            'settings-map-b',
         ])
         expect(fake.api.getPanel('settings-map-a')?.title).toBe(
             'map-a settings'
         )
     })
 
-    it('adds a settings tab once, and only while Interactions exists', () => {
+    it('adds a settings tab once, and none once the tools are gone', () => {
         const fake = setup()
         const view = addView(fake, 'map-a')
         fake.emit('onDidAddPanel', view)
@@ -968,7 +1052,7 @@ describe('selection and settings', () => {
             fake.toolGroup.panels.filter(({ id }) => id === 'settings-map-a')
         ).toHaveLength(1)
 
-        fake.api.removePanel(existing(fake, INTERACTIONS_PANEL_ID))
+        fake.api.removePanel(existing(fake, ADD_VIEWS_PANEL_ID))
         addView(fake, 'map-b')
         expect(fake.api.getPanel('settings-map-b')).toBeUndefined()
     })
@@ -976,7 +1060,11 @@ describe('selection and settings', () => {
     it('titles a settings tab even for an untitled view', () => {
         const fake = setup()
 
-        fake.api.addPanel({ id: 'untitled', component: 'view', params: {} })
+        fake.api.addPanel({
+            id: 'untitled',
+            component: 'view',
+            params: { type: 'map', number: 1 },
+        })
 
         expect(fake.api.getPanel('settings-untitled')?.title).toBe(' settings')
     })
@@ -1081,7 +1169,7 @@ describe('selection and settings', () => {
         const fake = setup()
         fake.dispatch.mockClear()
 
-        fake.api.removePanel(existing(fake, INTERACTIONS_PANEL_ID))
+        fake.api.removePanel(existing(fake, ADD_VIEWS_PANEL_ID))
 
         expect(fake.dispatch).not.toHaveBeenCalled()
     })
@@ -1149,6 +1237,19 @@ describe('showSettingsForTarget', () => {
     })
 })
 
+describe('closeView', () => {
+    it('closes a view, and does nothing for one that is gone', () => {
+        const fake = setup()
+        const [map] = twoColumns(fake)
+
+        closeView(fake.asApi, 'gone')
+        closeView(fake.asApi, map.id)
+
+        expect(fake.api.removePanel).toHaveBeenCalledTimes(1)
+        expect(fake.api.getPanel(map.id)).toBeUndefined()
+    })
+})
+
 describe('moveTools', () => {
     it('moves every tool to the new edge, keeping the open tab', () => {
         const fake = setup()
@@ -1159,10 +1260,7 @@ describe('moveTools', () => {
         moveTools(fake.asApi, 'top', 'left')
 
         const left = fake.edgeGroups.get('left') as FakeGroup
-        expect(left.panels.map(({ id }) => id)).toEqual([
-            ADD_VIEWS_PANEL_ID,
-            INTERACTIONS_PANEL_ID,
-        ])
+        expect(left.panels.map(({ id }) => id)).toEqual([ADD_VIEWS_PANEL_ID])
         expect(fake.api.removeEdgeGroup).toHaveBeenCalledWith('top')
         expect(addViews?.api.setActive).toHaveBeenCalledTimes(1)
         expect(left.api.collapse).not.toHaveBeenCalled()

@@ -1,14 +1,23 @@
 import i18n from '@dhis2/d2-i18n'
-import { decodeViewDrag, VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
 import {
+    decodeViewDrag,
+    getDraggedViewType,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
+import {
+    along,
     fromSerializedGrid,
     getGridLength,
+    getLeaves,
     getMinLength,
-    VIEW_MIN_SIZE,
+    getViewMaxSizes,
+    PLUGIN_SIZES,
+    withViewSizes,
     type GridTree,
     type Rect,
     type SerializedGrid,
     type SplitAxis,
+    type ViewSizes,
 } from '@modules/workspace/grid-tree'
 import {
     getInsertZones,
@@ -31,7 +40,11 @@ import {
     type DropContext,
     type DragSource,
 } from '@modules/workspace/rules'
-import { getViewTitle, type ViewType } from '@modules/workspace/view-types'
+import {
+    getViewTitle,
+    getViewTypeSizes,
+    type ViewType,
+} from '@modules/workspace/view-types'
 import type { AppDispatch } from '@store/store'
 import {
     activeViewChanged,
@@ -53,8 +66,7 @@ export const VIEW_COMPONENT = 'view'
 export const VIEW_SETTINGS_COMPONENT = 'view-settings'
 export const SWAP_SPACER_COMPONENT = 'swap-spacer'
 export const ADD_VIEWS_PANEL_ID = 'add-views'
-export const INTERACTIONS_PANEL_ID = 'interactions'
-const TOOL_PANEL_IDS = [ADD_VIEWS_PANEL_ID, INTERACTIONS_PANEL_ID]
+const TOOL_PANEL_IDS = [ADD_VIEWS_PANEL_ID]
 const SETTINGS_PANEL_PREFIX = 'settings-'
 
 const getSettingsPanelId = (viewId: string): string =>
@@ -92,10 +104,17 @@ export const getEdgePosition = (
 const getViewPanels = (api: DockviewApi): IDockviewPanel[] =>
     api.panels.filter(isViewPanel)
 
-const toWorkspaceView = (panel: IDockviewPanel): WorkspaceView => {
+const toWorkspaceView = (
+    panel: IDockviewPanel
+): Omit<WorkspaceView, 'kind'> => {
     const params = panel.params as ViewPanelParams
     return { id: panel.id, type: params.type, number: params.number }
 }
+
+const getPanelSizes = (panel: IDockviewPanel | undefined): ViewSizes =>
+    panel && isViewPanel(panel)
+        ? getViewTypeSizes((panel.params as ViewPanelParams).type)
+        : PLUGIN_SIZES
 
 const getDropPlacement = (
     group: DockviewGroupPanel | undefined,
@@ -124,8 +143,25 @@ export const readGridTree = (api: DockviewApi): GridTree | null => {
     const tree = fromSerializedGrid(
         api.toJSON().grid as unknown as SerializedGrid
     )
-    return tree.width > 0 && tree.height > 0 ? tree : null
+    if (tree.width <= 0 || tree.height <= 0) {
+        return null
+    }
+    return withViewSizes(tree, (groupId) =>
+        getPanelSizes(getGroupPanel(api, groupId)?.activePanel)
+    )
 }
+
+const hasRoomToSplit = (
+    group: DockviewGroupPanel,
+    axis: SplitAxis,
+    placedSizes: ViewSizes
+): boolean =>
+    hasRoomToSplitCell({
+        length: getCellLength(group, axis),
+        targetMin: along(getPanelSizes(group.activePanel).min, axis),
+        placedMin: along(placedSizes.min, axis),
+        halves: !placedSizes.preferred,
+    })
 
 /* The dragged view is left out of the room checks: moving it frees its
  * space. */
@@ -135,10 +171,12 @@ const hasRoomForDrop = (
         group,
         position,
         sourceGroupId,
+        placedSizes,
     }: {
         group: DockviewGroupPanel | undefined
         position: Position
         sourceGroupId: string | null
+        placedSizes: ViewSizes
     }
 ): boolean => {
     const axis = getSplitAxis(position)
@@ -146,7 +184,7 @@ const hasRoomForDrop = (
         return true
     }
     if (group && !isEdgeGroup(group)) {
-        return hasRoomToSplitCell(getCellLength(group, axis), axis)
+        return hasRoomToSplit(group, axis, placedSizes)
     }
     return (
         !tree ||
@@ -156,7 +194,7 @@ const hasRoomForDrop = (
                 excludeId: sourceGroupId,
             }),
             length: getGridLength(tree, axis),
-            axis,
+            placedMin: along(placedSizes.min, axis),
         })
     )
 }
@@ -167,7 +205,8 @@ const hasRoomForDrop = (
  * comes from the caller. Returns null when no cell has room. */
 const getDefaultPlacement = (
     api: DockviewApi,
-    nextToViewId: string | null
+    nextToViewId: string | null,
+    placedSizes: ViewSizes
 ): AddPanelPositionOptions | null => {
     const groups = getViewGroups(api)
     if (!groups.length) {
@@ -186,10 +225,10 @@ const getDefaultPlacement = (
     ].filter((group): group is DockviewGroupPanel => Boolean(group))
 
     for (const group of candidates) {
-        if (hasRoomToSplitCell(group.api.width, 'horizontal')) {
+        if (hasRoomToSplit(group, 'horizontal', placedSizes)) {
             return { referenceGroup: group, direction: 'right' }
         }
-        if (hasRoomToSplitCell(group.api.height, 'vertical')) {
+        if (hasRoomToSplit(group, 'vertical', placedSizes)) {
             return { referenceGroup: group, direction: 'below' }
         }
     }
@@ -237,6 +276,39 @@ const toLayoutChange = (
         : { kind: 'insert', placedId }
 }
 
+/* A selector's maximum is set on its cell after each change, and only where
+ * it holds back no plugin (see getViewMaxSizes); a cell's maximum stays
+ * with the cell when views swap, so every cell is set. dockview lays the
+ * grid out before this, and a maximum raised afterwards leaves the grid
+ * short of its container until the next layout, so one is asked for. */
+const applyMaxSizes = (api: DockviewApi, tree: GridTree): void => {
+    const maxSizes = getViewMaxSizes(tree)
+    let changed = false
+    for (const leaf of getLeaves(tree.root)) {
+        const group = getGroupPanel(api, leaf.id)
+        const max = maxSizes.get(leaf.id)
+        const maximumWidth = max?.width ?? Number.MAX_SAFE_INTEGER
+        const maximumHeight = max?.height ?? Number.MAX_SAFE_INTEGER
+        if (
+            !group ||
+            (group.maximumWidth === maximumWidth &&
+                group.maximumHeight === maximumHeight)
+        ) {
+            continue
+        }
+        changed = true
+        group.api.setConstraints({ maximumWidth, maximumHeight })
+    }
+    const shell = changed
+        ? getGroupPanel(api, getLeaves(tree.root)[0].id)?.element.closest(
+              '.dv-shell'
+          )
+        : null
+    if (shell) {
+        api.layout(shell.clientWidth, shell.clientHeight, true)
+    }
+}
+
 const applySizeRequests = (api: DockviewApi, requests: SizeRequest[]): void => {
     for (const { id, ...size } of requests) {
         api.getGroup(id)?.api.setSize(size)
@@ -269,10 +341,11 @@ export const addView = (
     } = {}
 ): AddViewResult => {
     const views = getViewPanels(api).map(toWorkspaceView)
-    if (!canAddView(views.length)) {
+    if (!canAddView(type, views)) {
         return { status: 'full' }
     }
-    const position = placement ?? getDefaultPlacement(api, nextToViewId)
+    const sizes = getViewTypeSizes(type)
+    const position = placement ?? getDefaultPlacement(api, nextToViewId, sizes)
     if (!position) {
         return { status: 'no-room' }
     }
@@ -293,8 +366,8 @@ export const addView = (
         params,
         renderer: 'always',
         position,
-        minimumWidth: VIEW_MIN_SIZE.width,
-        minimumHeight: VIEW_MIN_SIZE.height,
+        minimumWidth: sizes.min.width,
+        minimumHeight: sizes.min.height,
     })
     return { status: 'added', viewId }
 }
@@ -403,6 +476,14 @@ export const getWorkspaceAnnouncement = (event: {
             return i18n.t('{{title}} restored', { title, interpolation })
         default:
             return null
+    }
+}
+
+/* Closing a view also removes its settings tab (see setupWorkspace) */
+export const closeView = (api: DockviewApi, viewId: string): void => {
+    const view = api.getPanel(viewId)
+    if (view) {
+        api.removePanel(view)
     }
 }
 
@@ -531,9 +612,22 @@ const getDropContext = (
     }
 }
 
-const hasViewPayload = (event: DragEvent | PointerEvent): boolean =>
-    'dataTransfer' in event &&
-    Boolean(event.dataTransfer?.types.includes(VIEW_DRAG_MIME))
+/* The formats a drag carries; none for a touch drag */
+const getDragFormats = (
+    event: DragEvent | PointerEvent
+): readonly string[] | undefined =>
+    'dataTransfer' in event ? event.dataTransfer?.types : undefined
+
+/* The view type a palette drag carries, if there is room for one more */
+const getAddableDraggedType = (
+    api: DockviewApi,
+    formats: readonly string[] | undefined
+): ViewType | null => {
+    const type = getDraggedViewType(formats)
+    return type && canAddView(type, getViewPanels(api).map(toWorkspaceView))
+        ? type
+        : null
+}
 
 /* The gridview's top-left corner in the page, where its first cell starts */
 const getGridOrigin = (api: DockviewApi): { left: number; top: number } => {
@@ -552,20 +646,22 @@ const getDraggedView = (api: DockviewApi): IDockviewPanel | undefined => {
     return panel && isViewPanel(panel) ? panel : undefined
 }
 
-/* The strips between lines where the current drag can insert a view,
+/* The strips where the current drag can insert a view as a new line,
  * placed relative to the container element. None for a tool tab or for a
- * palette tile once the grid is full. */
+ * palette tile the workspace has no room left for. */
 export const getInsertZonesForDrag = (
     api: DockviewApi,
-    container: Element
+    container: Element,
+    formats: readonly string[]
 ): InsertZone[] => {
     const isTabDrag = Boolean(getPanelData())
     const view = getDraggedView(api)
-    const canDrag = isTabDrag
-        ? Boolean(view)
-        : canAddView(getViewPanels(api).length)
-    const tree = canDrag ? readGridTree(api) : null
-    if (!tree) {
+    const paletteType = isTabDrag ? null : getAddableDraggedType(api, formats)
+    const placedSizes = view
+        ? getPanelSizes(view)
+        : paletteType && getViewTypeSizes(paletteType)
+    const tree = placedSizes && readGridTree(api)
+    if (!placedSizes || !tree) {
         return []
     }
     const origin = getGridOrigin(api)
@@ -575,9 +671,10 @@ export const getInsertZonesForDrag = (
         left: rect.left + origin.left - bounds.left,
         top: rect.top + origin.top - bounds.top,
     })
-    return getInsertZones(tree, { sourceId: view?.group.id ?? null }).map(
-        (zone) => ({ ...zone, rect: toContainer(zone.rect) })
-    )
+    return getInsertZones(tree, {
+        sourceId: view?.group.id ?? null,
+        placedSizes,
+    }).map((zone) => ({ ...zone, rect: toContainer(zone.rect) }))
 }
 
 export const canDropOnInsertZone = (
@@ -586,8 +683,25 @@ export const canDropOnInsertZone = (
 ): boolean =>
     getPanelData()
         ? Boolean(getDraggedView(api))
-        : Boolean(dataTransfer?.types.includes(VIEW_DRAG_MIME)) &&
-          canAddView(getViewPanels(api).length)
+        : Boolean(getAddableDraggedType(api, dataTransfer?.types))
+
+/* dockview has no drop target on an empty grid once its outer edges are
+ * off, so the empty grid's own message takes palette tiles */
+export const canDropOnEmptyGrid = (
+    api: DockviewApi,
+    dataTransfer: DataTransfer | null
+): boolean =>
+    !getPanelData() && Boolean(getAddableDraggedType(api, dataTransfer?.types))
+
+export const dropOnEmptyGrid = (
+    api: DockviewApi,
+    dataTransfer: DataTransfer | null
+): void => {
+    const type = decodeViewDrag(dataTransfer?.getData(VIEW_DRAG_MIME))
+    if (type) {
+        addView(api, type)
+    }
+}
 
 export const dropOnInsertZone = (
     api: DockviewApi,
@@ -628,7 +742,6 @@ export const dropOnInsertZone = (
 
 type ToolTitles = {
     addViews: string
-    interactions: string
     viewSettings: (viewTitle: string) => string
 }
 
@@ -643,25 +756,18 @@ const addToolPanels = (api: DockviewApi, titles: ToolTitles): void => {
         title: titles.addViews,
         position: { referenceGroup: topGroupId },
     })
-    api.addPanel({
-        id: INTERACTIONS_PANEL_ID,
-        component: INTERACTIONS_PANEL_ID,
-        title: titles.interactions,
-        position: { referenceGroup: topGroupId },
-        inactive: true,
-    })
 }
 
-/* Settings tabs sit between "Add views" and "Interactions", in the
- * order the views were added. */
+/* Settings tabs follow "Add views", in the order the views were added.
+ * None is added once the tools are gone, e.g. during teardown. */
 const addViewSettingsPanel = (
     api: DockviewApi,
     view: IDockviewPanel,
     titles: ToolTitles
 ): void => {
     const id = getSettingsPanelId(view.id)
-    const interactions = api.getPanel(INTERACTIONS_PANEL_ID)
-    if (api.getPanel(id) || !interactions) {
+    const addViews = api.getPanel(ADD_VIEWS_PANEL_ID)
+    if (api.getPanel(id) || !addViews) {
         return
     }
     const params: ViewSettingsPanelParams = { viewId: view.id }
@@ -671,8 +777,8 @@ const addViewSettingsPanel = (
         title: titles.viewSettings(view.title ?? ''),
         params,
         position: {
-            referenceGroup: interactions.group,
-            index: interactions.group.panels.indexOf(interactions),
+            referenceGroup: addViews.group,
+            index: addViews.group.panels.length,
         },
         inactive: true,
     })
@@ -754,31 +860,40 @@ export const setupWorkspace = (
             const expected = expectedChanges.get(api)
             const before = expected?.before ?? layoutBefore
             const after = readGridTree(api)
-            if (!before || !after) {
+            if (!after) {
+                return
+            }
+            applyMaxSizes(api, after)
+            if (!before) {
                 return
             }
             const change = expected && toLayoutChange(api, expected.change)
             applySizeRequests(api, computeLayoutSizes(before, after, change))
         }),
         api.onUnhandledDragOver((event) => {
-            if (
-                hasViewPayload(event.nativeEvent) &&
-                canAddView(getViewPanels(api).length)
-            ) {
+            if (getAddableDraggedType(api, getDragFormats(event.nativeEvent))) {
                 event.accept()
             }
         }),
         api.onWillShowOverlay((event) => {
             const tree = readGridTree(api)
             const context = getDropContext(api, event, tree)
-            const sourceGroupId =
+            const dragged =
                 context.source === 'view'
-                    ? (getDraggedPanel(api, event.getData())?.group.id ?? null)
-                    : null
+                    ? getDraggedPanel(api, event.getData())
+                    : undefined
+            const paletteType = getDraggedViewType(
+                getDragFormats(event.nativeEvent)
+            )
             const hasRoom = hasRoomForDrop(tree, {
                 group: event.group,
                 position: event.position,
-                sourceGroupId,
+                sourceGroupId: dragged?.group.id ?? null,
+                placedSizes: dragged
+                    ? getPanelSizes(dragged)
+                    : paletteType
+                      ? getViewTypeSizes(paletteType)
+                      : PLUGIN_SIZES,
             })
             if (!isAllowedDrop(context) || !hasRoom) {
                 event.preventDefault()

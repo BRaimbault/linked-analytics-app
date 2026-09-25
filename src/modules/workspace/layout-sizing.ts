@@ -4,7 +4,12 @@ import {
     getLeafRects,
     getLeaves,
     getLineCount,
+    getMaxLength,
     getMinLength,
+    getPreferredLength,
+    getViewSizes,
+    withEffectiveMaxSizes,
+    along,
     lengthOf,
     orthogonal,
     startOf,
@@ -31,18 +36,17 @@ const TOLERANCE = 1
 const sum = (values: number[]): number =>
     values.reduce((total, value) => total + value, 0)
 
-const halve = (rect: Rect, axis: SplitAxis): [Rect, Rect] => {
+/* Cuts the rectangle in two along the axis, the first part `first` long */
+const cut = (rect: Rect, axis: SplitAxis, first: number): [Rect, Rect] => {
     if (axis === 'horizontal') {
-        const width = rect.width / 2
         return [
-            { ...rect, width },
-            { ...rect, left: rect.left + width, width },
+            { ...rect, width: first },
+            { ...rect, left: rect.left + first, width: rect.width - first },
         ]
     }
-    const height = rect.height / 2
     return [
-        { ...rect, height },
-        { ...rect, top: rect.top + height, height },
+        { ...rect, height: first },
+        { ...rect, top: rect.top + first, height: rect.height - first },
     ]
 }
 
@@ -51,7 +55,8 @@ const isSideBySide = (a: Rect, b: Rect): boolean =>
     Math.abs(a.height - b.height) <= TOLERANCE
 
 /* Where each view was before the change: the sizes to keep in proportion.
- * A view that split another one's cell takes half of that cell. */
+ * A view that split another one's cell takes half of that cell, or its
+ * preferred length if it has one (a selector). */
 const getKnownRects = (
     before: GridTree,
     after: GridTree,
@@ -73,8 +78,20 @@ const getKnownRects = (
         return known
     }
     const axis = isSideBySide(placed, target) ? 'horizontal' : 'vertical'
-    const [first, second] = halve(targetBefore, axis)
+    const placedLeaf = getLeaves(after.root).find(
+        (leaf) => leaf.id === change.placedId
+    )
+    const preferred = placedLeaf && getViewSizes(placedLeaf).preferred
+    const cellLength = lengthOf(targetBefore, axis)
+    const placedLength = preferred
+        ? Math.min(along(preferred, axis), cellLength)
+        : cellLength / 2
     const placedFirst = startOf(placed, axis) < startOf(target, axis)
+    const [first, second] = cut(
+        targetBefore,
+        axis,
+        placedFirst ? placedLength : cellLength - placedLength
+    )
     known.set(change.placedId, placedFirst ? first : second)
     known.set(change.targetId, placedFirst ? second : first)
     return known
@@ -100,40 +117,45 @@ const getKnownExtent = (
     return end - start
 }
 
-/* Lengths below their minimum are raised to it, and the others share what
- * is left in proportion, until all fit. When even the minimums don't fit,
- * the lengths are left for the grid to clamp. */
-export const fitToMinimums = (
+/* Lengths outside their limits are clamped to them, and the others share
+ * what is left in proportion, until all fit. When even the minimums don't
+ * fit, the lengths are left for the grid to clamp. */
+export const fitToLimits = (
     lengths: number[],
-    minimums: number[],
+    { minimums, maximums }: { minimums: number[]; maximums: number[] },
     total: number
 ): number[] => {
     if (sum(minimums) > total) {
         return lengths
     }
-    const fixed = new Set<number>()
+    const clamp = (length: number, index: number) =>
+        Math.min(Math.max(length, minimums[index]), maximums[index])
+    const fixed = new Map<number, number>()
     let fitted = [...lengths]
-    let short = fitted.flatMap((length, index) =>
-        length < minimums[index] ? [index] : []
-    )
-    while (short.length) {
-        short.forEach((index) => fixed.add(index))
+    const outOfLimits = () =>
+        fitted.flatMap((length, index) =>
+            !fixed.has(index) && clamp(length, index) !== length ? [index] : []
+        )
+    let clamped = outOfLimits()
+    while (clamped.length) {
+        clamped.forEach((index) =>
+            fixed.set(index, clamp(fitted[index], index))
+        )
         const free = lengths.flatMap((_, index) =>
             fixed.has(index) ? [] : [index]
         )
-        const freeTotal = total - sum([...fixed].map((i) => minimums[i]))
+        const freeTotal = total - sum([...fixed.values()])
         const freeWeight = sum(free.map((index) => lengths[index]))
         fitted = lengths.map((length, index) => {
-            if (fixed.has(index)) {
-                return minimums[index]
+            const fixedLength = fixed.get(index)
+            if (fixedLength !== undefined) {
+                return fixedLength
             }
             return freeWeight > 0
                 ? (freeTotal * length) / freeWeight
                 : freeTotal / free.length
         })
-        short = fitted.flatMap((length, index) =>
-            !fixed.has(index) && length < minimums[index] ? [index] : []
-        )
+        clamped = outOfLimits()
     }
     return fitted
 }
@@ -154,10 +176,14 @@ const roundToTotal = (lengths: number[], total: number): number[] => {
 
 /* The sizes that keep the user's proportions after a view is added,
  * moved or closed:
- * - a split cell is halved, the other cells keep their size;
- * - a new line gets as much room as the lines it joins, one share per view
- *   met along it;
- * - space a view leaves goes to its neighbours in proportion.
+ * - a split cell is halved (or gives a selector its preferred length), the
+ *   other cells keep their size;
+ * - a line of selectors alone keeps its length, or gets its preferred length
+ *   when new; the other lines share the rest;
+ * - among those, a new line gets as much room as the lines it joins, one
+ *   share per view met along it;
+ * - space a view leaves goes to its neighbours in proportion;
+ * - no line passes its views' minimum or maximum sizes.
  * Returned in the order to apply them: each branch's children before
  * their own children, the last child of each branch taking what is left.
  * Empty when the layout already matches. */
@@ -170,6 +196,7 @@ export const computeLayoutSizes = (
         return []
     }
     const known = getKnownRects(before, after, change)
+    const capped = withEffectiveMaxSizes(after)
     const requests: SizeRequest[] = []
     let changed = false
 
@@ -190,26 +217,60 @@ export const computeLayoutSizes = (
                 axis
             )
         )
-        const lines = children.map((child) =>
-            getLineCount(child, childOrientation, { axis })
+        const measure = { axis }
+        const preferred = children.map((child) =>
+            getPreferredLength(child, childOrientation, measure)
+        )
+        const isSelectorLine = (index: number) => preferred[index] !== null
+        const hasPluginLine = children.some(
+            (_, index) => !isSelectorLine(index)
+        )
+        /* Lines of selectors alone keep their length, or ask for their own */
+        const selectorLengths = children.map((_, index) =>
+            isSelectorLine(index)
+                ? (extents[index] ?? (preferred[index] as number))
+                : 0
+        )
+        const pluginLength = length - sum(selectorLengths)
+        const lines = children.map((child, index) =>
+            isSelectorLine(index)
+                ? 0
+                : getLineCount(child, childOrientation, measure)
         )
         const newShares = extents.map((extent, index) =>
-            extent === null ? (length * lines[index]) / sum(lines) : 0
+            extent === null && !isSelectorLine(index)
+                ? (pluginLength * lines[index]) / sum(lines)
+                : 0
         )
-        const knownLength = length - sum(newShares)
-        const knownTotal = sum(extents.map((extent) => extent ?? 0))
-        const targets = extents.map((extent, index) =>
-            extent === null
+        const knownPluginLength = pluginLength - sum(newShares)
+        const knownPluginTotal = sum(
+            extents.map((extent, index) =>
+                isSelectorLine(index) ? 0 : (extent ?? 0)
+            )
+        )
+        const shareOf = (index: number): number => {
+            if (isSelectorLine(index)) {
+                return selectorLengths[index]
+            }
+            const extent = extents[index]
+            return extent === null
                 ? newShares[index]
-                : (knownLength * extent) / knownTotal
-        )
-        const minimums = children.map((child) =>
-            getMinLength(child, childOrientation, { axis })
-        )
-        const sizes = roundToTotal(
-            fitToMinimums(targets, minimums, length),
-            length
-        )
+                : (knownPluginLength * extent) / (knownPluginTotal || 1)
+        }
+        const shares = children.map((_, index) => shareOf(index))
+        /* With no plugin to take the rest, the selector lines share it */
+        const targets = hasPluginLine
+            ? shares
+            : shares.map((share) => (length * share) / sum(shares))
+        const limits = {
+            minimums: children.map((child) =>
+                getMinLength(child, childOrientation, measure)
+            ),
+            maximums: children.map((child) =>
+                getMaxLength(child, childOrientation, measure)
+            ),
+        }
+        const sizes = roundToTotal(fitToLimits(targets, limits, length), length)
 
         children.forEach((child, index) => {
             if (Math.abs(sizes[index] - child.size) > TOLERANCE) {
@@ -239,7 +300,7 @@ export const computeLayoutSizes = (
     }
 
     const rootAxis = axisOf(after.orientation)
-    sizeChildren(after.root, after.orientation, {
+    sizeChildren(capped.root, capped.orientation, {
         length: getGridLength(after, rootAxis),
         crossLength: getGridLength(
             after,

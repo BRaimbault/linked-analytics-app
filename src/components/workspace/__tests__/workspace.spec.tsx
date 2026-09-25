@@ -2,8 +2,12 @@ import {
     getOuterEdgeDropModel,
     Workspace,
 } from '@components/workspace/workspace'
+import {
+    getViewTypeMime,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
 import { selectActiveView, selectViews } from '@store/workspace-slice'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { renderWithStore } from './render-with-store'
@@ -25,13 +29,26 @@ const renderWorkspace = async () => {
 }
 
 describe('Workspace', () => {
-    it('starts with the tool tabs and an empty grid', async () => {
+    it('starts with the palette alone and an empty grid', async () => {
         await renderWorkspace()
 
         expect(
-            screen.getByRole('tab', { name: 'Interactions' })
-        ).toBeInTheDocument()
+            screen.getAllByRole('tab').map((tab) => tab.textContent)
+        ).toEqual(['Add views'])
         expect(screen.getByTestId('workspace-watermark')).toBeInTheDocument()
+    })
+
+    it('marks the workspace while something is dragged', async () => {
+        await renderWorkspace()
+        const workspace = screen.getByTestId('workspace')
+
+        fireEvent.dragStart(screen.getByTestId('add-view-map'), {
+            dataTransfer: { setData: vi.fn(), types: [] },
+        })
+        expect(workspace).toHaveAttribute('data-dragging')
+
+        fireEvent.dragEnd(screen.getByTestId('add-view-map'))
+        expect(workspace).not.toHaveAttribute('data-dragging')
     })
 
     it('adds a view from the palette and mirrors it in the store', async () => {
@@ -48,6 +65,52 @@ describe('Workspace', () => {
                 expect.objectContaining({ type: 'map', number: 1 }),
             ])
         )
+    })
+
+    it('takes a view dragged from the palette onto the empty grid', async () => {
+        await renderWorkspace()
+        const watermark = screen.getByTestId('workspace-watermark')
+        const palette = {
+            types: [VIEW_DRAG_MIME, getViewTypeMime('map')],
+            getData: () => JSON.stringify({ type: 'map' }),
+        }
+
+        fireEvent.dragOver(watermark, { dataTransfer: { types: ['Files'] } })
+        expect(watermark).not.toHaveAttribute('data-drop-target')
+
+        fireEvent.dragOver(watermark, { dataTransfer: palette })
+        expect(watermark).toHaveAttribute('data-drop-target')
+
+        /* jsdom has no DragEvent, which would carry where the pointer went */
+        const leaveTo = (relatedTarget: Element | null) =>
+            act(() => {
+                watermark.dispatchEvent(
+                    new MouseEvent('dragleave', {
+                        bubbles: true,
+                        relatedTarget,
+                    })
+                )
+            })
+        leaveTo(watermark.firstElementChild)
+        expect(watermark).toHaveAttribute('data-drop-target')
+        leaveTo(null)
+        expect(watermark).not.toHaveAttribute('data-drop-target')
+
+        fireEvent.drop(watermark, { dataTransfer: palette })
+
+        expect(
+            await screen.findByRole('tab', { name: 'Map 1' })
+        ).toBeInTheDocument()
+    })
+
+    it('ignores a drop on the empty grid without a view payload', async () => {
+        await renderWorkspace()
+
+        fireEvent.drop(screen.getByTestId('workspace-watermark'), {
+            dataTransfer: { types: [], getData: () => '' },
+        })
+
+        expect(screen.getByTestId('workspace-watermark')).toBeInTheDocument()
     })
 
     it('adds a view from the empty-grid buttons', async () => {
@@ -82,6 +145,30 @@ describe('Workspace', () => {
                 screen.queryByRole('tab', { name: 'Map 1 settings' })
             ).toBeNull()
         )
+    })
+
+    it('closes a view from its settings tab', async () => {
+        await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        const settingsTab = await screen.findByRole('tab', {
+            name: 'Map 1 settings',
+        })
+
+        expect(
+            within(screen.getByRole('tab', { name: 'Add views' })).queryByRole(
+                'button',
+                { name: 'Close tab' }
+            )
+        ).toBeNull()
+        await userEvent.click(
+            within(settingsTab).getByRole('button', { name: 'Close tab' })
+        )
+
+        await waitFor(() =>
+            expect(screen.queryByRole('tab', { name: 'Map 1' })).toBeNull()
+        )
+        expect(screen.queryByRole('tab', { name: 'Map 1 settings' })).toBeNull()
+        expect(screen.getByTestId('workspace-watermark')).toBeInTheDocument()
     })
 
     it('shows the settings of a view the user selects, but keeps the palette after adding', async () => {

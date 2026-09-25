@@ -1,8 +1,11 @@
 import { AddViewsPanel } from '@components/workspace/panels/add-views-panel'
-import { VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
-import { MAX_VIEWS } from '@modules/workspace/rules'
+import {
+    getViewTypeMime,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
+import { MAX_PLUGIN_VIEWS } from '@modules/workspace/rules'
 import { viewAdded } from '@store/workspace-slice'
-import { act, fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { DockviewApi } from 'dockview-react'
 import { describe, expect, it, vi } from 'vitest'
@@ -30,6 +33,22 @@ describe('AddViewsPanel', () => {
             VIEW_DRAG_MIME,
             JSON.stringify({ type: 'map' })
         )
+        expect(setData).toHaveBeenCalledWith(getViewTypeMime('map'), '')
+    })
+
+    it('groups analytics apart from selectors, each under a heading', () => {
+        renderWithStore(<AddViewsPanel />)
+
+        const tilesOf = (name: string) =>
+            within(screen.getByRole('region', { name }))
+                .getAllByRole('button')
+                .map((tile) => tile.textContent)
+
+        expect(tilesOf('Analytics')).toEqual(['Map', 'Visualization'])
+        expect(tilesOf('Selectors')).toEqual(['Period', 'Org unit', 'Data'])
+        expect(
+            screen.getAllByRole('heading').map((heading) => heading.textContent)
+        ).toEqual(['Analytics', 'Selectors'])
     })
 
     it('adds a view on click', async () => {
@@ -47,12 +66,12 @@ describe('AddViewsPanel', () => {
         )
     })
 
-    it('disables the tiles once the workspace is full', () => {
+    it('disables the plugin tiles at the limit, but not the selectors', async () => {
         const { store } = renderWithStore(<AddViewsPanel />)
         expect(screen.getByTestId('add-view-map')).toBeEnabled()
 
         act(() => {
-            for (let number = 1; number <= MAX_VIEWS; number++) {
+            for (let number = 1; number <= MAX_PLUGIN_VIEWS; number++) {
                 store.dispatch(
                     viewAdded({ id: `map-${number}`, type: 'map', number })
                 )
@@ -61,5 +80,13 @@ describe('AddViewsPanel', () => {
 
         expect(screen.getByTestId('add-view-map')).toBeDisabled()
         expect(screen.getByTestId('add-view-visualization')).toBeDisabled()
+        expect(screen.getByTestId('add-view-org-unit-selector')).toBeEnabled()
+
+        await userEvent.hover(screen.getByTestId('add-view-map'))
+        expect(
+            await screen.findByText(
+                'A workspace holds up to 4 maps and visualizations'
+            )
+        ).toBeInTheDocument()
     })
 })

@@ -4,7 +4,11 @@ import {
     row,
     view,
 } from '@modules/workspace/__tests__/grid-tree-builders'
-import { VIEW_DRAG_MIME } from '@modules/workspace/drag-payload'
+import {
+    getViewTypeMime,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
+import type { ViewType } from '@modules/workspace/view-types'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { createFakeDockview } from './fake-dockview'
@@ -19,8 +23,13 @@ vi.mock('dockview-react', async (importOriginal) => ({
     getPanelData: () => drag.data,
 }))
 
-const paletteTransfer = (type = 'map') => ({
-    types: [VIEW_DRAG_MIME],
+const paletteFormats = (type: ViewType = 'map') => [
+    VIEW_DRAG_MIME,
+    getViewTypeMime(type),
+]
+
+const paletteTransfer = (type: ViewType = 'map') => ({
+    types: paletteFormats(type),
     getData: () => JSON.stringify({ type }),
 })
 
@@ -56,8 +65,11 @@ const findEdgeZone = async (edge: string) =>
         (zone) => zone.dataset.edge === edge
     ) as HTMLElement
 
-const renderZones = (fake: ReturnType<typeof createFakeDockview>) =>
-    render(<InsertZones api={fake.asApi} isDragging />)
+/* A drag from the palette unless a tab drag is set up */
+const renderZones = (
+    fake: ReturnType<typeof createFakeDockview>,
+    dragFormats: readonly string[] = paletteFormats()
+) => render(<InsertZones api={fake.asApi} dragFormats={dragFormats} />)
 
 describe('InsertZones', () => {
     it('shows a strip over each divider while a view is dragged from the palette', async () => {
@@ -76,9 +88,9 @@ describe('InsertZones', () => {
     it('shows nothing when no drag is going on, or before the workspace is ready', async () => {
         const { fake } = threeColumns()
         const { rerender } = render(
-            <InsertZones api={fake.asApi} isDragging={false} />
+            <InsertZones api={fake.asApi} dragFormats={null} />
         )
-        rerender(<InsertZones api={null} isDragging />)
+        rerender(<InsertZones api={null} dragFormats={paletteFormats()} />)
         await new Promise((resolve) => setTimeout(resolve))
 
         expect(screen.queryAllByTestId('insert-zone')).toHaveLength(0)
@@ -90,7 +102,7 @@ describe('InsertZones', () => {
         const { rerender } = renderZones(fake)
         await screen.findAllByTestId('insert-zone')
 
-        rerender(<InsertZones api={fake.asApi} isDragging={false} />)
+        rerender(<InsertZones api={fake.asApi} dragFormats={null} />)
 
         expect(screen.queryAllByTestId('insert-zone')).toHaveLength(0)
     })
@@ -268,5 +280,15 @@ describe('InsertZones', () => {
             position: 'right',
         })
         expect(a.api.moveTo).not.toHaveBeenCalled()
+    })
+
+    it('offers a selector room a plugin would not get, once the plugins are full', async () => {
+        drag.data = undefined
+        const { fake } = threeColumns()
+        fake.addLaidOutView('d', { left: 0, top: 0, width: 1, height: 1 })
+
+        renderZones(fake, paletteFormats('org-unit-selector'))
+
+        expect(await findDividerZones()).toHaveLength(2)
     })
 })

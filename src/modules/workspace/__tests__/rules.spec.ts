@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VIEW_MIN_SIZE } from '../grid-tree'
+import { PLUGIN_SIZES } from '../grid-tree'
 import {
     canAddView,
     getNextViewNumber,
@@ -9,16 +9,52 @@ import {
     isAllowedDrop,
     isNoOpMove,
     isSwapDrop,
-    MAX_VIEWS,
+    MAX_PLUGIN_VIEWS,
+    getViewLimitMessage,
     type DropContext,
 } from '../rules'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 describe('canAddView', () => {
-    it('allows views up to the maximum', () => {
-        expect(canAddView(0)).toBe(true)
-        expect(canAddView(MAX_VIEWS - 1)).toBe(true)
-        expect(canAddView(MAX_VIEWS)).toBe(false)
+    const maps = (count: number) =>
+        Array.from({ length: count }, () => ({ type: 'map' as const }))
+    const selectors = (count: number) =>
+        Array.from({ length: count }, () => ({
+            type: 'org-unit-selector' as const,
+        }))
+
+    it('allows plugin views up to the maximum', () => {
+        expect(canAddView('map', [])).toBe(true)
+        expect(canAddView('visualization', maps(MAX_PLUGIN_VIEWS - 1))).toBe(
+            true
+        )
+        expect(canAddView('map', maps(MAX_PLUGIN_VIEWS))).toBe(false)
+    })
+
+    it('does not count selectors toward the plugin limit', () => {
+        expect(
+            canAddView('map', [...maps(MAX_PLUGIN_VIEWS - 1), ...selectors(3)])
+        ).toBe(true)
+    })
+
+    it('allows at most one more selector of a type than there are plugins', () => {
+        expect(canAddView('org-unit-selector', [])).toBe(true)
+        expect(canAddView('org-unit-selector', selectors(1))).toBe(false)
+        expect(
+            canAddView('org-unit-selector', [...maps(2), ...selectors(2)])
+        ).toBe(true)
+        expect(
+            canAddView('org-unit-selector', [...maps(2), ...selectors(3)])
+        ).toBe(false)
+    })
+
+    it('explains each limit', () => {
+        expect(getViewLimitMessage('map')).toBe(
+            'A workspace holds up to 4 maps and visualizations'
+        )
+        expect(getViewLimitMessage('org-unit-selector')).toBe(
+            'A workspace holds at most one more org unit selector than it has maps and visualizations'
+        )
     })
 })
 
@@ -137,7 +173,7 @@ describe('isAllowedDrop', () => {
 })
 
 describe('room to split', () => {
-    const { width, height } = VIEW_MIN_SIZE
+    const { width, height } = PLUGIN_SIZES.min
 
     it('maps drop positions to a split axis', () => {
         expect(getSplitAxis('left')).toBe('horizontal')
@@ -147,11 +183,37 @@ describe('room to split', () => {
         expect(getSplitAxis('center')).toBeNull()
     })
 
-    it('splits a cell only when both halves keep the minimum size', () => {
-        expect(hasRoomToSplitCell(width * 2, 'horizontal')).toBe(true)
-        expect(hasRoomToSplitCell(width * 2 - 1, 'horizontal')).toBe(false)
-        expect(hasRoomToSplitCell(height * 2, 'vertical')).toBe(true)
-        expect(hasRoomToSplitCell(height * 2 - 1, 'vertical')).toBe(false)
+    it('halves a cell only when both halves keep their minimum size', () => {
+        const halving = { targetMin: width, placedMin: width, halves: true }
+
+        expect(hasRoomToSplitCell({ ...halving, length: width * 2 })).toBe(true)
+        expect(hasRoomToSplitCell({ ...halving, length: width * 2 - 1 })).toBe(
+            false
+        )
+        /* The larger minimum decides: a plugin halving a selector's cell */
+        expect(
+            hasRoomToSplitCell({
+                length: height * 2 - 1,
+                targetMin: 96,
+                placedMin: height,
+                halves: true,
+            })
+        ).toBe(false)
+    })
+
+    it('fits a selector next to a view when both keep their minimum', () => {
+        const selectorSplit = {
+            targetMin: height,
+            placedMin: 96,
+            halves: false,
+        }
+
+        expect(
+            hasRoomToSplitCell({ ...selectorSplit, length: height + 96 })
+        ).toBe(true)
+        expect(
+            hasRoomToSplitCell({ ...selectorSplit, length: height + 95 })
+        ).toBe(false)
     })
 
     it('inserts a line only when every line keeps its minimum size', () => {
@@ -159,21 +221,29 @@ describe('room to split', () => {
             hasRoomToInsertLine({
                 minLength: width * 2,
                 length: width * 3,
-                axis: 'horizontal',
+                placedMin: width,
             })
         ).toBe(true)
         expect(
             hasRoomToInsertLine({
                 minLength: width * 2,
                 length: width * 3 - 1,
-                axis: 'horizontal',
+                placedMin: width,
             })
         ).toBe(false)
         expect(
             hasRoomToInsertLine({
                 minLength: height,
                 length: height * 2,
-                axis: 'vertical',
+                placedMin: height,
+            })
+        ).toBe(true)
+        /* A selector needs less room than a plugin */
+        expect(
+            hasRoomToInsertLine({
+                minLength: height,
+                length: height + 96,
+                placedMin: 96,
             })
         ).toBe(true)
     })

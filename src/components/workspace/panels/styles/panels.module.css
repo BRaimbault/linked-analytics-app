@@ -37,15 +37,42 @@
     color: var(--colors-grey700);
 }
 
+/* Side by side, stacking when the strip is too narrow for both */
+.tileGroups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8) var(--spacers-dp24);
+}
+
+.tileGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp4);
+    min-inline-size: 0;
+}
+
+.tileGroupHeading {
+    margin-block: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--colors-grey700);
+}
+
+/* Equal tiles, wrapping when the group is too narrow */
 .tiles {
-    display: grid;
-    /* Equal tiles, stacking when the strip is too narrow for two */
-    grid-template-columns: repeat(auto-fill, 160px);
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--spacers-dp8);
 }
 
+.tiles > * {
+    flex: 0 0 160px;
+}
+
+/* Fills its cell also when a disabled tile sits in its tooltip's wrapper */
 .tile {
     display: inline-flex;
+    inline-size: 100%;
     align-items: center;
     gap: var(--spacers-dp8);
     padding-block: var(--spacers-dp8);
@@ -71,21 +98,6 @@
 .tile:disabled {
     color: var(--colors-grey500);
     cursor: not-allowed;
-}
-
-.viewList {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacers-dp8);
-    margin-block: 0;
-    padding-inline-start: 0;
-    list-style: none;
-}
-
-.viewListItem {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacers-dp4);
 }
 
 .settingsTitle {
