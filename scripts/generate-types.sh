@@ -30,7 +30,7 @@ BEGIN {
     print "import type { components } from '\''./generated'\'';\n"
     print "type Schemas = components['\''schemas'\''];\n"
 }
-# Only the direct children of `components.schemas`; stop at the block's closing brace
+# Only the direct children of components.schemas, stopping at the closing brace of that block
 /^export interface components \{/ { in_components=1; next }
 in_components && /^    schemas: \{/ { in_schemas=1; next }
 in_schemas && /^    \};?$/ { exit }

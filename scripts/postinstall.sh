@@ -14,7 +14,11 @@ fi
 # The app and its tests import the generated translations from src/locales
 pnpm d2-app-scripts i18n generate
 
-if [ ! -f src/types/dhis2-openapi-schemas/index.ts ]; then
-    pnpm generate-types ||
-        echo "⚠️  Type generation failed (is the server in dhis2.env.json reachable?). Run 'pnpm generate-types' later."
+# Locally a failure only warns so the install still completes; CI fails here rather than later in lint
+if [ ! -f src/types/dhis2-openapi-schemas/index.ts ] && ! pnpm generate-types; then
+    if [ -n "${CI:-}" ]; then
+        echo "❌ Type generation failed; lint and tests need these types." >&2
+        exit 1
+    fi
+    echo "⚠️  Type generation failed (is the server in dhis2.env.json reachable?). Run 'pnpm generate-types' later."
 fi
