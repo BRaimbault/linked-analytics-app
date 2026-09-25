@@ -1,0 +1,18 @@
+.container {
+    block-size: 100%;
+    padding-block: var(--spacers-dp16);
+    padding-inline: var(--spacers-dp16);
+}
+
+.title {
+    margin-block: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+.subtitle {
+    margin-block: var(--spacers-dp8) 0;
+    font-size: 14px;
+    color: var(--colors-grey700);
+}

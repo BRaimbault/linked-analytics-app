@@ -1,45 +1,61 @@
-This project was bootstrapped with [DHIS2 Application Platform](https://github.com/dhis2/app-platform).
+# Linked Analytics
+
+View DHIS2 Maps, Data Visualizer and other analytics plugins side by side in a flexible grid, and link them so selections in one update the others.
+
+This project was bootstrapped with [DHIS2 Application Platform](https://github.com/dhis2/app-platform). Its tooling and conventions follow [dhis2/event-visualizer-app](https://github.com/dhis2/event-visualizer-app).
+
+## Requirements
+
+- Node.js 24 (see `.nvmrc`; `engines` in `package.json` requires 22.22.2 or newer, and pnpm refuses to run on older versions). With nvm: `nvm install && nvm use`, or `nvm alias default 24` to make it your default
+- pnpm (the version is pinned in `package.json` under `packageManager`)
 
 ## Available Scripts
 
-In the project directory, you can run:
+### `pnpm install`
 
-### `yarn start`
+Installs dependencies. Its `postinstall` step also:
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+1. Points git's `core.hooksPath` at the tracked `.hooks/` directory (hooks run on `pre-commit`, `pre-push` and `commit-msg`)
+2. Copies `dhis2.env.template.json` to `dhis2.env.json` (dev server URL and credentials, gitignored)
+3. Generates the translations into `src/locales/`
+4. Generates TypeScript types from the dev server's OpenAPI spec into `src/types/dhis2-openapi-schemas/` (gitignored), if they are missing
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+### `pnpm start`
 
-### `yarn test`
+Runs the app in development mode on [http://localhost:3000](http://localhost:3000). To work against the analytics dev server:
 
-Launches the test runner and runs all available tests found in `/src`.<br />
+```bash
+pnpm start --proxy https://dev.im.dhis2.org/analytics-dev
+```
 
-See the section about [running tests](https://platform.dhis2.nu/#/scripts/test) for more information.
+Sign in with the server and credentials from `dhis2.env.json`.
 
-### `yarn build`
+### `pnpm test`
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.
 
-The build is minified and the filenames include the hashes.<br />
-A deployable `.zip` file can be found in `build/bundle`!
+### `pnpm lint` / `pnpm format`
 
-See the section about [building](https://platform.dhis2.nu/#/scripts/build) for more information.
+`pnpm lint` runs TypeScript, ESLint, Stylelint, ls-lint and Prettier checks. `pnpm format` fixes what can be fixed automatically.
 
-### `yarn deploy`
+### `pnpm build`
 
-Deploys the built app in the `build` folder to a running DHIS2 instance.<br />
-This command will prompt you to enter a server URL as well as the username and password of a DHIS2 user with the App Management authority.<br/>
-You must run `yarn build` before running `yarn deploy`.<br />
+Builds the app for production into `build/`. A deployable `.zip` file ends up in `build/bundle`.
 
-See the section about [deploying](https://platform.dhis2.nu/#/scripts/deploy) for more information.
+### `pnpm run deploy`
 
-## Learn More
+Deploys the built app to a running DHIS2 instance. Run `pnpm build` first.
 
-You can learn more about the platform in the [DHIS2 Application Platform Documentation](https://platform.dhis2.nu/).
+### `pnpm generate-types`
 
-You can learn more about the runtime in the [DHIS2 Application Runtime Documentation](https://runtime.dhis2.nu/).
+Regenerates the TypeScript types in `src/types/dhis2-openapi-schemas/` from the OpenAPI spec of the server in `dhis2.env.json`, e.g. after the dev server moves to a new DHIS2 version.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Contributing
+
+- Conventional commits (`feat:`, `fix:`, `chore:`, …), checked by commitlint.
+- Feature branches and pull requests; new features come with tests.
+- See [`CLAUDE.md`](./CLAUDE.md) for code conventions, architecture notes and the project plan.
+
+## License
+
+[BSD-3-Clause](./LICENSE)

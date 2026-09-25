@@ -1,5 +1,11 @@
 # DHIS2 Platform
 node_modules
+.pnpm-store
 .d2
-src/locales
+src/locales/*
 build
+src/types/dhis2-openapi-schemas
+dhis2.env.json
+.claude/settings.local.json
+.vscode
+opensrc

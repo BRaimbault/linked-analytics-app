@@ -1,0 +1,4 @@
+build
+.d2
+node_modules
+src/locales

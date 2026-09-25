@@ -1,0 +1,43 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 5
+      versioning-strategy: increase
+      ignore:
+          # @dhis2/ui does not support React 19 — cap React and its types at
+          # the v18 major until it does.
+          - dependency-name: react
+            versions:
+                - '>=19'
+          - dependency-name: react-dom
+            versions:
+                - '>=19'
+          - dependency-name: '@types/react'
+            versions:
+                - '>=19'
+          - dependency-name: '@types/react-dom'
+            versions:
+                - '>=19'
+          # TypeScript 7.0 is the native rewrite and ships no compiler API, so
+          # openapi-typescript (our type generator) can't run under it. The API
+          # returns in 7.1 — bound the ignore to the 7.0 line so Dependabot
+          # resumes proposing upgrades automatically once 7.1 lands.
+          - dependency-name: typescript
+            versions:
+                - '7.0.x'
+      groups:
+          security:
+              applies-to: security-updates
+              update-types:
+                  - minor
+                  - patch
+          dependencies:
+              applies-to: version-updates
+              update-types:
+                  - minor
+                  - patch
+              exclude-patterns:
+                  - '*@dhis2*'

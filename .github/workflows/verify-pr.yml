@@ -1,0 +1,37 @@
+name: 'verify pr'
+
+on:
+    pull_request:
+        types: ['opened', 'labeled', 'reopened', 'synchronize']
+
+concurrency:
+    group: ${{ github.workflow}}-${{ github.ref }}
+    cancel-in-progress: true
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    verify-and-build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .nvmrc
+                  cache: pnpm
+
+            - name: Install
+              # No `--ignore-scripts`: postinstall generates the translations and fetches the TS types (needs the dev server) that lint and tests need
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint
+              run: pnpm lint
+
+            - name: Unit tests
+              run: pnpm exec vitest run
+
+            - name: Build
+              run: pnpm d2-app-scripts build

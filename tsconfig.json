@@ -1,17 +1,34 @@
 {
     "compilerOptions": {
         "noEmit": true,
+        "strict": true,
         "skipLibCheck": true,
         "allowJs": true,
-        "jsx": "react",
+        "jsx": "react-jsx",
         "esModuleInterop": true,
+        "resolveJsonModule": true,
         "target": "ESNext",
         "module": "esnext",
-        "moduleResolution": "node",
-        "baseUrl": ".",
+        "moduleResolution": "bundler",
+        "types": ["vite/client", "@testing-library/jest-dom"],
         "paths": {
-            "@/*": ["src/*"]
-        }
+            /* Use this as the definitive source for type imports, mainly to prevent
+             * a suggestion overload from all the generated types */
+            "@types": ["./src/types/index"],
+            // For top level dirs with an index file we should treat that index file as a public API
+            "@hooks": ["./src/hooks/index"],
+            // In top level dirs without an index file we can access nested folders
+            "@api/*": ["./src/api/*"],
+            "@components/*": ["./src/components/*"],
+            "@locales/*": ["./src/locales/*"],
+            "@modules/*": ["./src/modules/*"],
+            "@store/*": ["./src/store/*"]
+        },
+        "plugins": [
+            {
+                "name": "typescript-plugin-css-modules"
+            }
+        ]
     },
-    "include": ["src", "types"]
+    "include": ["src/**/*.ts", "src/**/*.tsx", "*.d.ts", "*.mts", "vitest.*.ts"]
 }
