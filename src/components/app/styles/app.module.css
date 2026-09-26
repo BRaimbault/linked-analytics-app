@@ -1,18 +1,16 @@
-.container {
+/* The workspace fills the page below the header bar and scrolls inside its
+ * panels, never at page level. */
+:global(html),
+:global(body),
+:global(#dhis2-app-root),
+:global(.app-shell-adapter) {
+    overflow: hidden;
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
     block-size: 100%;
-    padding-block: var(--spacers-dp16);
-    padding-inline: var(--spacers-dp16);
-}
-
-.title {
-    margin-block: 0;
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--colors-grey900);
-}
-
-.subtitle {
-    margin-block: var(--spacers-dp8) 0;
-    font-size: 14px;
-    color: var(--colors-grey700);
+    overflow: hidden;
+    background: var(--colors-grey300);
 }

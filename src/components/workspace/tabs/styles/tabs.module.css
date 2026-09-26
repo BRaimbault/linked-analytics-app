@@ -1,0 +1,42 @@
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp2);
+    block-size: 100%;
+    padding-inline: var(--spacers-dp4);
+}
+
+.iconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 24px;
+    block-size: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--colors-grey700);
+    cursor: pointer;
+}
+
+.iconButton:hover {
+    background: var(--colors-grey200);
+    color: var(--colors-grey900);
+}
+
+/* dockview's tabs and their close button get the same ring */
+.iconButton:focus-visible,
+:global(.dv-tab:focus-visible),
+:global(.dv-default-tab-action:focus-visible) {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}
+
+/* In a vertical tab strip (tools docked left or right) the actions stack */
+:global(.dv-right-actions-container-vertical) .headerActions {
+    flex-direction: column;
+    block-size: auto;
+    padding-block: var(--spacers-dp4);
+    padding-inline: 0;
+}

@@ -1,0 +1,156 @@
+.placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    background: var(--colors-grey050);
+    color: var(--colors-grey600);
+}
+
+.placeholderType {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey800);
+}
+
+.placeholderHint {
+    font-size: 13px;
+}
+
+.tool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+    overflow: auto;
+    background: var(--colors-white);
+    font-size: 13px;
+    color: var(--colors-grey800);
+}
+
+.toolHint {
+    margin-block: 0;
+    color: var(--colors-grey700);
+}
+
+/* Side by side, stacking when the strip is too narrow for both */
+.tileGroups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8) var(--spacers-dp24);
+}
+
+.tileGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp4);
+    min-inline-size: 0;
+}
+
+.tileGroupHeading {
+    margin-block: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--colors-grey700);
+}
+
+/* Equal tiles, wrapping when the group is too narrow */
+.tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8);
+}
+
+.tiles > * {
+    flex: 0 0 160px;
+}
+
+/* Fills its cell also when a disabled tile sits in its tooltip's wrapper */
+.tile {
+    display: inline-flex;
+    inline-size: 100%;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+    border: 1px solid var(--colors-grey400);
+    border-radius: 4px;
+    background: var(--colors-white);
+    color: var(--colors-grey900);
+    font-size: 14px;
+    cursor: grab;
+}
+
+.tile:hover:not(:disabled) {
+    background: var(--colors-grey100);
+    border-color: var(--colors-grey500);
+}
+
+.tile:focus-visible {
+    outline: 3px solid var(--theme-focus);
+    outline-offset: -3px;
+}
+
+.tile:disabled {
+    color: var(--colors-grey500);
+    cursor: not-allowed;
+}
+
+.settingsTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    margin-block: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+.placeholderActions {
+    margin-block-start: var(--spacers-dp8);
+}
+
+.watermark {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    block-size: 100%;
+    background: var(--colors-grey200);
+    color: var(--colors-grey700);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* The same preview dockview draws over a cell a view can be dropped on */
+.watermark[data-drop-target]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--dv-drag-over-border);
+    background-color: var(--dv-drag-over-background-color);
+    pointer-events: none;
+}
+
+.watermark p {
+    margin-block: var(--spacers-dp4);
+}
+
+.watermarkTitle {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* Equal columns, so neither choice looks like the default */
+.watermarkActions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacers-dp8);
+    margin-block-start: var(--spacers-dp12);
+}

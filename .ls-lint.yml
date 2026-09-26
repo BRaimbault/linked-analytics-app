@@ -1,12 +1,13 @@
 ls:
     .d.ts: kebab-case
     .mts: kebab-case
-    '{scripts,src}':
+    '{cypress,scripts,src}':
         .dir: kebab-case | regex:__tests__
         .ts: kebab-case
         .spec.ts: kebab-case
         .tsx: kebab-case
         .spec.tsx: kebab-case
+        .cy.tsx: kebab-case
         .d.ts: kebab-case
         .module.css: kebab-case
         .sh: kebab-case
@@ -17,5 +18,7 @@ ignore:
     - .d2
     - .git
     - build
+    - cypress/screenshots
+    - cypress/downloads
     - src/locales
     - src/types/dhis2-openapi-schemas

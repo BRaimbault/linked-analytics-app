@@ -1,0 +1,122 @@
+/* dockview layers its parts with z-indexes (view overlays, drop targets);
+ * isolation keeps them inside the workspace, so DHIS2 menus and popovers,
+ * rendered at the end of the page, stay above them */
+.workspace {
+    position: relative;
+    isolation: isolate;
+    flex: 1;
+    min-block-size: 0;
+}
+
+/* dockview defines its colours as variables on the theme element; these
+ * map them onto the DHIS2 palette. */
+.workspace :global(.dockview-theme-light) {
+    --dv-group-view-background-color: var(--colors-white);
+    --dv-tabs-and-actions-container-background-color: var(--colors-grey100);
+    --dv-tabs-and-actions-container-font-size: 13px;
+    --dv-activegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-activegroup-visiblepanel-tab-color: var(--colors-grey900);
+    --dv-activegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-activegroup-hiddenpanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-inactivegroup-visiblepanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-inactivegroup-hiddenpanel-tab-color: var(--colors-grey600);
+    --dv-separator-border: var(--colors-grey400);
+    --dv-paneview-header-border-color: var(--colors-grey400);
+    --dv-active-sash-color: var(--colors-blue500);
+    --dv-drag-over-background-color: rgba(33, 150, 243, 0.15);
+    --dv-drag-over-border-color: var(--colors-blue500);
+
+    font-family: inherit;
+}
+
+/* dockview sizes the tab at 100%: the padding must fit inside it, or the
+ * tab overflows its row, which then scrolls and hides the close button */
+.workspace :global(.dv-default-tab) {
+    box-sizing: border-box;
+    padding-inline: var(--spacers-dp8);
+}
+
+.workspace :global(.dv-default-tab[data-selected='true']) {
+    box-shadow: inset 0 2px 0 var(--colors-blue600);
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* View bodies (and plugin iframes) are rendered in an overlay above the
+ * grid, so during a drag they would catch the pointer and hide the drop
+ * zones underneath; only the tab bar would stay reachable. Only view
+ * overlays are affected: the tools live in the same kind of overlay, and a
+ * drag is cancelled when its source (a palette tile) stops taking the
+ * pointer. */
+.workspace[data-dragging] :global(.dv-render-overlay:has([data-view-id])),
+.workspace[data-dragging] iframe {
+    pointer-events: none;
+}
+
+/* A view's only tab fills its header (singleTabMode="fullwidth"). The
+ * tools strip keeps its tabs at their own size, so "Add views" looks the
+ * same alone or next to settings tabs. */
+.workspace
+    :global(.dv-edge-group .dv-single-tab.dv-full-width-single-tab)
+    :is(
+        :global(.dv-scrollable),
+        :global(.dv-tabs-container),
+        :global(.dv-tab)
+    ) {
+    flex-grow: 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-tabs-container
+            .dv-tab
+    ) {
+    padding: 4px 8px;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-void-container
+    ) {
+    flex-grow: 1;
+}
+
+/* Panel bodies are drawn in overlays sized to their cell; a collapsed
+ * tools strip shrinks its overlay to nothing, which must also hide what is
+ * in it */
+.workspace :global(.dv-render-overlay) {
+    overflow: hidden;
+}
+
+/* A tools tab dropped in the tab row lands between two tabs, or after the
+ * last one when dropped on the empty part of the row: both show a line
+ * there, like the insertion line between views */
+.workspace :global(.dv-edge-group .dv-tab .dv-drop-target-selection-line),
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    border: none;
+    background-color: var(--colors-blue500);
+}
+
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    max-inline-size: 4px;
+}
+
+/* A strip on the left or right edge stacks its tabs */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-groupview-header-vertical
+            .dv-void-container
+            .dv-drop-target-selection
+    ) {
+    max-inline-size: none;
+    max-block-size: 4px;
+}

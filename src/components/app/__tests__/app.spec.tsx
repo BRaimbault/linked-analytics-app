@@ -22,24 +22,10 @@ describe('App', () => {
         ).toBeInTheDocument()
     })
 
-    it('welcomes the current user by name', async () => {
-        renderApp({ me: { name: 'John Traore' } })
+    it('shows the workspace once the current user is loaded', async () => {
+        renderApp({ me: { id: 'user-a' } })
 
-        expect(
-            await screen.findByRole('heading', {
-                name: 'Welcome, John Traore!',
-            })
-        ).toBeInTheDocument()
-    })
-
-    it('shows names with special characters as typed', async () => {
-        renderApp({ me: { name: "Seán O'Brien & Co / HQ" } })
-
-        expect(
-            await screen.findByRole('heading', {
-                name: "Welcome, Seán O'Brien & Co / HQ!",
-            })
-        ).toBeInTheDocument()
+        expect(await screen.findByTestId('workspace')).toBeInTheDocument()
     })
 
     it('shows an error when the current user cannot be loaded', async () => {
