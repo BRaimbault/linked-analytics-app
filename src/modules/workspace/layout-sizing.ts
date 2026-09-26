@@ -1,14 +1,10 @@
+import { getLineCount, getMinLength, getPreferredLength } from './grid-measures'
 import {
     axisOf,
     getGridLength,
     getLeafRects,
     getLeaves,
-    getLineCount,
-    getMaxLength,
-    getMinLength,
-    getPreferredLength,
     getViewSizes,
-    withEffectiveMaxSizes,
     along,
     lengthOf,
     orthogonal,
@@ -19,6 +15,7 @@ import {
     type Rect,
     type SplitAxis,
 } from './grid-tree'
+import { fitToMinimums, roundToTotal, sum } from './line-lengths'
 
 /* How a view was placed: splitting another view's cell, or as a new line
  * (a row or column at the grid's outer edge or between two lines). A view
@@ -32,9 +29,6 @@ export type SizeRequest =
 
 /* Sizes this close are left alone, which absorbs rounding */
 const TOLERANCE = 1
-
-const sum = (values: number[]): number =>
-    values.reduce((total, value) => total + value, 0)
 
 /* Cuts the rectangle in two along the axis, the first part `first` long */
 const cut = (rect: Rect, axis: SplitAxis, first: number): [Rect, Rect] => {
@@ -117,63 +111,6 @@ const getKnownExtent = (
     return end - start
 }
 
-/* Lengths outside their limits are clamped to them, and the others share
- * what is left in proportion, until all fit. When even the minimums don't
- * fit, the lengths are left for the grid to clamp. */
-export const fitToLimits = (
-    lengths: number[],
-    { minimums, maximums }: { minimums: number[]; maximums: number[] },
-    total: number
-): number[] => {
-    if (sum(minimums) > total) {
-        return lengths
-    }
-    const clamp = (length: number, index: number) =>
-        Math.min(Math.max(length, minimums[index]), maximums[index])
-    const fixed = new Map<number, number>()
-    let fitted = [...lengths]
-    const outOfLimits = () =>
-        fitted.flatMap((length, index) =>
-            !fixed.has(index) && clamp(length, index) !== length ? [index] : []
-        )
-    let clamped = outOfLimits()
-    while (clamped.length) {
-        clamped.forEach((index) =>
-            fixed.set(index, clamp(fitted[index], index))
-        )
-        const free = lengths.flatMap((_, index) =>
-            fixed.has(index) ? [] : [index]
-        )
-        const freeTotal = total - sum([...fixed.values()])
-        const freeWeight = sum(free.map((index) => lengths[index]))
-        fitted = lengths.map((length, index) => {
-            const fixedLength = fixed.get(index)
-            if (fixedLength !== undefined) {
-                return fixedLength
-            }
-            return freeWeight > 0
-                ? (freeTotal * length) / freeWeight
-                : freeTotal / free.length
-        })
-        clamped = outOfLimits()
-    }
-    return fitted
-}
-
-/* Whole pixels that still add up to the total */
-const roundToTotal = (lengths: number[], total: number): number[] => {
-    let end = 0
-    let previousEnd = 0
-    return lengths.map((length, index) => {
-        end += length
-        const roundedEnd =
-            index === lengths.length - 1 ? Math.round(total) : Math.round(end)
-        const rounded = roundedEnd - previousEnd
-        previousEnd = roundedEnd
-        return rounded
-    })
-}
-
 /* The sizes that keep the user's proportions after a view is added,
  * moved or closed:
  * - a split cell is halved (or gives a selector its preferred length), the
@@ -183,7 +120,7 @@ const roundToTotal = (lengths: number[], total: number): number[] => {
  * - among those, a new line gets as much room as the lines it joins, one
  *   share per view met along it;
  * - space a view leaves goes to its neighbours in proportion;
- * - no line passes its views' minimum or maximum sizes.
+ * - no line goes below its views' minimum sizes.
  * Returned in the order to apply them: each branch's children before
  * their own children, the last child of each branch taking what is left.
  * Empty when the layout already matches. */
@@ -196,7 +133,6 @@ export const computeLayoutSizes = (
         return []
     }
     const known = getKnownRects(before, after, change)
-    const capped = withEffectiveMaxSizes(after)
     const requests: SizeRequest[] = []
     let changed = false
 
@@ -221,10 +157,12 @@ export const computeLayoutSizes = (
         const preferred = children.map((child) =>
             getPreferredLength(child, childOrientation, measure)
         )
-        const isSelectorLine = (index: number) => preferred[index] !== null
-        const hasPluginLine = children.some(
-            (_, index) => !isSelectorLine(index)
-        )
+        /* With no map or visualization in the branch, nothing takes the
+         * rest of it, so its selector lines share it like any lines
+         * (e.g. a bar of selectors across the top) */
+        const hasPluginLine = preferred.some((length) => length === null)
+        const isSelectorLine = (index: number) =>
+            hasPluginLine && preferred[index] !== null
         /* Lines of selectors alone keep their length, or ask for their own */
         const selectorLengths = children.map((_, index) =>
             isSelectorLine(index)
@@ -257,20 +195,14 @@ export const computeLayoutSizes = (
                 ? newShares[index]
                 : (knownPluginLength * extent) / (knownPluginTotal || 1)
         }
-        const shares = children.map((_, index) => shareOf(index))
-        /* With no plugin to take the rest, the selector lines share it */
-        const targets = hasPluginLine
-            ? shares
-            : shares.map((share) => (length * share) / sum(shares))
-        const limits = {
-            minimums: children.map((child) =>
-                getMinLength(child, childOrientation, measure)
-            ),
-            maximums: children.map((child) =>
-                getMaxLength(child, childOrientation, measure)
-            ),
-        }
-        const sizes = roundToTotal(fitToLimits(targets, limits, length), length)
+        const targets = children.map((_, index) => shareOf(index))
+        const minimums = children.map((child) =>
+            getMinLength(child, childOrientation, measure)
+        )
+        const sizes = roundToTotal(
+            fitToMinimums(targets, minimums, length),
+            length
+        )
 
         children.forEach((child, index) => {
             if (Math.abs(sizes[index] - child.size) > TOLERANCE) {
@@ -300,7 +232,7 @@ export const computeLayoutSizes = (
     }
 
     const rootAxis = axisOf(after.orientation)
-    sizeChildren(capped.root, capped.orientation, {
+    sizeChildren(after.root, after.orientation, {
         length: getGridLength(after, rootAxis),
         crossLength: getGridLength(
             after,

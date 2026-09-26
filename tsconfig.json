@@ -14,7 +14,8 @@
             "vite/client",
             "@testing-library/jest-dom",
             "cypress",
-            "cypress/react"
+            "cypress/react",
+            "@cypress/grep"
         ],
         "paths": {
             /* Use this as the definitive source for type imports, mainly to prevent

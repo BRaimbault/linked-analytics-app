@@ -1,0 +1,54 @@
+/* Above the view overlays and sashes, but only the zones take the pointer */
+.insertZones {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.insertZone {
+    position: absolute;
+    pointer-events: auto;
+}
+
+/* The insertion line, drawn along the divider */
+.insertZone[data-active]::after {
+    content: '';
+    position: absolute;
+    border-radius: 2px;
+    background: var(--colors-blue500);
+    box-shadow: 0 0 0 2px var(--colors-white);
+}
+
+.insertZone[data-axis='horizontal'][data-active]::after {
+    inset-block: 4px;
+    inset-inline-start: calc(50% - 2px);
+    inline-size: 4px;
+}
+
+/* Half the divider's 24px strip above it; the rest covers the headers
+ * below it */
+.insertZone[data-axis='vertical'][data-active]::after {
+    inset-inline: 4px;
+    inset-block-start: 10px;
+    block-size: 4px;
+}
+
+/* At an outer edge the new line goes along the edge itself */
+.insertZone[data-edge='left'][data-active]::after {
+    inset-inline-start: 2px;
+}
+
+.insertZone[data-edge='right'][data-active]::after {
+    inset-inline-start: auto;
+    inset-inline-end: 2px;
+}
+
+.insertZone[data-edge='top'][data-active]::after {
+    inset-block-start: 2px;
+}
+
+.insertZone[data-edge='bottom'][data-active]::after {
+    inset-block-start: auto;
+    inset-block-end: 2px;
+}

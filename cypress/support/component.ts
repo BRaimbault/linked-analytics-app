@@ -1,4 +1,7 @@
+import { register as registerCypressGrep } from '@cypress/grep'
 import { mount } from 'cypress/react'
+
+registerCypressGrep()
 
 Cypress.Commands.add('mount', mount)
 

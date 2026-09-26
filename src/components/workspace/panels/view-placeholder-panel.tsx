@@ -1,9 +1,7 @@
+import type { ViewPanelParams } from '@components/workspace/controller/panels'
+import { openSettings } from '@components/workspace/controller/settings'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
-import {
-    openSettings,
-    type ViewPanelParams,
-} from '@components/workspace/workspace-controller'
 import i18n from '@dhis2/d2-i18n'
 import { Button, IconSettings16 } from '@dhis2/ui'
 import { getViewKind, getViewTypeLabel } from '@modules/workspace/view-types'

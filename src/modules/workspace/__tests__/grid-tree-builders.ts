@@ -13,7 +13,7 @@ type Spec = ViewSpec | BranchSpec
 
 export const view = (id: string, weight = 1): ViewSpec => ({ id, weight })
 
-/* A selector view, with its minimum, preferred and maximum sizes */
+/* A selector view, with its minimum and preferred sizes */
 export const selector = (id: string, weight = 1): ViewSpec => ({
     id,
     weight,

@@ -1,9 +1,10 @@
+import { getSplitAxis, hasRoomToInsertLine, isNoOpMove } from './drop-rules'
+import { getMinLength } from './grid-measures'
 import {
     axisOf,
     along,
     getGridLength,
     getLeaves,
-    getMinLength,
     getNodeRects,
     lengthOf,
     orthogonal,
@@ -16,7 +17,6 @@ import {
     PLUGIN_SIZES,
     type ViewSizes,
 } from './grid-tree'
-import { getSplitAxis, hasRoomToInsertLine, isNoOpMove } from './rules'
 
 export type InsertPosition = 'left' | 'right' | 'top' | 'bottom'
 
@@ -33,6 +33,11 @@ export type InsertZone = {
 }
 
 export const INSERT_ZONE_THICKNESS = 24
+/* The tab header at the top of every view. A header sits right under a
+ * line (the divider above it, or the grid's top edge, whose strip is
+ * thicker), so a divider's strip reaches down over the headers below it:
+ * a view dragged by its tab is then dropped on a line, not in a tab bar. */
+export const VIEW_HEADER_HEIGHT = 35
 /* Wider, as the pointer is easily pushed past the grid's edge */
 export const OUTER_ZONE_THICKNESS = 40
 
@@ -107,12 +112,14 @@ export const getInsertZones = (
         placedSizes = PLUGIN_SIZES,
         thickness = INSERT_ZONE_THICKNESS,
         outerThickness = OUTER_ZONE_THICKNESS,
+        headerHeight = VIEW_HEADER_HEIGHT,
     }: {
         /* The dragged view's cell, null for a view from the palette */
         sourceId?: string | null
         placedSizes?: ViewSizes
         thickness?: number
         outerThickness?: number
+        headerHeight?: number
     } = {}
 ): InsertZone[] => {
     /* An empty grid takes its first view anywhere */
@@ -173,7 +180,13 @@ export const getInsertZones = (
                 rect:
                     axis === 'horizontal'
                         ? { ...branchRect, left: divider, width: thickness }
-                        : { ...branchRect, top: divider, height: thickness },
+                        : {
+                              ...branchRect,
+                              top: divider,
+                              height:
+                                  thickness / 2 +
+                                  Math.max(thickness / 2, headerHeight),
+                          },
             })
         })
         node.children.forEach((child) => visit(child, orthogonal(orientation)))

@@ -3,6 +3,7 @@ import {
     getInsertZones,
     INSERT_ZONE_THICKNESS,
     OUTER_ZONE_THICKNESS,
+    VIEW_HEADER_HEIGHT,
     type InsertZone,
 } from '../insert-zones'
 import { getViewTypeSizes } from '../view-types'
@@ -61,8 +62,29 @@ describe('getInsertZones', () => {
             axis: 'vertical',
             referenceId: 'b',
             position: 'bottom',
-            rect: { left: 600, top: 395, width: 600, height: 10 },
+            rect: { left: 600, top: 395, width: 600, height: 5 + 35 },
         })
+    })
+
+    it('reaches down over the headers below a divider, for a tab dropped there', () => {
+        const zones = getInsertZones(
+            buildTree(1200, 800, column(1, view('a'), view('b')))
+        )
+
+        expect(betweenLines(zones)[0]?.rect).toEqual({
+            left: 0,
+            top: 400 - half,
+            width: 1200,
+            height: half + VIEW_HEADER_HEIGHT,
+        })
+        expect(
+            betweenLines(
+                getInsertZones(
+                    buildTree(1200, 800, column(1, view('a'), view('b'))),
+                    { headerHeight: 0 }
+                )
+            )[0]?.rect.height
+        ).toBe(INSERT_ZONE_THICKNESS)
     })
 
     it('leaves out the dividers next to the dragged view', () => {
@@ -170,7 +192,12 @@ describe('getInsertZones', () => {
                 axis: 'vertical',
                 position: 'top',
                 referenceId: null,
-                rect: { left: 0, top: 0, width: 1200, height: t },
+                rect: {
+                    left: 0,
+                    top: 0,
+                    width: 1200,
+                    height: t,
+                },
             },
             {
                 axis: 'vertical',

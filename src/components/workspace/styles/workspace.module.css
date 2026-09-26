@@ -1,5 +1,9 @@
+/* dockview layers its parts with z-indexes (view overlays, drop targets);
+ * isolation keeps them inside the workspace, so DHIS2 menus and popovers,
+ * rendered at the end of the page, stay above them */
 .workspace {
     position: relative;
+    isolation: isolate;
     flex: 1;
     min-block-size: 0;
 }
@@ -27,95 +31,17 @@
     font-family: inherit;
 }
 
+/* dockview sizes the tab at 100%: the padding must fit inside it, or the
+ * tab overflows its row, which then scrolls and hides the close button */
 .workspace :global(.dv-default-tab) {
+    box-sizing: border-box;
     padding-inline: var(--spacers-dp8);
-}
-
-.headerActions {
-    display: flex;
-    align-items: center;
-    gap: var(--spacers-dp2);
-    block-size: 100%;
-    padding-inline: var(--spacers-dp4);
-}
-
-.watermark {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    block-size: 100%;
-    background: var(--colors-grey200);
-    color: var(--colors-grey700);
-    font-size: 14px;
-    text-align: center;
-}
-
-/* The same preview dockview draws over a cell a view can be dropped on */
-.watermark[data-drop-target]::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: var(--dv-drag-over-border);
-    background-color: var(--dv-drag-over-background-color);
-    pointer-events: none;
-}
-
-.watermark p {
-    margin-block: var(--spacers-dp4);
-}
-
-.watermarkTitle {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--colors-grey900);
-}
-
-/* Equal columns, so neither choice looks like the default */
-.watermarkActions {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacers-dp8);
-    margin-block-start: var(--spacers-dp12);
 }
 
 .workspace :global(.dv-default-tab[data-selected='true']) {
     box-shadow: inset 0 2px 0 var(--colors-blue600);
     font-weight: 500;
     color: var(--colors-grey900);
-}
-
-.iconButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 24px;
-    block-size: 24px;
-    padding: 0;
-    border: none;
-    border-radius: 3px;
-    background: transparent;
-    color: var(--colors-grey700);
-    cursor: pointer;
-}
-
-.iconButton:hover {
-    background: var(--colors-grey200);
-    color: var(--colors-grey900);
-}
-
-.iconButton:focus-visible {
-    outline: 2px solid var(--theme-focus);
-    outline-offset: -2px;
-}
-
-/* In a vertical tab strip (tools docked left or right) the actions stack */
-:global(.dv-right-actions-container-vertical) .headerActions {
-    flex-direction: column;
-    block-size: auto;
-    padding-block: var(--spacers-dp4);
-    padding-inline: 0;
 }
 
 /* View bodies (and plugin iframes) are rendered in an overlay above the
@@ -127,59 +53,6 @@
 .workspace[data-dragging] :global(.dv-render-overlay:has([data-view-id])),
 .workspace[data-dragging] iframe {
     pointer-events: none;
-}
-
-/* Above the view overlays and sashes, but only the zones take the pointer */
-.insertZones {
-    position: absolute;
-    inset: 0;
-    z-index: 100;
-    pointer-events: none;
-}
-
-.insertZone {
-    position: absolute;
-    pointer-events: auto;
-}
-
-/* The insertion line, drawn along the middle of the divider */
-.insertZone[data-active]::after {
-    content: '';
-    position: absolute;
-    border-radius: 2px;
-    background: var(--colors-blue500);
-    box-shadow: 0 0 0 2px var(--colors-white);
-}
-
-.insertZone[data-axis='horizontal'][data-active]::after {
-    inset-block: 4px;
-    inset-inline-start: calc(50% - 2px);
-    inline-size: 4px;
-}
-
-.insertZone[data-axis='vertical'][data-active]::after {
-    inset-inline: 4px;
-    inset-block-start: calc(50% - 2px);
-    block-size: 4px;
-}
-
-/* At an outer edge the new line goes along the edge itself */
-.insertZone[data-edge='left'][data-active]::after {
-    inset-inline-start: 2px;
-}
-
-.insertZone[data-edge='right'][data-active]::after {
-    inset-inline-start: auto;
-    inset-inline-end: 2px;
-}
-
-.insertZone[data-edge='top'][data-active]::after {
-    inset-block-start: 2px;
-}
-
-.insertZone[data-edge='bottom'][data-active]::after {
-    inset-block-start: auto;
-    inset-block-end: 2px;
 }
 
 /* A view's only tab fills its header (singleTabMode="fullwidth"). The
@@ -212,4 +85,38 @@
             .dv-void-container
     ) {
     flex-grow: 1;
+}
+
+/* Panel bodies are drawn in overlays sized to their cell; a collapsed
+ * tools strip shrinks its overlay to nothing, which must also hide what is
+ * in it */
+.workspace :global(.dv-render-overlay) {
+    overflow: hidden;
+}
+
+/* A tools tab dropped in the tab row lands between two tabs, or after the
+ * last one when dropped on the empty part of the row: both show a line
+ * there, like the insertion line between views */
+.workspace :global(.dv-edge-group .dv-tab .dv-drop-target-selection-line),
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    border: none;
+    background-color: var(--colors-blue500);
+}
+
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    max-inline-size: 4px;
+}
+
+/* A strip on the left or right edge stacks its tabs */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-groupview-header-vertical
+            .dv-void-container
+            .dv-drop-target-selection
+    ) {
+    max-inline-size: none;
+    max-block-size: 4px;
 }

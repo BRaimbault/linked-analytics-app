@@ -113,3 +113,44 @@
 .placeholderActions {
     margin-block-start: var(--spacers-dp8);
 }
+
+.watermark {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    block-size: 100%;
+    background: var(--colors-grey200);
+    color: var(--colors-grey700);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* The same preview dockview draws over a cell a view can be dropped on */
+.watermark[data-drop-target]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--dv-drag-over-border);
+    background-color: var(--dv-drag-over-background-color);
+    pointer-events: none;
+}
+
+.watermark p {
+    margin-block: var(--spacers-dp4);
+}
+
+.watermarkTitle {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* Equal columns, so neither choice looks like the default */
+.watermarkActions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacers-dp8);
+    margin-block-start: var(--spacers-dp12);
+}

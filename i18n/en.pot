@@ -5,44 +5,23 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-25T13:14:44.111Z\n"
-"PO-Revision-Date: 2026-09-25T13:14:44.112Z\n"
+"POT-Creation-Date: 2026-09-25T20:01:52.517Z\n"
+"PO-Revision-Date: 2026-09-25T20:01:52.517Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
 
-msgid "Move to top"
-msgstr "Move to top"
+msgid "{{title}} added"
+msgstr "{{title}} added"
 
-msgid "Move to left"
-msgstr "Move to left"
+msgid "{{title}} closed"
+msgstr "{{title}} closed"
 
-msgid "Move to right"
-msgstr "Move to right"
+msgid "{{title}} maximized"
+msgstr "{{title}} maximized"
 
-msgid "Move to bottom"
-msgstr "Move to bottom"
-
-msgid "Move these panels"
-msgstr "Move these panels"
-
-msgid "View actions"
-msgstr "View actions"
-
-msgid "Swap with {{title}}"
-msgstr "Swap with {{title}}"
-
-msgid "Expand"
-msgstr "Expand"
-
-msgid "Collapse"
-msgstr "Collapse"
-
-msgid "Restore"
-msgstr "Restore"
-
-msgid "Maximize"
-msgstr "Maximize"
+msgid "{{title}} restored"
+msgstr "{{title}} restored"
 
 msgid "Analytics"
 msgstr "Analytics"
@@ -81,13 +60,6 @@ msgstr "The plugin will render here"
 msgid "Edit settings"
 msgstr "Edit settings"
 
-msgid ""
-"There is no room for another view. Make the window larger, or close or "
-"resize a view."
-msgstr ""
-"There is no room for another view. Make the window larger, or close or "
-"resize a view."
-
 msgid "Add a map"
 msgstr "Add a map"
 
@@ -104,17 +76,45 @@ msgstr ""
 "Views tile side by side, with up to {{max}} maps and visualizations at a "
 "time."
 
-msgid "{{title}} added"
-msgstr "{{title}} added"
+msgid "Move to top"
+msgstr "Move to top"
 
-msgid "{{title}} closed"
-msgstr "{{title}} closed"
+msgid "Move to left"
+msgstr "Move to left"
 
-msgid "{{title}} maximized"
-msgstr "{{title}} maximized"
+msgid "Move to right"
+msgstr "Move to right"
 
-msgid "{{title}} restored"
-msgstr "{{title}} restored"
+msgid "Move to bottom"
+msgstr "Move to bottom"
+
+msgid "Move these panels"
+msgstr "Move these panels"
+
+msgid "Expand"
+msgstr "Expand"
+
+msgid "Collapse"
+msgstr "Collapse"
+
+msgid "View actions"
+msgstr "View actions"
+
+msgid "Swap with {{title}}"
+msgstr "Swap with {{title}}"
+
+msgid "Restore"
+msgstr "Restore"
+
+msgid "Maximize"
+msgstr "Maximize"
+
+msgid ""
+"There is no room for another view. Make the window larger, or close or "
+"resize a view."
+msgstr ""
+"There is no room for another view. Make the window larger, or close or "
+"resize a view."
 
 msgid "Add views"
 msgstr "Add views"

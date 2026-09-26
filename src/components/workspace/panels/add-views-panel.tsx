@@ -9,7 +9,7 @@ import {
     getViewTypeMime,
     VIEW_DRAG_MIME,
 } from '@modules/workspace/drag-payload'
-import { canAddView, getViewLimitMessage } from '@modules/workspace/rules'
+import { canAddView, getViewLimitMessage } from '@modules/workspace/view-limits'
 import {
     getViewKind,
     getViewTypeLabel,
@@ -18,8 +18,10 @@ import {
     type ViewType,
 } from '@modules/workspace/view-types'
 import { selectActiveView, selectViews } from '@store/workspace-slice'
+import type { IDockviewPanelProps } from 'dockview-react'
 import type { DragEvent, FC } from 'react'
 import classes from './styles/panels.module.css'
+import { ToolPanel } from './tool-panel'
 
 const ViewTile: FC<{ type: ViewType; disabled: boolean }> = ({
     type,
@@ -62,11 +64,11 @@ const TILE_GROUPS: { kind: ViewKind; heading: () => string }[] = [
     { kind: 'selector', heading: () => i18n.t('Selectors') },
 ]
 
-export const AddViewsPanel: FC = () => {
+export const AddViewsPanel: FC<IDockviewPanelProps> = ({ api }) => {
     const views = useAppSelector(selectViews)
 
     return (
-        <div className={classes.tool}>
+        <ToolPanel api={api}>
             <div className={classes.tileGroups}>
                 {TILE_GROUPS.map(({ kind, heading }) => (
                     <section
@@ -92,6 +94,6 @@ export const AddViewsPanel: FC = () => {
                     </section>
                 ))}
             </div>
-        </div>
+        </ToolPanel>
     )
 }

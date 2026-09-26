@@ -1,28 +1,29 @@
-import { HeaderActions } from '@components/workspace/header-actions'
-import { InsertZones } from '@components/workspace/insert-zones'
+import { getWorkspaceAnnouncement } from '@components/workspace/controller/announcements'
+import {
+    ADD_VIEWS_PANEL_ID,
+    SWAP_SPACER_COMPONENT,
+    VIEW_COMPONENT,
+    VIEW_SETTINGS_COMPONENT,
+} from '@components/workspace/controller/panels'
+import { showSettingsForTarget } from '@components/workspace/controller/settings'
+import { setupWorkspace } from '@components/workspace/controller/setup-workspace'
+import { SwapSpacer } from '@components/workspace/controller/swap-views'
+import { InsertZones } from '@components/workspace/insert-zones/insert-zones'
 import { AddViewsPanel } from '@components/workspace/panels/add-views-panel'
 import { SettingsPanel } from '@components/workspace/panels/settings-panel'
 import { ViewPlaceholderPanel } from '@components/workspace/panels/view-placeholder-panel'
+import { Watermark } from '@components/workspace/panels/watermark'
+import { HeaderActions } from '@components/workspace/tabs/header-actions'
+import { WorkspaceTab } from '@components/workspace/tabs/workspace-tab'
 import { useCurrentDrag } from '@components/workspace/use-current-drag'
-import { Watermark } from '@components/workspace/watermark'
 import { WorkspaceApiContext } from '@components/workspace/workspace-api-context'
-import {
-    ADD_VIEWS_PANEL_ID,
-    getWorkspaceAnnouncement,
-    setupWorkspace,
-    SWAP_SPACER_COMPONENT,
-    SwapSpacer,
-    showSettingsForTarget,
-    VIEW_COMPONENT,
-    VIEW_SETTINGS_COMPONENT,
-} from '@components/workspace/workspace-controller'
-import { WorkspaceTab } from '@components/workspace/workspace-tab'
 import i18n from '@dhis2/d2-i18n'
 import { useAppDispatch } from '@hooks'
 import {
     DockviewReact,
     themeLight,
     type DockviewApi,
+    type DockviewTheme,
     type DockviewReadyEvent,
     type DroptargetOverlayModel,
     type DropOverlayModelParams,
@@ -53,6 +54,16 @@ const CELL_DROP_MODEL: DroptargetOverlayModel = {
 }
 const getDropOverlayModel = ({ location }: DropOverlayModelParams) =>
     location === 'content' ? CELL_DROP_MODEL : undefined
+
+/* Tabs are reordered only in the tools strip, and a tab dropped there lands
+ * between two tabs, so its preview is a line at that tab edge rather than a
+ * shaded half tab. tabAnimation unset would open a gap in a view's header
+ * as if the view could join it; views never share a cell. */
+const THEME: DockviewTheme = {
+    ...themeLight,
+    dndTabIndicator: 'line',
+    tabAnimation: 'default',
+}
 
 /* Defined once: a new object on every render makes dockview reconfigure */
 const components = {
@@ -92,7 +103,7 @@ export const Workspace: FC = () => {
                 }
             >
                 <DockviewReact
-                    theme={themeLight}
+                    theme={THEME}
                     components={components}
                     defaultTabComponent={WorkspaceTab}
                     rightHeaderActionsComponent={HeaderActions}

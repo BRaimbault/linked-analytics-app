@@ -60,9 +60,6 @@ describe('view types', () => {
         const selector = getViewTypeSizes('org-unit-selector')
 
         expect(selector.min.height).toBeLessThan(PLUGIN_SIZES.min.height)
-        expect(selector.max).toEqual({
-            width: (selector.preferred?.width ?? 0) * 2,
-            height: (selector.preferred?.height ?? 0) * 2,
-        })
+        expect(selector.preferred?.height).toBeGreaterThan(selector.min.height)
     })
 })

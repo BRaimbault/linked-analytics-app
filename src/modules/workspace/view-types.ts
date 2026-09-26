@@ -12,11 +12,10 @@ type ViewTypeDefinition = {
     sizes: ViewSizes
 }
 
-/* Header (about 30px) plus a one-line summary */
+/* Header (35px) plus a one-line summary */
 const SELECTOR_SIZES: ViewSizes = {
     min: { width: 240, height: 96 },
     preferred: { width: 320, height: 120 },
-    max: { width: 640, height: 240 },
 }
 
 const VIEW_TYPE_DEFINITIONS = {

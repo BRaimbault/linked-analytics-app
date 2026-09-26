@@ -1,4 +1,4 @@
-import { type LogLevelNames } from 'loglevel'
+import type { LogLevelNames } from 'loglevel'
 
 const LOG_LEVEL_KEY = 'LINKED_ANALYTICS_LOG_LEVEL'
 
