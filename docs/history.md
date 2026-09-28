@@ -218,6 +218,7 @@ After `08bccd7`, 4 independent reviews ran: correctness, tests, code quality, an
 - a settings tab dragged onto the grid moves its view; a divider follows "Add views"; a drop point between two tools tabs shows as one line.
 - palette tiles could not be dropped anywhere in a Windows Chrome that passed the drag on without its custom formats; the page now keeps the dragged tile itself. The Cypress drag no longer drops where no `dragover` was taken, and drags that lose their data are tested.
 - Firefox: palette tiles wrapped and overflowed the tools strip, and a tile's drag started only on its icon or name; both fixed. The Cypress scenarios now pass in Firefox too, and CI runs them in both browsers, each in its own job beside lint, unit tests and build; and the mount loads Roboto and `CssReset` as the app shell does (before, text was measured in each browser's fallback font).
+- a code structure doc ([code-structure.md](code-structure.md)): the layered layout stays, each new domain takes the same name in each layer, and ESLint now enforces the import direction between layers.
 - settings tabs and view headers carry their view type's icon; in a vertical tools strip, tab names were 2px off centre (dockview's right margin on them runs across the tab there), now fixed.
 - Left as known limits: Tab reaches a view's body only after every header (bodies live in overlays).
 

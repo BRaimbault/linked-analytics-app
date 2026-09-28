@@ -4,16 +4,17 @@ Design and research documents for the Linked Analytics app, for the team and for
 
 ## Index
 
-| Doc                                          | What it covers                                                                               | Status                             |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------- |
-| [workspace-grid.md](workspace-grid.md)       | The grid: placing, sizing, drops, touch, iframes                                             | Decided, implemented               |
-| [history.md](history.md)                     | How the repo got here: a timeline, and the report of each milestone (the tooling port first) | Record                             |
-| [interactions.md](interactions.md)           | Channels, selectors, link mode, and the upstream plugin PRs                                  | Research, decided design, proposal |
-| [plugins.md](plugins.md)                     | What the real DV, Maps, LL and EV plugins accept                                             | Research (September 2026)          |
-| [view-settings.md](view-settings.md)         | Picking, creating and editing a view's item                                                  | Research, proposal                 |
-| [selector-controls.md](selector-controls.md) | The controls a selector can show, and their sizes                                            | Research; no maximum size decided  |
-| [map-layers.md](map-layers.md)               | Options to limit layers per map in the first version                                         | Proposal, under discussion         |
-| [demo-mode.md](demo-mode.md)                 | Fake plugins on synthetic data                                                               | Proposal, decided where noted      |
+| Doc                                          | What it covers                                                                               | Status                              |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
+| [workspace-grid.md](workspace-grid.md)       | The grid: placing, sizing, drops, touch, iframes                                             | Decided, implemented                |
+| [history.md](history.md)                     | How the repo got here: a timeline, and the report of each milestone (the tooling port first) | Record                              |
+| [interactions.md](interactions.md)           | Channels, selectors, link mode, and the upstream plugin PRs                                  | Research, decided design, proposal  |
+| [plugins.md](plugins.md)                     | What the real DV, Maps, LL and EV plugins accept                                             | Research (September 2026)           |
+| [view-settings.md](view-settings.md)         | Picking, creating and editing a view's item                                                  | Research, proposal                  |
+| [selector-controls.md](selector-controls.md) | The controls a selector can show, and their sizes                                            | Research; no maximum size decided   |
+| [map-layers.md](map-layers.md)               | Options to limit layers per map in the first version                                         | Proposal, under discussion          |
+| [demo-mode.md](demo-mode.md)                 | Fake plugins on synthetic data                                                               | Proposal, decided where noted       |
+| [code-structure.md](code-structure.md)       | How `src/` is organized, and the rules and moves for new domains                             | Research (September 2026), proposal |
 
 **Single sources**: plugin behavior lives in [plugins.md](plugins.md), and the grid's rules in [workspace-grid.md](workspace-grid.md). Other docs link to them rather than repeat them.
 

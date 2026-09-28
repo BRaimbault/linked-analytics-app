@@ -28,6 +28,7 @@ The design and the repo's history live in `docs/` ([index, terms and conventions
 - [selector-controls.md](docs/selector-controls.md): selector controls and their sizes.
 - [map-layers.md](docs/map-layers.md): options to limit layers per map (proposal).
 - [demo-mode.md](docs/demo-mode.md): fake plugins on synthetic data. Its `released` profile mirrors plugins.md.
+- [code-structure.md](docs/code-structure.md): how `src/` is organized, where a new domain's code goes, and the moves planned for later.
 
 ## Working with the user
 
@@ -77,7 +78,7 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
 
 1. **Tooling** (done): the EV setup: Vitest, strict TypeScript, path aliases, ESLint, Stylelint, ls-lint, Prettier, commitlint and git hooks, the RTK Query data layer, generated API types, CI.
 2. **Workspace grid with placeholders** (in progress): the dockview workspace, with view kinds (plugin or selector) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md). What's left from the external review is listed in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review).
-3. **Render plugins** (next): replace the placeholders with the DV and Maps plugins, and check performance with 4 at once, including memory and main-thread cost on a deployed build. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. See [docs/plugins.md](docs/plugins.md).
+3. **Render plugins** (next): replace the placeholders with the DV and Maps plugins, and check performance with 4 at once, including memory and main-thread cost on a deployed build. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. See [docs/plugins.md](docs/plugins.md). Place the new code as planned in [docs/code-structure.md §4](docs/code-structure.md#4-rules-for-new-code).
     - **Demo mode**, alongside it ([docs/demo-mode.md](docs/demo-mode.md)): fake DV and Maps plugins on synthetic data, mounted by the same plugin adapter. Each fake acts like the released plugins or like the proposed upstream contract, so the interactions can be built and shown before the upstream PRs.
 4. **View settings** (planned; [docs/view-settings.md §7](docs/view-settings.md#7-order-of-work)): pick a saved item with `OpenFileDialog` (together with step 3), hand off to DV or Maps for full editing, then in-app editors for visualizations and map layers, with Save as, Save and Revert. The map editor's scope depends on [docs/map-layers.md](docs/map-layers.md).
 5. **Interactions** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): channels, selectors and link mode, with a pure, unit-tested `applyLinks`; then click-driven links once the upstream `onDataClick` and `highlight` props land. Needs only step 3, so it can run alongside step 4.
@@ -106,6 +107,10 @@ The grid is `dockview-react`, one view per cell. Detail and reasons: [docs/works
     - Docking a panel to an edge by dragging, and full keyboard docking, are paid (Enterprise) features. No RTL support (dockview issue #388).
 
 ## Code conventions
+
+### Where a new domain goes
+
+Give it the same name in each layer, each only when it has content: `modules/<domain>/` (pure), `components/<domain>/` (UI and library adapters), `store/<domain>-slice.ts`, `api/<domain>.ts`. `modules/` never imports from `components/`, `store/`, `api/` or `hooks/`, and `store/` and `api/` never from `components/` (enforced by ESLint, `LAYERS` in `eslint.config.mjs`). The planned domains and the moves still to make are in [docs/code-structure.md](docs/code-structure.md).
 
 ### Where helpers live in `src/modules`
 

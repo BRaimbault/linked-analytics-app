@@ -40,7 +40,73 @@ const restrictedImportPaths = [
 ]
 
 /* Flat config replaces a rule's options wholesale, so every override of
- * no-restricted-imports must repeat the shared patterns and paths. */
+ * no-restricted-imports builds its options here, with the shared patterns
+ * and paths. */
+const restrictImports = (...patterns) => [
+    'error',
+    {
+        patterns: [...sharedRestrictedImportPatterns, ...patterns],
+        paths: restrictedImportPaths,
+    },
+]
+
+const noParentImports = {
+    group: ['../*'],
+    message:
+        "Relative parent imports are not allowed. Use path aliases (e.g. '@hooks', '@components') instead.",
+}
+
+const noDeepParentImports = {
+    group: ['../../*'],
+    message:
+        'In __tests__ directories, you may only import from one parent level (../filename). Deeper parent imports are not allowed.',
+}
+
+const TEST_FILES = ['**/__tests__/**/*.{js,jsx,ts,tsx}']
+
+/* Imports flow one way between layers (docs/code-structure.md §4.1). Every
+ * import in src uses an alias, so the rule matches alias names. */
+const LAYERS = [
+    {
+        files: ['src/modules/**/*.{ts,tsx}'],
+        forbidden: ['@components/*', '@store/*', '@api/*', '@hooks'],
+        message:
+            'modules/ holds pure logic: it may not import from components, store, api or hooks.',
+    },
+    {
+        files: ['src/store/**/*.{ts,tsx}', 'src/api/**/*.{ts,tsx}'],
+        forbidden: ['@components/*'],
+        message: 'store/ and api/ may not import from components.',
+    },
+]
+
+const layerRules = LAYERS.flatMap(({ files, forbidden, message }) => {
+    const layer = { group: forbidden, message }
+    return [
+        {
+            files,
+            ignores: TEST_FILES,
+            rules: {
+                'no-restricted-imports': restrictImports(
+                    noParentImports,
+                    layer
+                ),
+            },
+        },
+        {
+            files: files.map((glob) =>
+                glob.replace('/**/', '/**/__tests__/**/')
+            ),
+            rules: {
+                'no-restricted-imports': restrictImports(
+                    noDeepParentImports,
+                    layer
+                ),
+            },
+        },
+    ]
+})
+
 export default defineConfig([
     includeIgnoreFile(gitignorePath),
 
@@ -70,20 +136,7 @@ export default defineConfig([
             'react-hooks/globals': 'off',
             'import/no-default-export': 'error',
             'no-console': 'error',
-            'no-restricted-imports': [
-                'error',
-                {
-                    patterns: [
-                        ...sharedRestrictedImportPatterns,
-                        {
-                            group: ['../*'],
-                            message:
-                                "Relative parent imports are not allowed. Use path aliases (e.g. '@hooks', '@components') instead.",
-                        },
-                    ],
-                    paths: restrictedImportPaths,
-                },
-            ],
+            'no-restricted-imports': restrictImports(noParentImports),
         },
     },
 
@@ -98,24 +151,14 @@ export default defineConfig([
 
     // Override: test directories -- allow one level of parent imports
     {
-        files: ['**/__tests__/**/*.{js,jsx,ts,tsx}'],
+        files: TEST_FILES,
         rules: {
-            'no-restricted-imports': [
-                'error',
-                {
-                    patterns: [
-                        ...sharedRestrictedImportPatterns,
-                        {
-                            group: ['../../*'],
-                            message:
-                                'In __tests__ directories, you may only import from one parent level (../filename). Deeper parent imports are not allowed.',
-                        },
-                    ],
-                    paths: restrictedImportPaths,
-                },
-            ],
+            'no-restricted-imports': restrictImports(noDeepParentImports),
         },
     },
+
+    // Override: the import direction between layers, after the rules above
+    ...layerRules,
 
     // Override: types/index.ts
     {
