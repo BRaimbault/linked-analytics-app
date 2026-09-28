@@ -21,7 +21,9 @@ describe('WorkspacePanel', () => {
             <WorkspacePanel {...panelProps({})} />,
             { api: workspaceApi }
         )
-        const evenOut = screen.getByRole('button', { name: 'Even out sizes' })
+        const evenOut = screen.getByRole('button', {
+            name: 'Even out view sizes',
+        })
         expect(evenOut).toBeDisabled()
 
         act(() => {
@@ -31,6 +33,25 @@ describe('WorkspacePanel', () => {
             )
         })
         await userEvent.click(evenOut)
+
+        expect(evenOutSizes).toHaveBeenCalledWith(workspaceApi)
+    })
+
+    it('evens out the sizes from its name too, once there are two views', async () => {
+        const { store } = renderWithStore(
+            <WorkspacePanel {...panelProps({})} />,
+            { api: workspaceApi }
+        )
+        const name = screen.getByText('Even out view sizes')
+
+        await userEvent.click(name)
+        expect(evenOutSizes).not.toHaveBeenCalled()
+
+        act(() => {
+            store.dispatch(viewAdded({ id: 'map-a', type: 'map', number: 1 }))
+            store.dispatch(viewAdded({ id: 'map-b', type: 'map', number: 2 }))
+        })
+        await userEvent.click(name)
 
         expect(evenOutSizes).toHaveBeenCalledWith(workspaceApi)
     })
@@ -45,7 +66,7 @@ describe('WorkspacePanel', () => {
         })
 
         await userEvent.click(
-            screen.getByRole('button', { name: 'Even out sizes' })
+            screen.getByRole('button', { name: 'Even out view sizes' })
         )
 
         expect(evenOutSizes).not.toHaveBeenCalled()

@@ -314,6 +314,12 @@ export const setUpRowOfThree = () => {
     })
 }
 
+/* The opacity of what only shows on hover, before any hover: hidden with
+ * a mouse, shown on a device that can't hover. Headless browsers, as on
+ * CI, report no hover, so both cases run. */
+export const hiddenUntilHoverOpacity = (doc: Document): string =>
+    doc.defaultView?.matchMedia('(hover: none)').matches ? '1' : '0'
+
 /* Tagged tests make the smoke run (pnpm cy:comp:smoke) */
 export const SMOKE = { tags: '@smoke' }
 

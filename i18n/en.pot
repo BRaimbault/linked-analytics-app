@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-28T10:25:31.325Z\n"
-"PO-Revision-Date: 2026-09-28T10:25:31.325Z\n"
+"POT-Creation-Date: 2026-09-28T11:02:29.136Z\n"
+"PO-Revision-Date: 2026-09-28T11:02:29.136Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -97,17 +97,11 @@ msgstr ""
 "Views tile side by side, with up to {{max}} maps and visualizations at a "
 "time."
 
+msgid "Even out view sizes"
+msgstr "Even out view sizes"
+
 msgid "Layout"
 msgstr "Layout"
-
-msgid "Even out sizes"
-msgstr "Even out sizes"
-
-msgid "Gives maps and visualizations the same size, and selectors their usual size."
-msgstr "Gives maps and visualizations the same size, and selectors their usual size."
-
-msgid "Views"
-msgstr "Views"
 
 msgid "Show view headers only on hover"
 msgstr "Show view headers only on hover"

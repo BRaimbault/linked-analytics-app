@@ -182,15 +182,56 @@
     margin-block-start: var(--spacers-dp12);
 }
 
-.toolSection {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacers-dp8);
+/* A group of settings in the Workspace tab: its controls keep their own
+ * width rather than stretching to the group's */
+.settingGroup {
+    align-items: flex-start;
 }
 
-.toolSectionRow {
+/* A setting's control and its name, in rows as tall as the switch (24px).
+ * A button sits in a box as wide as the switch's track (41px), with its
+ * name as far after it, so the names line up. */
+.settingControl {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: var(--spacers-dp8);
+    gap: 5px;
+    min-block-size: 24px;
+}
+
+.settingControlBox {
+    display: flex;
+    justify-content: center;
+    inline-size: 41px;
+}
+
+/* Less room above and below the icon than a small button's; doubled
+ * classes outweigh the button's own styles */
+.settingControlBox :global(button.small.small) {
+    block-size: 24px;
+    padding-block: 0;
+}
+
+.settingLabel {
+    font-size: 14px;
+    color: var(--colors-grey900);
+    cursor: pointer;
+}
+
+/* The switch and its name take a click like the button and its name */
+.settingControl :global(label:has(> input[role='switch'])) {
+    cursor: pointer;
+}
+
+.settingControl :global(label:has(> input[role='switch']:disabled)) {
+    cursor: default;
+}
+
+/* The switch's input lies over its track */
+.settingControl :global(input[role='switch']) {
+    cursor: inherit;
+}
+
+.settingLabel[data-disabled] {
+    color: var(--colors-grey500);
+    cursor: default;
 }

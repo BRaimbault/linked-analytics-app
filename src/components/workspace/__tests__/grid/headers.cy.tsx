@@ -1,4 +1,10 @@
-import { clickTile, getCell, mountWorkspace, SMOKE } from './grid-helpers'
+import {
+    clickTile,
+    getCell,
+    hiddenUntilHoverOpacity,
+    mountWorkspace,
+    SMOKE,
+} from './grid-helpers'
 
 const header = (doc: Document, title: string) =>
     getCell(doc, title).querySelector(
@@ -26,7 +32,7 @@ describe('view headers on hover', () => {
 
             cy.document().should((doc) => {
                 expect(getComputedStyle(header(doc, 'Map 1')).opacity).to.equal(
-                    '0'
+                    hiddenUntilHoverOpacity(doc)
                 )
                 const cell = getCell(doc, 'Map 1').getBoundingClientRect()
                 const mapBody = body(doc, 'map').getBoundingClientRect()
@@ -41,7 +47,7 @@ describe('view headers on hover', () => {
                 )
                 expect(
                     getComputedStyle(header(doc, 'Visualization 1')).opacity
-                ).to.equal('0')
+                ).to.equal(hiddenUntilHoverOpacity(doc))
             })
         }
     )

@@ -208,7 +208,7 @@ After `08bccd7`, 4 independent reviews ran: correctness, tests, code quality, an
 - a selector type is also capped at 4 (`MAX_SELECTORS_PER_TYPE`), so 4 maps and visualizations no longer allow 5 of a type; the limit message says which cap is reached.
 - clicking a tile keeps the views balanced: it halves the largest cell across its line (`balanced-split.ts`), so four clicked views make an even 2×2 grid in any window, instead of going next to the selected view.
 - tools tabs are all one length, with shorter default names (settings tabs take their view's title; selectors are "Period 1", "Org unit 1", "Data 1"); a name cut short shows in full in a DHIS2 tooltip that opens towards the grid, whichever edge the strip is at.
-- a "Workspace" tab comes first in the tools strip, for settings of the whole workspace; it starts with "Even out sizes". It and "Add views" carry an icon.
+- a "Workspace" tab comes first in the tools strip, for settings of the whole workspace; it starts with "Even out view sizes". It and "Add views" carry an icon.
 - text views: a third view kind for titles and notes, with no cap and no settings tab, written in place with the DHIS2 rich-text editor (`@dhis2/analytics` added); clicked, they go to a text row at the very top, above the selector bar.
 - while a view is maximized, no view can be added: the palette's tiles are disabled, with the reason (this replaces leaving maximize to add).
 - a view is selected only while its settings tab is shown; closing a view goes back to "Add views" with none selected (this replaces selecting the nearest view, from the first round of fixes). A double click on a view's header opens its settings.

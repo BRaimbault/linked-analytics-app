@@ -411,4 +411,20 @@ describe('tools strip and settings', () => {
             })
         }
     })
+
+    it('shows a hand over every Workspace setting and its name', () => {
+        mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
+        toolTab('Workspace').click()
+
+        for (const selector of [
+            '[data-test="even-out-sizes"]',
+            '[data-test="workspace-panel"] [aria-hidden="true"]',
+            '[data-test="view-headers-on-hover"]',
+            '[data-test="view-headers-on-hover"] input',
+        ]) {
+            cy.get(selector).should('have.css', 'cursor', 'pointer')
+        }
+    })
 })

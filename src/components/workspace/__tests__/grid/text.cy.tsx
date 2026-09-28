@@ -6,6 +6,7 @@ import {
     expectLayout,
     getCell,
     getCells,
+    hiddenUntilHoverOpacity,
     mountWorkspace,
     outerEdge,
     SMOKE,
@@ -63,9 +64,12 @@ describe('text views', () => {
             /* Workspace, Add views and the map's settings */
             cy.get('.dv-edge-group .dv-tab').should('have.length', 3)
             /* Hidden until the view is hovered or holds the focus */
-            cy.get('[data-test="text-view-edit"]')
-                .parent()
-                .should('have.css', 'opacity', '0')
+            cy.document().then((doc) =>
+                cy
+                    .get('[data-test="text-view-edit"]')
+                    .parent()
+                    .should('have.css', 'opacity', hiddenUntilHoverOpacity(doc))
+            )
             cy.get('[data-test="text-view-edit"]').focus()
             cy.get('[data-test="text-view-edit"]')
                 .parent()
