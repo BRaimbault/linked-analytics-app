@@ -297,6 +297,29 @@ describe('isNoOpMove', () => {
         ).toBe(false)
     })
 
+    /* dockview keeps a column that is its root's only child, e.g. after a
+     * second view was added below the first */
+    it('sees the outer edge through a root that holds a single line', () => {
+        const stacked = buildTree(
+            1000,
+            800,
+            row(1, column(1, view('a'), view('b')))
+        )
+
+        expect(
+            isNoOpMove(stacked, 'a', { type: 'edge', position: 'top' })
+        ).toBe(true)
+        expect(
+            isNoOpMove(stacked, 'b', { type: 'edge', position: 'bottom' })
+        ).toBe(true)
+        expect(
+            isNoOpMove(stacked, 'a', { type: 'edge', position: 'bottom' })
+        ).toBe(false)
+        expect(
+            isNoOpMove(stacked, 'a', { type: 'edge', position: 'left' })
+        ).toBe(false)
+    })
+
     it('refuses the outer edge a view already runs along', () => {
         expect(
             isNoOpMove(layout, 'a', { type: 'edge', position: 'left' })

@@ -104,11 +104,6 @@
     inline-size: 160px;
 }
 
-/* A disabled tile sits in its tooltip's wrapper, which takes the width */
-.tiles > * > .tile {
-    inline-size: 100%;
-}
-
 .tile {
     display: inline-flex;
     padding: 0;
@@ -131,7 +126,7 @@
     padding-inline: var(--spacers-dp12);
 }
 
-.tile:hover:not(:disabled) {
+.tile:hover:not([aria-disabled='true']) {
     background: var(--colors-grey100);
     border-color: var(--colors-grey500);
 }
@@ -141,7 +136,8 @@
     outline-offset: -3px;
 }
 
-.tile:disabled {
+/* Still focusable, so the reason can be read (see ViewTile) */
+.tile[aria-disabled='true'] {
     color: var(--colors-grey500);
     cursor: not-allowed;
 }

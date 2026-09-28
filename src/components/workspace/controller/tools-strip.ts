@@ -49,3 +49,14 @@ export const moveTools = (
         target.api.collapse()
     }
 }
+
+/* After a move from the strip's menu: the menu's button went with the old
+ * strip, so the focus goes to the open tab of the new one */
+export const focusToolsStrip = (
+    api: DockviewApi,
+    position: EdgePosition
+): void => {
+    const strip = api.getEdgeGroup(position)
+    const group = strip && getGroupPanel(api, strip.id)
+    group?.element.querySelector<HTMLElement>('.dv-tab.dv-active-tab')?.focus()
+}

@@ -4,7 +4,7 @@ import { ViewPanel } from '@components/workspace/panels/view-panel'
 import { CustomDataProvider } from '@dhis2/app-runtime'
 import { viewHeadersChanged } from '@store/workspace-settings-slice'
 import { activeViewChanged, viewAdded } from '@store/workspace-slice'
-import { act, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { panelProps } from './panel-props'
@@ -87,6 +87,54 @@ describe('TextViewPanel', () => {
         expect(api.updateParameters).not.toHaveBeenCalled()
         expect(screen.getByText('Old')).toBeInTheDocument()
         expect(api.isMaximized()).toBe(false)
+    })
+
+    /* jsdom can't lay out the editor's pop-ups (Cypress opens the real "@"
+     * list, text.cy.tsx): an open DHIS2 layer stands in for one */
+    it('keeps the note when Escape is meant for one of the editor pop-ups', async () => {
+        const api = setUpText('Old')
+        await userEvent.click(screen.getByRole('button', { name: 'Edit text' }))
+        await userEvent.type(screen.getByRole('textbox'), ' kept')
+        const popup = document.createElement('div')
+        popup.dataset.test = 'dhis2-uicore-layer'
+        document.body.append(popup)
+
+        await userEvent.keyboard('{Escape}')
+        popup.remove()
+
+        expect(screen.getByRole('textbox')).toHaveValue('Old kept')
+        await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+        expect(api.updateParameters).toHaveBeenCalledWith(
+            expect.objectContaining({ text: 'Old kept' })
+        )
+    })
+
+    it('gives the focus back to the edit button once written', async () => {
+        setUpText('Old')
+        const editButton = () =>
+            screen.getByRole('button', { name: 'Edit text' })
+
+        await userEvent.click(editButton())
+        await userEvent.type(screen.getByRole('textbox'), '!')
+        await userEvent.keyboard('{Control>}{Enter}{/Control}')
+        expect(editButton()).toHaveFocus()
+
+        await userEvent.click(editButton())
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+        expect(editButton()).toHaveFocus()
+    })
+
+    it('leaves the focus where it is when it wasn’t in the editor', async () => {
+        setUpText('Old')
+        await userEvent.click(screen.getByRole('button', { name: 'Edit text' }))
+        const elsewhere = document.createElement('button')
+        document.body.append(elsewhere)
+        elsewhere.focus()
+
+        fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+        expect(elsewhere).toHaveFocus()
+        elsewhere.remove()
     })
 
     it('keeps writing on a plain Enter', async () => {

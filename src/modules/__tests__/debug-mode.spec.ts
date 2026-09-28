@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 /* The level is computed once when the module loads, so each test sets up
  * localStorage first and then imports a fresh copy. */
-const importDebugMode = () => import('../debug-mode')
+const importDebugMode = () => import('@modules/debug-mode')
 
 describe('debug mode', () => {
     beforeEach(() => {

@@ -1,6 +1,6 @@
 # Interactions between views
 
-- **Status**: §1–3 research (DHIS2 `master` branches, September 2026) · §4–5 decided design · §6 proposal for the upstream PRs. Plan step 5.
+- **Status**: §1–3 research (DHIS2 `master` branches, September 2026) · §4–5 decided design · §6 proposal for the upstream PRs. Plan steps 3 (the core, on the fake plugins), 4 (the real plugins) and 5.
 - **Related**: [plugins.md](plugins.md) (what the plugins accept), [selector-controls.md](selector-controls.md), [view-settings.md](view-settings.md), [demo-mode.md](demo-mode.md). Terms are defined in the [docs index](README.md#terms).
 
 How views in Linked Analytics drive each other: what other tools do, what the DHIS2 data model and the plugins allow, and the design for this app: the model, the UI, and the changes proposed to the DV and Maps plugins.
@@ -254,7 +254,7 @@ Each view is in at most one org unit channel, so the left views show Bo and the 
     | EV   | nothing                                           | `pe` through `relativePeriodDate`, for relative periods only                                                                   |
 
 - **Each receiving member has a mode**: `filter` (rewrite) or `highlight` ([Filter vs highlight](#filter-vs-highlight)). It is `filter` until the plugins support highlight.
-- **Persistence** (plan step 6): channels, their values and the settings are saved with the workspace.
+- **Persistence** (plan step 7): channels, their values and the settings are saved with the workspace.
 
 ## 5. UI: configuring interactions in the grid
 
@@ -417,14 +417,15 @@ In the browser, with the plugins served locally:
 
 ## 7. Order of work
 
-1. **Grid prerequisites** (done in the grid milestone): view kinds (plugin or selector), a plugin-only view limit, and a minimum and preferred size per view type ([workspace-grid.md](workspace-grid.md#2-view-kinds-and-limits)).
-2. Channels, selectors, link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section, with `ou` and `pe` receivers in DV and Maps. Needs plugins rendered (plan step 3), or the fake plugins of [demo-mode.md](demo-mode.md).
-3. DV `onDrill` as the interim `ou` sender. Maps views remount for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
-4. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight.
-5. Period selector play mode (on a fixed delay until the PRs add `onLoadingComplete`).
-6. `dx` channels and the data selector.
-7. LL receivers by remounting, and EV `relativePeriodDate` receivers.
-8. Highlight mode for receivers, hover sync, multi-select, drag to connect, templates.
+1. **Grid prerequisites** (done in the grid milestone): view kinds (plugin, selector or text), view limits per kind, and a minimum and preferred size per view type ([workspace-grid.md](workspace-grid.md#2-view-kinds-and-limits)).
+2. **On the fake plugins of [demo-mode.md](demo-mode.md)** (`proposed` profile, plan step 3), for the first demos: channels, `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, click senders through `onDataClick` and sender highlight, header badges, and the defaults of [§5.1](#51-zero-configuration-by-default) (views send, new views join). No link mode yet: the defaults wire the preset workspace.
+3. **On the real plugins** (plan step 4): `ou` and `pe` receivers in DV and Maps, DV `onDrill` as the interim `ou` sender, and Maps remounts for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
+4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.
+5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
+6. Period selector play mode (on a fixed delay with the real plugins until the PRs add `onLoadingComplete`).
+7. `dx` channels and the data selector; the full `@dhis2/analytics` pickers in the selectors.
+8. LL receivers by remounting, and EV `relativePeriodDate` receivers.
+9. Highlight mode for receivers, hover sync, multi-select, drag to connect, templates.
 
 ## 8. Decisions and open questions
 

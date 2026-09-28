@@ -14,12 +14,27 @@ export default defineConfig({
         },
         viewportWidth: 1280,
         viewportHeight: 800,
-        /* Lets `pnpm cy:comp:smoke` skip the specs without smoke tests */
-        setupNodeEvents: (_on, config) => {
+        setupNodeEvents: (on, config) => {
+            /* Lets `pnpm cy:comp:smoke` skip the specs without smoke tests */
             cypressGrepPlugin(config)
+            /* Headless Chrome reports no pointer that hovers, and ignores
+             * the DevTools media emulation here: it runs as a desktop with
+             * a mouse instead. Headless Firefox keeps no hover, so the two
+             * browsers cover both cases (headers.cy.tsx). */
+            on('before:browser:launch', (browser, launchOptions) => {
+                if (browser.family === 'chromium') {
+                    launchOptions.args.push(
+                        '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4'
+                    )
+                }
+                return launchOptions
+            })
             return config
         },
     },
     video: false,
-    retries: { runMode: 1, openMode: 0 },
+    /* No retries: after a failure screenshot, animation frames nearly stop,
+     * so dockview never positions view bodies and a retry can pass by
+     * mistake. The checks retry instead (expectLayout, cellSize…). */
+    retries: 0,
 })

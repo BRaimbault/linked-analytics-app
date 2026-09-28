@@ -59,11 +59,10 @@ export const isSizingPaused = (api: DockviewApi): boolean =>
 /* A layout change about to happen, and the layout before it, so that
  * sizes can be put back in proportion once dockview has made it (see
  * setupWorkspace). A tab dropped at the outer edge reshapes the grid
- * before dockview announces the change, so the layout is read when the
- * change is expected. Kept by view id: a moved view may land in a new
- * cell. Kept until the current task ends, as a move to the outer edge
- * reaches dockview as two changes (a new cell, then the view moving in),
- * and sizes are fixed after each. */
+ * before dockview announces the change (dockview 8.3.1 adds the new cell
+ * without a layout event, then moves the view in as one change), so the
+ * layout is read when the change is expected. Kept by view id: a moved
+ * view may land in a new cell. */
 type ExpectedChange =
     | { kind: 'split'; viewId: string; targetGroupId: string }
     | { kind: 'insert'; viewId: string }

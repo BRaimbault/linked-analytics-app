@@ -3,7 +3,7 @@
 - **Status**: research, September 2026, against DHIS2 2.44-SNAPSHOT (DV 101.6.3, Maps 101.17.3, LL 102.4.1) and app-runtime 3.17.4. The single source for plugin behavior: other docs link here.
 - **Related**: [interactions.md](interactions.md) (the links and the upstream contract), [demo-mode.md](demo-mode.md) (fakes that copy these limits), [view-settings.md](view-settings.md).
 
-What the DV, Maps, Line Listing (LL) and Event Visualizer (EV) plugins accept when this app embeds them, and what that means for plan step 3, "Render plugins". Two sources:
+What the DV, Maps, Line Listing (LL) and Event Visualizer (EV) plugins accept when this app embeds them, and what that means for plan step 4, "Real plugins". Two sources:
 
 - **A live spike**: real DV and Maps plugins mounted with `Plugin` from `@dhis2/app-runtime/experimental` on the dev server, fed objects fetched with the dashboard's field lists, then rewritten in place. It was throwaway code, not kept.
 - **A read of the code** on each repo's default branch ([Sources](#sources)).

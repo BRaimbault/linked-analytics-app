@@ -13,3 +13,11 @@
     border-block-start: 2px solid var(--colors-blue600);
     pointer-events: none;
 }
+
+/* Without hover, headers take their room (see the workspace CSS), and the
+ * selected tab shows its own line */
+@media (hover: none) {
+    .selectedFrame {
+        display: none;
+    }
+}

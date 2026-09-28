@@ -10,7 +10,12 @@ import {
     type SplitAxis,
     type ViewSizes,
 } from '@modules/workspace/grid-tree'
-import type { DockviewGroupPanel, Position } from 'dockview-react'
+import { SIZE_TOLERANCE } from '@modules/workspace/layout-targets'
+import type {
+    DockviewGroupPanel,
+    IDockviewPanel,
+    Position,
+} from 'dockview-react'
 import { getCellLength, getPanelSizes, isEdgeGroup } from './panels'
 
 export const hasRoomToSplit = (
@@ -26,6 +31,21 @@ export const hasRoomToSplit = (
         crossLength: getCellLength(group, crossAxis(axis)),
         placedCrossMin: along(placedSizes.min, crossAxis(axis)),
     })
+
+const fitsCell = (view: IDockviewPanel, group: DockviewGroupPanel): boolean =>
+    (['horizontal', 'vertical'] as const).every(
+        (axis) =>
+            along(getPanelSizes(view).min, axis) <=
+            getCellLength(group, axis) + SIZE_TOLERANCE
+    )
+
+/* A swap keeps both cells' sizes (sizing is paused while it runs), so each
+ * view must fit the cell it gets: a map doesn't go in a selector's 120px
+ * row */
+export const hasRoomToSwap = (
+    first: IDockviewPanel,
+    second: IDockviewPanel
+): boolean => fitsCell(first, second.group) && fitsCell(second, first.group)
 
 /* The dragged view is left out of the room checks: moving it frees its
  * space. */

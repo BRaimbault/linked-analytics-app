@@ -160,7 +160,7 @@ describe('sizing', () => {
         /* The column gets its preferred width, and the block shares the
          * rest evenly, every view above its minimum */
         cellSize('Org unit 1').its('width').should('be.closeTo', 320, 2)
-        cy.document().then((doc) => {
+        cy.document().should((doc) => {
             const widths = [
                 'Map 1',
                 'Visualization 1',
@@ -182,7 +182,11 @@ describe('sizing', () => {
         /* Maximizing selects Map 1, which brings its settings forward */
         cy.get('.dv-edge-group .dv-tab').contains('Add views').click()
 
-        cy.get('[data-test="add-view-period-selector"]').should('be.disabled')
+        cy.get('[data-test="add-view-period-selector"]').should(
+            'have.attr',
+            'aria-disabled',
+            'true'
+        )
 
         inViewHeader('Map 1', '[data-test="maximize-view-button"]').click()
         cy.get('.dv-edge-group .dv-tab').contains('Add views').click()

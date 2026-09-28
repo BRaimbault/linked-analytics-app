@@ -2,7 +2,10 @@ import {
     EDGE_POSITIONS,
     type EdgePosition,
 } from '@components/workspace/controller/panels'
-import { moveTools } from '@components/workspace/controller/tools-strip'
+import {
+    focusToolsStrip,
+    moveTools,
+} from '@components/workspace/controller/tools-strip'
 import { useDockviewValue } from '@components/workspace/use-dockview-value'
 import i18n from '@dhis2/d2-i18n'
 import {
@@ -50,7 +53,10 @@ const MoveMenu: FC<{ api: DockviewApi; current: EdgePosition }> = ({
                 key: position,
                 label: MOVE_LABELS[position](),
                 dataTest: `move-tools-${position}`,
-                onClick: () => moveTools(api, current, position),
+                onClick: () => {
+                    moveTools(api, current, position)
+                    focusToolsStrip(api, position)
+                },
             })
         )}
     />

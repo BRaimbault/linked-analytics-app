@@ -11,7 +11,7 @@ Design and research documents for the Linked Analytics app, for the team and for
 | [interactions.md](interactions.md)           | Channels, selectors, link mode, and the upstream plugin PRs                                  | Research, decided design, proposal  |
 | [plugins.md](plugins.md)                     | What the real DV, Maps, LL and EV plugins accept                                             | Research (September 2026)           |
 | [view-settings.md](view-settings.md)         | Picking, creating and editing a view's item                                                  | Research, proposal                  |
-| [selector-controls.md](selector-controls.md) | The controls a selector can show, and their sizes                                            | Research; no maximum size decided   |
+| [selector-controls.md](selector-controls.md) | The controls a selector can show, and their sizes                                            | Research; decided: no maximum size  |
 | [map-layers.md](map-layers.md)               | Options to limit layers per map in the first version                                         | Proposal, under discussion          |
 | [demo-mode.md](demo-mode.md)                 | Fake plugins on synthetic data                                                               | Proposal, decided where noted       |
 | [code-structure.md](code-structure.md)       | How `src/` is organized, and the rules and moves for new domains                             | Research (September 2026), proposal |
@@ -20,11 +20,11 @@ Design and research documents for the Linked Analytics app, for the team and for
 
 ## Terms
 
-- **View**: an item in the grid: a plugin or a selector. **Cell** is used only for layout.
+- **View**: an item in the grid: a plugin, a selector, or a text view (a title or a note). **Cell** is used only for layout.
 - **Plugin**: a map or visualization view, rendered by the DHIS2 app's plugin in an iframe. DV is Data Visualizer, LL Line Listing, EV Event Visualizer.
 - **Selector**: a small view that shows and sets one value (a period, an org unit, a data item), e.g. a drop-down or a tree.
 - **Selector bar**: the row of selectors across the top of the grid. **Selector column**: a stack of selectors along one side, proposed for tall controls.
-- **Tools strip**: the edge group holding "Add views" (the palette) and one settings tab per view.
+- **Tools strip**: the edge group holding "Workspace" (settings of the whole workspace), "Add views" (the palette) and one settings tab per view.
 - **Channel**: one dimension (`ou`, `pe`, `dx` or a dynamic dimension) with one shared value, and the views linked to it.
 - **Sender** / **receiver**: a view whose clicks set a channel's value / a view rewritten with it. A **member** is either or both.
 - **Link mode**: a grid mode for rewiring channels.

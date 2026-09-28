@@ -12,7 +12,7 @@ import {
     pointIn,
     setUpSeventyThirty,
     SMOKE,
-    viewTitles,
+    expectViewCount,
     inViewHeader,
 } from './grid-helpers'
 
@@ -52,7 +52,10 @@ describe('selectors', () => {
         clickTile('map')
         clickTile('visualization')
 
-        cy.get('[data-test="add-view-org-unit-selector"]').should('be.enabled')
+        cy.get('[data-test="add-view-org-unit-selector"]').should(
+            'not.have.attr',
+            'aria-disabled'
+        )
         dragTo({ tile: 'org-unit-selector' }, (doc) =>
             outerEdge(doc, 'top')
         ).should('deep.equal', INSERT_LINE)
@@ -119,7 +122,7 @@ describe('selectors', () => {
             pointIn(doc, 'Org unit 1', [0.5, 0.9])
         )
 
-        cy.document().then((doc) => {
+        cy.document().should((doc) => {
             const map = pointIn(doc, 'Map 1', [1, 1])
             /* The two stack to the full height of the map beside them */
             expect(pointIn(doc, 'Org unit 2', [0, 0])[1]).to.be.greaterThan(
@@ -170,14 +173,28 @@ describe('selectors', () => {
         mountWorkspace()
 
         clickTile('period-selector')
-        cy.get('[data-test="add-view-period-selector"]').should('be.disabled')
-        cy.get('[data-test="add-view-data-selector"]').should('be.enabled')
+        cy.get('[data-test="add-view-period-selector"]').should(
+            'have.attr',
+            'aria-disabled',
+            'true'
+        )
+        cy.get('[data-test="add-view-data-selector"]').should(
+            'not.have.attr',
+            'aria-disabled'
+        )
 
         clickTile('map')
-        cy.get('[data-test="add-view-period-selector"]').should('be.enabled')
+        cy.get('[data-test="add-view-period-selector"]').should(
+            'not.have.attr',
+            'aria-disabled'
+        )
         clickTile('period-selector')
-        cy.get('[data-test="add-view-period-selector"]').should('be.disabled')
-        viewTitles().should('have.length', 3)
+        cy.get('[data-test="add-view-period-selector"]').should(
+            'have.attr',
+            'aria-disabled',
+            'true'
+        )
+        expectViewCount(3)
     })
 
     it('keeps the selector bar’s height when two of its selectors swap', () => {

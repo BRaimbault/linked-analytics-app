@@ -1,4 +1,7 @@
-import { getDraggedViewType } from '@modules/workspace/drag-payload'
+import {
+    getDraggedViewType,
+    VIEW_DRAG_MIME,
+} from '@modules/workspace/drag-payload'
 import {
     isNoOpMove,
     type DragSource,
@@ -151,6 +154,16 @@ export const getDragFormats = (
 ): readonly string[] | undefined =>
     'dataTransfer' in event ? event.dataTransfer?.types : undefined
 
+/* A drag of the workspace's own: a palette tile, or a tab dockview drags
+ * (its drag data is set by the time dragstart bubbles up). Other drags,
+ * such as text moved within a note, leave the workspace alone. */
+export const isWorkspaceDrag = (event: DragEvent): boolean =>
+    Boolean(
+        getDragFormats(event)?.includes(VIEW_DRAG_MIME) ||
+        getDraggedTile() ||
+        getPanelData()
+    )
+
 /* The view type a palette drag carries, if there is room for one more */
 export const getAddableDraggedType = (
     api: DockviewApi,
@@ -199,8 +212,24 @@ export const getDraggedSizes = (
 }
 
 /* "Workspace" and "Add views" stay first (see isAllowedDrop): a mouse drag
- * of one doesn't even start. A touch drag, which dockview runs itself,
- * still starts but drops nowhere. */
+ * of one doesn't even start. It is cancelled before dockview's own
+ * dragstart listener on the tab, as dockview readies a drag (its drag data,
+ * iframes that ignore the pointer) before onWillDragPanel, and only a
+ * dragend, which a cancelled drag never gets, would undo that. Registered
+ * on the document in the capture phase, so it runs first. */
+export const cancelFixedToolDrag = (event: Event): void => {
+    const tab =
+        event.target instanceof Element
+            ? event.target.closest<HTMLElement>('.dv-tab')
+            : null
+    const panelId = tab?.dataset.tabPanelId
+    if (panelId && isFixedToolPanelId(panelId)) {
+        event.preventDefault()
+    }
+}
+
+/* A touch drag, which dockview runs itself with pointer events, still
+ * starts, but drops nowhere */
 export const keepFixedToolsInPlace = (event: {
     panel: IDockviewPanel
     nativeEvent: Event

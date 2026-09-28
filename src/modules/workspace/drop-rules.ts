@@ -6,6 +6,7 @@ import {
     findLeafLocation,
     getLeaves,
     lengthOf,
+    type GridBranch,
     type GridNode,
     type GridOrientation,
     type GridTree,
@@ -128,6 +129,16 @@ type MoveTarget =
     | { type: 'cell'; id: string; position: DropPosition }
     | { type: 'edge'; position: DropPosition }
 
+/* The line that spans the whole grid: dockview keeps a branch that is its
+ * root's only child (a column added below a first view), which spans it
+ * just as well */
+const getOuterLine = (branch: GridBranch): GridBranch => {
+    const [only] = branch.children
+    return branch.children.length === 1 && only.type === 'branch'
+        ? getOuterLine(only)
+        : branch
+}
+
 /* A move changes nothing when the view lands where it already is: in its
  * own cell, against the facing edge of the view next to it, or at the
  * outer edge it already runs along. */
@@ -151,7 +162,7 @@ export const isNoOpMove = (
     const towardsStart = target.position === 'left' || target.position === 'top'
     if (target.type === 'edge') {
         return (
-            source.parent === tree.root &&
+            source.parent === getOuterLine(tree.root) &&
             source.index === (towardsStart ? 0 : siblings.length - 1)
         )
     }

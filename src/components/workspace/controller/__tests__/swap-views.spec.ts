@@ -1,4 +1,5 @@
 import { asPanel } from '@components/workspace/__tests__/fake-dockview'
+import { addViewSettingsPanel } from '@components/workspace/controller/settings'
 import {
     swapViews,
     swapViewsById,
@@ -14,12 +15,24 @@ describe('swapping', () => {
         const mapCell = map.group
         const visCell = vis.group
 
-        swapViews(fake.asApi, asPanel(map), asPanel(vis))
+        addViewSettingsPanel(fake.asApi, asPanel(map))
+
+        const selected = swapViews(fake.asApi, asPanel(map), asPanel(vis))
 
         expect(map.group).toBe(visCell)
         expect(vis.group).toBe(mapCell)
         expect(fake.api.removePanel).toHaveBeenCalledTimes(2)
         expect(map.api.setActive).toHaveBeenCalled()
+        /* Its settings came forward, so it's the one to select */
+        expect(selected).toBe('map-a')
+    })
+
+    it('has no view to select when the dragged one has no settings tab', () => {
+        const fake = setup()
+        /* Laid out without events, so without settings tabs */
+        const [map, vis] = twoColumns(fake)
+
+        expect(swapViews(fake.asApi, asPanel(map), asPanel(vis))).toBeNull()
     })
 
     it('leaves every size as it was, even while a cell holds its spacer', () => {

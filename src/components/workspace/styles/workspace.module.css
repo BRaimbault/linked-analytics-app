@@ -236,35 +236,36 @@
 /* Headers on hover: a view's header floats over the top of its view
  * instead of taking room, so no view (and no plugin's iframe) resizes as
  * the pointer moves. It shows while the view is hovered (data-hovered, set
- * by markHoveredView) or holds the focus, during a drag (its tab is the
- * handle), and always on touch screens, which have no hover. */
-.workspace[data-view-headers='hover'] :global(.dv-grid-view .dv-groupview) {
-    position: relative;
-}
+ * by markHoveredView), holds the focus or has its menu open (the menu is in
+ * a layer outside it), and during a drag (its tab is the handle). Only where a pointer can hover: on a touch screen a floating
+ * header would always show, over the top of its view, so headers take their
+ * room there, as with "always". */
+@media (hover: hover) {
+    .workspace[data-view-headers='hover'] :global(.dv-grid-view .dv-groupview) {
+        position: relative;
+    }
 
-.workspace[data-view-headers='hover']
-    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline: 0;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity 0.15s;
-}
-
-.workspace[data-view-headers='hover']
-    :global(
-        .dv-grid-view
-            .dv-groupview:is([data-hovered], :focus-within)
-            > .dv-tabs-and-actions-container
-    ),
-.workspace[data-view-headers='hover'][data-dragging]
-    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
-    opacity: 1;
-}
-
-@media (hover: none) {
     .workspace[data-view-headers='hover']
+        :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline: 0;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .workspace[data-view-headers='hover']
+        :global(
+            .dv-grid-view
+                .dv-groupview:is(
+                    [data-hovered],
+                    :focus-within,
+                    :has([data-menu-open])
+                )
+                > .dv-tabs-and-actions-container
+        ),
+    .workspace[data-view-headers='hover'][data-dragging]
         :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
         opacity: 1;
     }

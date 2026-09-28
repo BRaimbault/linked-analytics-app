@@ -79,5 +79,5 @@ export const createViewEvents = (api: DockviewApi, dispatch: AppDispatch) => {
         }
     }
 
-    return { onViewAdded, onViewRemoved, onViewSelected }
+    return { onViewAdded, onViewRemoved, onViewSelected, select }
 }

@@ -1,13 +1,17 @@
 import {
+    cellSize,
+    clickTile,
     dragTo,
     expectLayout,
-    getCell,
+    inViewHeader,
+    mountWorkspace,
+    NO_PREVIEW,
     PREVIEW,
     pointIn,
     setUpSeventyThirty,
     setUpStack,
     SMOKE,
-    toolTabs,
+    expectToolTabs,
 } from './grid-helpers'
 
 describe('swapping views', () => {
@@ -31,15 +35,7 @@ describe('swapping views', () => {
     it('swaps a view from its menu, without dragging', SMOKE, () => {
         setUpSeventyThirty()
 
-        cy.document().then((doc) =>
-            cy
-                .wrap(
-                    getCell(doc, 'Map 1').querySelector(
-                        '[data-test="view-actions-button"]'
-                    ) as HTMLElement
-                )
-                .click()
-        )
+        inViewHeader('Map 1', '[data-test="view-actions-button"]').click()
         cy.contains('Swap with Visualization 1').click()
 
         expectLayout({
@@ -60,6 +56,28 @@ describe('swapping views', () => {
         })
     })
 
+    it('offers no swap that would put a view in a cell below its minimum', () => {
+        mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
+        clickTile('period-selector')
+        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+
+        /* A map needs 160px; the selector bar is 120px */
+        dragTo({ tab: 'Map 1' }, (doc) =>
+            pointIn(doc, 'Period 1', [0.5, 0.5])
+        ).should('deep.equal', NO_PREVIEW)
+        inViewHeader('Map 1', '[data-test="view-actions-button"]').click()
+
+        cy.contains('Swap with Visualization 1').should('be.visible')
+        cy.contains('Swap with Period 1').should('not.exist')
+        expectLayout({
+            'Period 1': { y: 0, w: 100 },
+            'Map 1': { x: 0, w: 50 },
+            'Visualization 1': { x: 50, w: 50 },
+        })
+    })
+
     it('keeps each view’s settings tab through a swap', () => {
         setUpSeventyThirty()
 
@@ -67,11 +85,6 @@ describe('swapping views', () => {
             pointIn(doc, 'Map 1', [0.5, 0.5])
         )
 
-        toolTabs().should('deep.equal', [
-            'Workspace',
-            'Add views',
-            'Map 1',
-            'Visualization 1',
-        ])
+        expectToolTabs(['Workspace', 'Add views', 'Map 1', 'Visualization 1'])
     })
 })

@@ -1,7 +1,7 @@
 import type { GridTree } from '@modules/workspace/grid-tree'
 import type { AppDispatch } from '@store/store'
 import type { DockviewApi } from 'dockview-react'
-import { keepFixedToolsInPlace } from './drags'
+import { cancelFixedToolDrag, keepFixedToolsInPlace } from './drags'
 import {
     acceptPaletteDrag,
     addTileDroppedOnGrid,
@@ -24,10 +24,8 @@ export const setupWorkspace = (
     /* The layout as the user last left it, read before each change while
      * no view is maximized, so leaving maximize puts it back */
     let layoutBefore: GridTree | null = null
-    const { onViewAdded, onViewRemoved, onViewSelected } = createViewEvents(
-        api,
-        dispatch
-    )
+    const { onViewAdded, onViewRemoved, onViewSelected, select } =
+        createViewEvents(api, dispatch)
 
     const disposables = [
         api.onDidAddPanel(onViewAdded),
@@ -46,9 +44,13 @@ export const setupWorkspace = (
         api.onWillDragPanel(keepFixedToolsInPlace),
         api.onUnhandledDragOver((event) => acceptPaletteDrag(api, event)),
         api.onWillShowOverlay((event) => refuseDisallowedDrop(api, event)),
-        api.onWillDrop((event) => swapOrExpectMove(api, event)),
+        api.onWillDrop((event) => swapOrExpectMove(api, event, select)),
         api.onDidDrop((event) => addTileDroppedOnGrid(api, event)),
     ]
+    document.addEventListener('dragstart', cancelFixedToolDrag, true)
 
-    return () => disposables.forEach((disposable) => disposable.dispose())
+    return () => {
+        disposables.forEach((disposable) => disposable.dispose())
+        document.removeEventListener('dragstart', cancelFixedToolDrag, true)
+    }
 }

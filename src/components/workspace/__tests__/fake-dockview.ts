@@ -325,33 +325,38 @@ export const createFakeDockview = () => {
             })
         ),
         getEdgeGroup: (position: string) => edgeGroups.get(position)?.api,
+        /* Like dockview, adding and removing an edge group are layout
+         * changes (its will and did events fire around them) */
         addEdgeGroup: vi.fn(
             (
                 position: 'top' | 'bottom' | 'left' | 'right',
                 options: { id: string }
-            ) => {
-                const group = createGroup(
-                    { type: 'edge', position },
-                    undefined,
-                    options.id
-                )
-                edgeGroups.set(position, group)
-                return group.api
-            }
+            ) =>
+                mutate(() => {
+                    const group = createGroup(
+                        { type: 'edge', position },
+                        undefined,
+                        options.id
+                    )
+                    edgeGroups.set(position, group)
+                    return group.api
+                })
         ),
         /* Like dockview, removing an edge group disposes of its panels */
-        removeEdgeGroup: vi.fn((position: string) => {
-            const group = edgeGroups.get(position)
-            edgeGroups.delete(position)
-            if (!group) {
-                return
-            }
-            for (const panel of group.panels) {
-                panels.splice(panels.indexOf(panel), 1)
-            }
-            group.panels = []
-            groups.splice(groups.indexOf(group), 1)
-        }),
+        removeEdgeGroup: vi.fn((position: string) =>
+            mutate(() => {
+                const group = edgeGroups.get(position)
+                edgeGroups.delete(position)
+                if (!group) {
+                    return
+                }
+                for (const panel of group.panels) {
+                    panels.splice(panels.indexOf(panel), 1)
+                }
+                group.panels = []
+                groups.splice(groups.indexOf(group), 1)
+            })
+        ),
         onDidAddPanel: on('onDidAddPanel'),
         onDidRemovePanel: on('onDidRemovePanel'),
         onDidActivePanelChange: on('onDidActivePanelChange'),

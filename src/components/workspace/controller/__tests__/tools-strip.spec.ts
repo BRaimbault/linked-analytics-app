@@ -8,10 +8,36 @@ import {
     WORKSPACE_PANEL_ID,
 } from '@components/workspace/controller/panels'
 import { moveTools } from '@components/workspace/controller/tools-strip'
+import {
+    buildTree,
+    row,
+    view,
+} from '@modules/workspace/__tests__/grid-tree-builders'
 import { describe, expect, it, vi } from 'vitest'
-import { setup } from './controller-fixtures'
+import { setup, twoColumns } from './controller-fixtures'
 
 describe('moveTools', () => {
+    it('keeps the proportions the user gave the views', () => {
+        const fake = setup()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                row(1, view(map.group.id, 70), view(vis.group.id, 30))
+            )
+        )
+        /* The strip now takes width at the left, and dockview spreads the
+         * views evenly across what is left */
+        fake.changeLayoutTo(() =>
+            buildTree(1040, 835, row(1, view(map.group.id), view(vis.group.id)))
+        )
+
+        moveTools(fake.asApi, 'top', 'left')
+
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 728 })
+    })
+
     it('moves every tool to the new edge, keeping the open tab', () => {
         const fake = setup()
         const addViews = fake.api.getPanel(ADD_VIEWS_PANEL_ID)

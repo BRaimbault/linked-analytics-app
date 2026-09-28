@@ -21,35 +21,67 @@ import {
 } from '@modules/workspace/view-types'
 import { selectViews } from '@store/workspace-slice'
 import type { IDockviewPanelProps } from 'dockview-react'
-import { useCallback, type DragEvent, type FC } from 'react'
+import {
+    useCallback,
+    useId,
+    type DragEvent,
+    type FC,
+    type HTMLAttributes,
+    type MutableRefObject,
+    type Ref,
+} from 'react'
 import classes from './styles/panels.module.css'
 import { ToolPanel } from './tool-panel'
 
-/* A tile that can't add its view says why in its tooltip */
+type TooltipHandlers = Partial<
+    Pick<
+        HTMLAttributes<HTMLButtonElement>,
+        'onMouseOver' | 'onMouseOut' | 'onFocus' | 'onBlur'
+    >
+>
+
+/* A tile that can't add its view says why: in a tooltip, and to screen
+ * readers as its description. It stays focusable (aria-disabled rather
+ * than disabled), so both can reach it; its click and drag do nothing. */
 const ViewTile: FC<{ type: ViewType; disabledReason: string | null }> = ({
     type,
     disabledReason,
 }) => {
     const api = useWorkspaceApi()
     const addView = useAddView(api)
+    const reasonId = useId()
     const disabled = disabledReason !== null
 
     const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
+        if (disabled) {
+            event.preventDefault()
+            return
+        }
         event.dataTransfer.setData(VIEW_DRAG_MIME, encodeViewDrag(type))
         event.dataTransfer.setData(getViewTypeMime(type), '')
         event.dataTransfer.effectAllowed = 'copy'
         startTileDrag(type)
     }
 
-    const tile = (
+    const renderTile = (
+        handlers: TooltipHandlers = {},
+        ref?: Ref<HTMLButtonElement>
+    ) => (
         <button
+            {...handlers}
+            ref={ref}
             type="button"
             className={classes.tile}
             data-test={`add-view-${type}`}
             draggable={!disabled}
-            disabled={disabled}
+            aria-disabled={disabled || undefined}
+            aria-describedby={disabled ? reasonId : undefined}
             onDragStart={onDragStart}
-            onClick={() => addView(type)}
+            onClick={() => {
+                if (!disabled) {
+                    addView(type)
+                }
+            }}
         >
             <span className={classes.tileContent}>
                 <ViewTypeIcon type={type} />
@@ -58,7 +90,24 @@ const ViewTile: FC<{ type: ViewType; disabledReason: string | null }> = ({
         </button>
     )
 
-    return disabled ? <Tooltip content={disabledReason}>{tile}</Tooltip> : tile
+    if (!disabled) {
+        return renderTile()
+    }
+    return (
+        <>
+            <Tooltip content={disabledReason}>
+                {({ ref, ...handlers }) =>
+                    renderTile(
+                        handlers,
+                        ref as MutableRefObject<HTMLButtonElement>
+                    )
+                }
+            </Tooltip>
+            <span id={reasonId} hidden>
+                {disabledReason}
+            </span>
+        </>
+    )
 }
 
 const TILE_GROUPS: { kind: ViewKind; heading: () => string }[] = [

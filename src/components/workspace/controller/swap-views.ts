@@ -6,16 +6,18 @@ import { showViewSettings } from './settings'
 /* Swaps two views by moving the panels themselves, so their content (and
  * later a plugin's iframe) is never rebuilt. dockview removes a group the
  * moment it is empty, so each cell holds a temporary spacer tab while its
- * view is away. */
+ * view is away. The first view's settings come forward, without a dockview
+ * event to say so: returns that view, for the caller to select (a view is
+ * selected while its settings are shown), or null. */
 export const swapViews = (
     api: DockviewApi,
     first: IDockviewPanel,
     second: IDockviewPanel
-): void => {
+): string | null => {
     const firstGroup = first.group
     const secondGroup = second.group
     if (firstGroup === secondGroup) {
-        return
+        return null
     }
     /* A swap leaves every size as it was */
     withoutSizing(api, () => {
@@ -32,19 +34,17 @@ export const swapViews = (
         spacers.forEach((spacer) => api.removePanel(spacer))
     })
     first.api.setActive()
-    showViewSettings(api, first.id)
+    return showViewSettings(api, first.id) ? first.id : null
 }
 
 /* For callers that only know the ids (e.g. from the store); does nothing
- * if either view is gone by then. */
+ * if either view is gone by then */
 export const swapViewsById = (
     api: DockviewApi,
     firstId: string,
     secondId: string
-): void => {
+): string | null => {
     const first = api.getPanel(firstId)
     const second = api.getPanel(secondId)
-    if (first && second) {
-        swapViews(api, first, second)
-    }
+    return first && second ? swapViews(api, first, second) : null
 }

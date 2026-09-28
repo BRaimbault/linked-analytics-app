@@ -1,6 +1,6 @@
 # View settings
 
-- **Status**: §1 research (September 2026, `@dhis2/analytics` 29.8.1) · §2–7 proposal. Plan step 4.
+- **Status**: §1 research (September 2026, `@dhis2/analytics` 29.8.1) · §2–7 proposal. Plan step 6, except picking a saved item (step 4).
 - **Related**: [interactions.md](interactions.md) (how views drive each other), [map-layers.md](map-layers.md) (the map editor's scope), [plugins.md](plugins.md), [selector-controls.md](selector-controls.md).
 
 Every view has a settings tab in the tools strip. This doc covers what that tab does for maps and visualizations (picking a saved item, creating one in the app, editing it and saving it), plus the pickers selectors use. Scope: aggregate data first, so DV visualizations, and maps with thematic, org unit (boundary), facility and Earth Engine layers.
@@ -83,7 +83,7 @@ A view holds one of two things:
     - It is fetched with the dashboard's field lists (dashboard-app `getFavoriteFields`, `getMapFields`).
     - It is refetched when the workspace opens, so changes made in DV or Maps show up.
 - **A local object**: `{ source: 'local', object }`.
-    - Built in the app and stored with the workspace (plan step 6, persistence). It is not on the server.
+    - Built in the app and stored with the workspace (plan step 7, persistence). It is not on the server.
     - The plugin gets it directly.
 
 Editing a saved item in the app turns it into a local copy that remembers where it came from ("Modified from ANC coverage"). Its ⋯ menu then offers:
@@ -180,7 +180,7 @@ Which layers a map may combine depends on [map-layers.md](map-layers.md).
 
 ## 7. Order of work
 
-1. **Pick a saved item**: `OpenFileDialog` for maps and visualizations, fetched with the dashboard's fields and rendered by the plugins. Do it with plan step 3 ("Render plugins"), which needs saved items to show anything.
+1. **Pick a saved item**: `OpenFileDialog` for maps and visualizations, fetched with the dashboard's fields and rendered by the plugins. Do it with plan step 4 ("Real plugins"), which needs saved items to show anything.
 2. **Hand-offs**: Open in DV or Maps by id, and Replace…
 3. **Visualization editor** with local objects, then Save as. Includes the DV hand-off of a local object through `currentAnalyticalObject`.
 4. **Map editor**: thematic, boundaries, facilities, within the scope chosen in [map-layers.md](map-layers.md).

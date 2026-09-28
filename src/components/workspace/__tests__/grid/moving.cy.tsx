@@ -3,6 +3,7 @@ import {
     dragTo,
     expectLayout,
     inHeader,
+    inViewHeader,
     INSERT_LINE,
     mountWorkspace,
     setUpRowOfThree,
@@ -14,7 +15,7 @@ import {
     setUpSeventyThirty,
     setUpStack,
     SMOKE,
-    viewTitles,
+    expectViewTitles,
 } from './grid-helpers'
 
 describe('moving views', () => {
@@ -201,6 +202,21 @@ describe('moving views', () => {
         expectLayout({ 'Map 1': { w: 100, h: 100 } })
     })
 
+    it('moves a view to a new row or column from its menu, sized as by a drop', () => {
+        setUpSeventyThirty()
+
+        inViewHeader('Map 1', '[data-test="view-actions-button"]').click()
+        /* Map 1 already runs along the left edge */
+        cy.get('[data-test="move-to-edge-left"]').should('not.exist')
+        cy.get('[data-test="move-to-edge-bottom"] [role="menuitem"]').click()
+
+        expectLayout({
+            'Visualization 1': { x: 0, y: 0, w: 100, h: 50 },
+            'Map 1': { x: 0, y: 50, w: 100, h: 50 },
+        })
+        cy.focused().should('have.text', 'Map 1')
+    })
+
     it('moves a view dragged by its settings tab, like by its own tab', () => {
         setUpSeventyThirty()
 
@@ -208,7 +224,7 @@ describe('moving views', () => {
         dragTo({ toolTab: 'Map 1' }, (doc) =>
             pointIn(doc, 'Visualization 1', [0.5, 0.5])
         )
-        viewTitles().should('deep.equal', ['Visualization 1', 'Map 1'])
+        expectViewTitles(['Visualization 1', 'Map 1'])
 
         /* Onto the bottom edge of the other view: a split */
         dragTo({ toolTab: 'Map 1' }, (doc) =>

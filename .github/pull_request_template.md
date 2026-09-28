@@ -10,9 +10,9 @@ Add _N/A_ to items that are not applicable and check them.
 
 <!--Checkmate-->
 
-- [ ] Vitest tests added/updated
+- [ ] Vitest tests added/updated (and Cypress, for layout, CSS or drag and drop)
 - [ ] Checked in the browser against a DHIS2 instance
-- [ ] Docs updated (README, CLAUDE.md)
+- [ ] Docs updated (README, CLAUDE.md, docs/)
 
 ---
 

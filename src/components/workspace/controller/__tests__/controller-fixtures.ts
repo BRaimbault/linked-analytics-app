@@ -10,6 +10,14 @@ import {
 import type { ViewType } from '@modules/workspace/view-types'
 import { vi } from 'vitest'
 
+/* jsdom has no elementFromPoint, which the drop rules read for tab drops,
+ * and lays nothing out: no element lies under a point unless a test says
+ * which */
+export const elementFromPoint = vi.fn<(x: number, y: number) => Element | null>(
+    () => null
+)
+document.elementFromPoint = elementFromPoint
+
 export const titles = {
     workspace: 'Workspace',
     addViews: 'Add views',

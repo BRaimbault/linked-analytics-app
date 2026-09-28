@@ -11,7 +11,7 @@ import {
     setUpSeventyThirty,
     setUpRowOfThree,
     SMOKE,
-    viewTitles,
+    expectViewCount,
 } from './grid-helpers'
 
 describe('adding views', () => {
@@ -28,6 +28,40 @@ describe('adding views', () => {
 
         expectLayout({ 'Map 1': { x: 0, y: 0, w: 100, h: 100 } })
         cy.get('[data-test="workspace-watermark"]').should('not.exist')
+    })
+
+    /* A cancelled drag gets no dragend: whatever its start set up must not
+     * outlive it */
+    it('still takes a tile after a drag of the Workspace tab, which never starts', () => {
+        mountWorkspace()
+        clickTile('map')
+
+        cy.get('.dv-edge-group .dv-tab')
+            .contains('Workspace')
+            .then(([name]) => {
+                const tab = name.closest('.dv-tab') as HTMLElement
+                const started = tab.dispatchEvent(
+                    new DragEvent('dragstart', {
+                        bubbles: true,
+                        cancelable: true,
+                        dataTransfer: new DataTransfer(),
+                    })
+                )
+                expect(started, 'drag started').to.equal(false)
+            })
+        cy.get('[data-test="workspace"]').should(
+            'not.have.attr',
+            'data-dragging'
+        )
+
+        dragTo({ tile: 'visualization' }, (doc) =>
+            pointIn(doc, 'Map 1', [0.9, 0.5])
+        ).should('deep.equal', PREVIEW)
+
+        expectLayout({
+            'Map 1': { x: 0, w: 50 },
+            'Visualization 1': { x: 50, w: 50 },
+        })
     })
 
     it('fills the empty grid from its buttons', () => {
@@ -217,12 +251,22 @@ describe('adding views', () => {
         clickTile('map')
         clickTile('visualization')
 
-        cy.get('[data-test="add-view-map"]').should('be.disabled')
-        cy.get('[data-test="add-view-visualization"]').should('be.disabled')
+        cy.get('[data-test="add-view-map"]').should(
+            'have.attr',
+            'aria-disabled',
+            'true'
+        )
+        cy.get('[data-test="add-view-visualization"]').should(
+            'have.attr',
+            'aria-disabled',
+            'true'
+        )
         dragTo({ tile: 'map' }, (doc) =>
             pointIn(doc, 'Map 1', [1, 0.5])
         ).should('deep.equal', NO_PREVIEW)
-        viewTitles().should('have.length', 4)
+        /* Still focusable, so the reason can be read, but it adds nothing */
+        clickTile('map')
+        expectViewCount(4)
     })
 })
 
@@ -275,7 +319,7 @@ describe('adding views from a drag that loses its data', () => {
             LOSES_DATA
         ).should('deep.equal', INSERT_LINE)
 
-        viewTitles().should('have.length', 3)
+        expectViewCount(3)
     })
 
     it('adds a line at an outer edge', () => {

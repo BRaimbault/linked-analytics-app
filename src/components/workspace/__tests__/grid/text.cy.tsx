@@ -83,8 +83,9 @@ describe('text views', () => {
             cy.get(
                 '[data-test="text-view"] .mainActions button:visible'
             ).should('have.length', 4)
-            cy.get('[data-test="text-view"] .mainActions').then(([actions]) =>
-                expect(actions.querySelectorAll('button').length).to.equal(5)
+            cy.get('[data-test="text-view"] .mainActions button').should(
+                'have.length',
+                5
             )
             cy.get('[data-test="text-view"] textarea').type('Malaria *cases*')
             cy.get('[data-test="text-view-done"]').click()
@@ -242,6 +243,21 @@ describe('text views', () => {
                 expect(tops).to.have.length(5)
                 expect(new Set(tops).size).to.equal(1)
             }
+        )
+    })
+
+    it('keeps the note when Escape is pressed in the "@" user list', () => {
+        mountWorkspace()
+        clickTile('text')
+        cy.get('[data-test="text-view-edit"]').click()
+
+        cy.get('[data-test="text-view"] textarea').type('Write to mail@')
+        cy.contains('Search for a user').should('be.visible')
+        cy.get('[data-test="text-view"] textarea').type('{esc}')
+
+        cy.get('[data-test="text-view"] textarea').should(
+            'have.value',
+            'Write to mail@'
         )
     })
 })

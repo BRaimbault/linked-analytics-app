@@ -94,7 +94,10 @@ describe('sizes after a layout change', () => {
         expect(vis.group.api.setSize).toHaveBeenCalledWith({ width: 520 })
     })
 
-    it('keeps the expected change across a move dockview makes in two steps', () => {
+    /* As dockview 8.3.1 does it (dockToLayoutEdge): first a new, empty cell
+     * at the edge, added without a layout event, then the view moving in,
+     * as one layout change */
+    it('sizes a move to the outer edge from the layout read at the drop', () => {
         const fake = setup()
         const [map, vis] = twoColumns(fake)
         fake.setLayout(
@@ -130,8 +133,7 @@ describe('sizes after a layout change', () => {
                 getData: () => ({ panelId: moved.id, groupId: '' }),
             })
         )
-        /* First a new, empty cell at the edge, then the view moving in */
-        fake.changeLayoutTo(() =>
+        fake.setLayout(
             buildTree(
                 1200,
                 800,
@@ -142,7 +144,6 @@ describe('sizes after a layout change', () => {
                 )
             )
         )
-        fake.mutate(() => undefined)
         fake.changeLayoutTo(() =>
             buildTree(
                 1200,
@@ -157,8 +158,8 @@ describe('sizes after a layout change', () => {
         )
         fake.mutate(() => undefined)
 
-        expect(map.group.api.setSize).toHaveBeenLastCalledWith({ width: 560 })
-        expect(vis.group.api.setSize).toHaveBeenLastCalledWith({ width: 240 })
+        expect(map.group.api.setSize).toHaveBeenCalledWith({ width: 560 })
+        expect(vis.group.api.setSize).toHaveBeenCalledWith({ width: 240 })
     })
 
     it('halves the cell a tab is dropped on', () => {

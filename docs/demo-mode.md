@@ -1,6 +1,6 @@
 # Demo mode: fake plugins on synthetic data
 
-- **Status**: proposal, not built; decided where [§11](#11-decisions-and-open-questions) says so. Planned alongside plan step 3.
+- **Status**: proposal, not built; decided where [§11](#11-decisions-and-open-questions) says so. Plan step 3, before the real plugins.
 - **Related**: [plugins.md](plugins.md) (what the real plugins do), [interactions.md §6](interactions.md#6-upstream-prs) (the contract the fakes implement), [view-settings.md](view-settings.md).
 
 A mode where every view is a **fake plugin**: a small stand-in for DV or Maps that takes exactly the props of the real plugin, and draws synthetic data. Nothing is requested from a DHIS2 server.
@@ -86,6 +86,7 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 
 ## 6. Running without a server
 
+- **First version: no fake data engine.** The fake plugins read the synthetic data directly from `src/modules/demo/`, and the demo's selectors offer a short fixed list from it. The fake data engine below comes when the real pickers run in demo mode.
 - **Data engine**: demo mode wraps the workspace in app-runtime's `CustomDataProvider`. Each resource the app and the pickers ask for is a function over the synthetic data:
     - for the pickers: `dataItems`, `indicators`, `indicatorGroups`, `dataElements`, `dataElementGroups`, `organisationUnits`, `organisationUnitLevels`, `organisationUnitGroups`, `dimensions`, `configuration/dataOutputPeriodTypes`, `userSettings`, and the `systemSettings/*` keys `PeriodDimension` reads;
     - for the app: `me`, `apps`, `visualizations`, `maps`, and `analytics` for any view that asks.
@@ -99,6 +100,7 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **The whole workspace goes demo**: every view is fake, and real and demo views are never mixed.
 - The demo providers wrap the workspace inside the app shell. The shell and its header stay real (the user is logged in), but everything below them talks to the fake engine.
 - **A banner stays visible** while it's on ("Demo data: nothing here comes from the server"), so a screenshot can't pass for real data.
+- **A preset workspace** loads with the flag: a map, a chart, a pivot table, and a period and an org unit selector, already linked. "Reset the demo" in the Workspace tab brings it back, so a demo never starts with a minute of dragging views around.
 - **The demo code loads on demand**, with a dynamic `import()` only when the flag is set, so the normal app doesn't download it.
 - **Nothing is saved**: demo workspaces never go to the dataStore. At most the browser's own storage keeps the current one.
 
@@ -122,13 +124,18 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 
 ## 10. Where it fits in the plan
 
-- **After the grid milestone, alongside plan step 3 ("Render plugins").** Both need the plugin adapter; demo mode is its second implementation.
-- Suggested order:
-    1. The plugin adapter, with the real `Plugin` and a first fake visualization (column chart, `released` and `proposed`).
-    2. Synthetic data and the `CustomDataProvider` resources for our own requests.
-    3. The fake map (thematic and boundaries).
-    4. The resources the pickers need, when plan step 4 (view settings) starts.
-    5. The `?demo` switch, the banner and the lazy loading, then the contract scenarios.
+- **Plan step 3, right after the grid, and before the real plugins (step 4).** The first demos are for people who need to see where the app goes, as soon as possible, and only the `proposed` profile shows clicks from maps, highlight and play mode. The real plugins then become the adapter's second implementation.
+- Order, up to the first demo:
+    1. Synthetic data in `src/modules/demo/`: org units with their shapes, periods, data items and values.
+    2. The plugin adapter, with a fake visualization (column chart and pivot table) under the `proposed` profile.
+    3. The fake map: one thematic layer ([map-layers.md](map-layers.md) option A), with boundaries drawn from the same shapes.
+    4. Channels, `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, and click-driven links ([interactions.md §7](interactions.md#7-order-of-work), item 2).
+    5. The `?demo` switch, the banner, the lazy loading and the preset workspace ([§7](#7-turning-it-on)).
+- After the first demo, as needed:
+    - `loadDelay` and the period selector's play mode;
+    - the `released` profile, to show what each upstream PR brings;
+    - the fake data engine ([§6](#6-running-without-a-server)), when the real pickers run in demo mode (plan step 6, view settings);
+    - the contract scenarios in Cypress ([§8](#8-using-it-for-specs-and-tests)).
 - **Code layout** (following [Where helpers live](../CLAUDE.md#where-helpers-live-in-srcmodules)):
     - `src/modules/demo/`: the synthetic data, value formula, period resolution and capability profiles, pure and unit-tested;
     - `src/components/demo/`: the fake plugins and the demo providers;
@@ -141,5 +148,7 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - Demo mode lives **inside the real app**, behind the `?demo` flag, rather than as a separate build.
 - **No public hosting**: demos are given from the app on a DHIS2 server.
 - **Made-up map shapes**, not real boundaries.
+- **Demo mode comes before the real plugins**, since the first demos show the vision ([§10](#10-where-it-fits-in-the-plan)).
+- **The first fakes read synthetic data directly**, without a fake data engine ([§6](#6-running-without-a-server)).
 
 **Open**: none.

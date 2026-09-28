@@ -56,16 +56,9 @@ const noParentImports = {
         "Relative parent imports are not allowed. Use path aliases (e.g. '@hooks', '@components') instead.",
 }
 
-const noDeepParentImports = {
-    group: ['../../*'],
-    message:
-        'In __tests__ directories, you may only import from one parent level (../filename). Deeper parent imports are not allowed.',
-}
-
-const TEST_FILES = ['**/__tests__/**/*.{js,jsx,ts,tsx}']
-
 /* Imports flow one way between layers (docs/code-structure.md §4.1). Every
- * import in src uses an alias, so the rule matches alias names. */
+ * import in src uses an alias, so the rule matches alias names. Tests are
+ * held to it too, but hooks' tests, which render a provider. */
 const LAYERS = [
     {
         files: ['src/modules/**/*.{ts,tsx}'],
@@ -78,34 +71,26 @@ const LAYERS = [
         forbidden: ['@components/*'],
         message: 'store/ and api/ may not import from components.',
     },
+    {
+        files: ['src/hooks/**/*.{ts,tsx}'],
+        ignores: ['**/__tests__/**'],
+        forbidden: ['@components/*'],
+        message: 'hooks/ may not import from components.',
+    },
 ]
 
-const layerRules = LAYERS.flatMap(({ files, forbidden, message }) => {
-    const layer = { group: forbidden, message }
-    return [
-        {
-            files,
-            ignores: TEST_FILES,
-            rules: {
-                'no-restricted-imports': restrictImports(
-                    noParentImports,
-                    layer
-                ),
-            },
+const layerRules = LAYERS.map(
+    ({ files, ignores = [], forbidden, message }) => ({
+        files,
+        ignores,
+        rules: {
+            'no-restricted-imports': restrictImports(noParentImports, {
+                group: forbidden,
+                message,
+            }),
         },
-        {
-            files: files.map((glob) =>
-                glob.replace('/**/', '/**/__tests__/**/')
-            ),
-            rules: {
-                'no-restricted-imports': restrictImports(
-                    noDeepParentImports,
-                    layer
-                ),
-            },
-        },
-    ]
-})
+    })
+)
 
 export default defineConfig([
     includeIgnoreFile(gitignorePath),
@@ -146,14 +131,6 @@ export default defineConfig([
         rules: {
             'import/order': 'off',
             'import/no-default-export': 'off',
-        },
-    },
-
-    // Override: test directories -- allow one level of parent imports
-    {
-        files: TEST_FILES,
-        rules: {
-            'no-restricted-imports': restrictImports(noDeepParentImports),
         },
     },
 

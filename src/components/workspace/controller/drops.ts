@@ -26,7 +26,7 @@ import {
 } from './drags'
 import { expectLayoutChange, getGridOrigin, readGridTree } from './grid-layout'
 import { getGroupPanel, isEdgeGroup } from './panels'
-import { hasRoomForDrop } from './room'
+import { hasRoomForDrop, hasRoomToSwap } from './room'
 import { swapViews } from './swap-views'
 import { getDraggedTile } from './tile-drag'
 
@@ -168,22 +168,28 @@ export const refuseDisallowedDrop = (
         event.getData(),
         getDragFormats(event.nativeEvent)
     )
-    const hasRoom = hasRoomForDrop(tree, {
-        group: event.group,
-        position: event.position,
-        sourceGroupId: draggedView?.group.id ?? null,
-        placedSizes: placedSizes ?? PLUGIN_SIZES,
-    })
+    const target = event.group?.activePanel
+    const hasRoom =
+        draggedView && target && isSwapDrop(context)
+            ? hasRoomToSwap(draggedView, target)
+            : hasRoomForDrop(tree, {
+                  group: event.group,
+                  position: event.position,
+                  sourceGroupId: draggedView?.group.id ?? null,
+                  placedSizes: placedSizes ?? PLUGIN_SIZES,
+              })
     if (!isAllowedDrop(context) || !hasRoom) {
         event.preventDefault()
     }
 }
 
-/* A view dropped on the middle of another swaps them; any other view drop
- * is a move, whose sizes are fixed once dockview has made it */
+/* A view dropped on the middle of another swaps them, and is selected, as
+ * its settings come forward; any other view drop is a move, whose sizes
+ * are fixed once dockview has made it */
 export const swapOrExpectMove = (
     api: DockviewApi,
-    event: DockviewWillDropEvent
+    event: DockviewWillDropEvent,
+    select: (viewId: string) => void
 ): void => {
     const { context, draggedView, standsInForView } = getDropContext(
         api,
@@ -193,8 +199,10 @@ export const swapOrExpectMove = (
     const target = event.group?.activePanel
     if (isSwapDrop(context)) {
         event.preventDefault()
-        if (draggedView && target) {
-            swapViews(api, draggedView, target)
+        const selected =
+            draggedView && target ? swapViews(api, draggedView, target) : null
+        if (selected) {
+            select(selected)
         }
         return
     }

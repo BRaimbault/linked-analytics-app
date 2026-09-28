@@ -56,7 +56,8 @@ From VS Code's terminal, run the Cypress scripts as `env -u ELECTRON_RUN_AS_NODE
     - [interactions.md](docs/interactions.md): how views link, and the upstream plugin changes;
     - [plugins.md](docs/plugins.md): what the DHIS2 plugins accept;
     - [view-settings.md](docs/view-settings.md): picking, creating and editing a view's item;
-    - [selector-controls.md](docs/selector-controls.md), [map-layers.md](docs/map-layers.md) and [demo-mode.md](docs/demo-mode.md).
+    - [selector-controls.md](docs/selector-controls.md), [map-layers.md](docs/map-layers.md) and [demo-mode.md](docs/demo-mode.md);
+    - [code-structure.md](docs/code-structure.md): how `src/` is organized, and where new code goes.
 - [CLAUDE.md](./CLAUDE.md): code conventions, architecture notes, gotchas and the plan. Written for AI coding agents, and useful to people too.
 
 ## Contributing

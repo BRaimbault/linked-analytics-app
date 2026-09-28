@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-28T11:20:33.507Z\n"
-"PO-Revision-Date: 2026-09-28T11:20:33.507Z\n"
+"POT-Creation-Date: 2026-09-28T15:48:36.602Z\n"
+"PO-Revision-Date: 2026-09-28T15:48:36.602Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -127,11 +127,23 @@ msgstr "Expand"
 msgid "Collapse"
 msgstr "Collapse"
 
-msgid "View actions"
-msgstr "View actions"
+msgid "Move to a new row at the top"
+msgstr "Move to a new row at the top"
+
+msgid "Move to a new row at the bottom"
+msgstr "Move to a new row at the bottom"
+
+msgid "Move to a new column on the left"
+msgstr "Move to a new column on the left"
+
+msgid "Move to a new column on the right"
+msgstr "Move to a new column on the right"
 
 msgid "Swap with {{title}}"
 msgstr "Swap with {{title}}"
+
+msgid "View actions"
+msgstr "View actions"
 
 msgid "Restore"
 msgstr "Restore"

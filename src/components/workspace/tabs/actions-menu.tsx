@@ -53,7 +53,9 @@ export const ActionsMenu: FC<{
     }
 
     return (
-        <span ref={anchorRef}>
+        /* The menu opens in a layer outside the header: the mark keeps a
+         * header shown only on hover visible while its menu is open */
+        <span ref={anchorRef} data-menu-open={isOpen || undefined}>
             <IconButton
                 label={label}
                 icon={<IconMore16 />}

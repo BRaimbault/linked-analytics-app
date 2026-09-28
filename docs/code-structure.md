@@ -25,7 +25,7 @@ What already matches the guides in §2:
 
 Where it strains, as of 2026-09-28:
 
-- **One domain spreads over three trees.** The workspace lives in `modules/workspace/` (13 files), `components/workspace/` (including `controller/`, 17 files) and `store/workspace-*-slice.ts`. With one domain that is easy to follow; with five more planned, finding "everything about X" gets harder.
+- **One domain spreads over three trees.** The workspace lives in `modules/workspace/` (12 files), `components/workspace/` (including `controller/`, 17 files) and `store/workspace-*-slice.ts`. With one domain that is easy to follow; with five more planned, finding "everything about X" gets harder.
 - **`components/workspace/controller/` holds no components.** It is the dockview adapter: every dockview call, one file per topic. The name is documented but off.
 - **Test helpers are local.** `render-with-store.tsx` and `fake-dockview.ts` live in `components/workspace/__tests__/`, which is right while the workspace is their only user.
 
@@ -86,7 +86,7 @@ As in CLAUDE.md: in the domain of what it **produces**, not of what it reads. `a
 
 In order, each at the moment given:
 
-1. **Subfolders in `modules/workspace/`**. When: the next file would take it past about 15 (13 as of 2026-09-28). A grouping by topic:
+1. **Subfolders in `modules/workspace/`**. When: the next file would take it past about 15 (12 as of 2026-09-28). A grouping by topic:
     - `grid/`: `grid-tree`, `grid-measures`, `line-lengths`, `layout-sizing`, `layout-targets`;
     - `drops/`: `drop-rules`, `insert-zones`, `drag-payload`;
     - `views/`: `view-types`, `view-limits`, `balanced-split`, `bar-placement`.

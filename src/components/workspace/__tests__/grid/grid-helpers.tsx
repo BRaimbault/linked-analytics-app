@@ -43,8 +43,29 @@ export const mountWorkspace = () => {
     cy.get('[data-test="add-view-map"]').should('be.visible')
 }
 
-export const sleep = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms))
+/* Waits for the page to render what the last events changed: React and
+ * dockview update the page before the next frames, however fast or slow
+ * the machine is */
+const nextFrames = (doc: Document, count = 2) =>
+    new Promise<void>((resolve) => {
+        const step = (left: number) =>
+            left
+                ? doc.defaultView?.requestAnimationFrame(() => step(left - 1))
+                : resolve()
+        step(count)
+    })
+
+/* Frame by frame until the condition holds, or the frames run out: some
+ * drags never set what others wait for (a cancelled drag, a tools tab) */
+const framesUntil = async (
+    doc: Document,
+    condition: () => boolean,
+    maxFrames = 10
+) => {
+    for (let frame = 0; frame < maxFrames && !condition(); frame++) {
+        await nextFrames(doc, 1)
+    }
+}
 
 export const getCell = (doc: Document, title: string): HTMLElement => {
     const tab = [...doc.querySelectorAll('.dv-grid-view .dv-tab')].find(
@@ -223,16 +244,21 @@ export const dragTo = (
         /* Clicking a palette tile can scroll the tools strip's tab row away */
         from.scrollIntoView({ block: 'nearest', inline: 'nearest' })
         fireAtSource('dragstart', from, [0, 0])
-        await sleep(50)
+        /* The workspace shows the drag, then works out and draws its
+         * insert strips, a render or two later */
+        await framesUntil(doc, () =>
+            Boolean(doc.querySelector('[data-test="workspace"][data-dragging]'))
+        )
+        await nextFrames(doc)
         const at = point(doc)
         const target = doc.elementFromPoint(...at) as Element
         fire('dragenter', target, at)
         fire('dragover', target, at)
-        await sleep(30)
+        await nextFrames(doc)
         /* A browser drops only where the last dragover was taken (its
          * default prevented); anywhere else, the drag is cancelled */
         const isTaken = !fire('dragover', target, at)
-        await sleep(30)
+        await nextFrames(doc)
         whileOver?.(doc)
         const result = {
             preview: [
@@ -244,7 +270,7 @@ export const dragTo = (
         }
         fire(drop && isTaken ? 'drop' : 'dragleave', target, at)
         fireAtSource('dragend', from, at)
-        await sleep(50)
+        await nextFrames(doc)
         return result
     })
 
@@ -295,8 +321,15 @@ export const dragDivider = (
         fire('pointermove', doc, (start + target) / 2)
         fire('pointermove', doc, target)
         fire('pointerup', doc, target)
-        await sleep(50)
+        await nextFrames(doc)
     })
+
+/* A tab's name, in the tools strip or in a view's header */
+export const toolTab = (title: string) =>
+    cy.get('.dv-edge-group .dv-tab').contains(title)
+
+export const viewTab = (title: string) =>
+    cy.get('.dv-grid-view .dv-tab').contains(title)
 
 export const clickTile = (tile: ViewType) =>
     cy.get(`[data-test="add-view-${tile}"]`).click()
@@ -328,8 +361,9 @@ export const setUpRowOfThree = () => {
 }
 
 /* The opacity of what only shows on hover, before any hover: hidden with
- * a mouse, shown on a device that can't hover. Headless browsers, as on
- * CI, report no hover, so both cases run. */
+ * a mouse, shown on a device that can't hover. Chrome runs as a desktop
+ * with a mouse (cypress.config.ts) and headless Firefox reports no hover,
+ * so both cases run on CI. */
 export const hiddenUntilHoverOpacity = (doc: Document): string =>
     doc.defaultView?.matchMedia('(hover: none)').matches ? '1' : '0'
 
@@ -343,26 +377,41 @@ export const PREVIEW: DragResult = { preview: true, insertLine: false }
 const titlesOf = (elements: JQuery<HTMLElement>) =>
     [...elements].map((element) => element.textContent?.trim())
 
+/* The checks below retry until the page matches, like expectLayout: the
+ * tab rows update a frame or more after a drop, close or swap */
+
 /* The tabs of the tools strip, in order */
-export const toolTabs = () => cy.get('.dv-edge-group .dv-tab').then(titlesOf)
+export const expectToolTabs = (expected: string[]) =>
+    cy
+        .get('.dv-edge-group .dv-tab')
+        .should((tabs) => expect(titlesOf(tabs)).to.deep.equal(expected))
+
+const readViewTitles = (doc: Document) =>
+    getCells(doc).map((cell) =>
+        cell.querySelector('.dv-tab')?.textContent?.trim()
+    )
 
 /* The views' titles, in the order dockview lays them out */
-export const viewTitles = () =>
+export const expectViewTitles = (expected: string[]) =>
     cy
         .document()
-        .then((doc) =>
-            getCells(doc).map((cell) =>
-                cell.querySelector('.dv-tab')?.textContent?.trim()
-            )
-        )
+        .should((doc) => expect(readViewTitles(doc)).to.deep.equal(expected))
 
-/* Clicks inside a view's header, e.g. its close or maximize button */
+export const expectViewCount = (count: number) =>
+    cy
+        .document()
+        .should((doc) => expect(readViewTitles(doc)).to.have.length(count))
+
+/* An element inside a view's header, e.g. its close or maximize button;
+ * a query chain, so it waits for the view to be there */
 export const inViewHeader = (title: string, selector: string) =>
     cy
-        .document()
-        .then((doc) =>
-            cy.wrap(getCell(doc, title).querySelector(selector) as HTMLElement)
+        .get('.dv-grid-view .dv-groupview')
+        .filter(
+            (_, cell) =>
+                cell.querySelector('.dv-tab')?.textContent?.trim() === title
         )
+        .find(selector)
 
 export const closeView = (title: string) =>
     inViewHeader(title, '.dv-default-tab-action').click()

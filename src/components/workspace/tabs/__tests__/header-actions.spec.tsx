@@ -4,7 +4,7 @@ import {
     toolsStrip,
     viewsGrid,
 } from '@components/workspace/__tests__/render-workspace'
-import { selectViews } from '@store/workspace-slice'
+import { selectActiveView, selectViews } from '@store/workspace-slice'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
@@ -18,6 +18,12 @@ describe('header actions', () => {
 
         await userEvent.click(screen.getByTestId('move-tools-button'))
         await userEvent.click(await screen.findByText('Move to left'))
+        /* The menu's button went with the old strip */
+        await waitFor(() =>
+            expect(
+                toolsStrip().getByRole('tab', { name: 'Add views' })
+            ).toHaveFocus()
+        )
 
         /* Once on the left, the menu offers the top edge instead */
         await userEvent.click(screen.getByTestId('move-tools-button'))
@@ -90,6 +96,90 @@ describe('header actions', () => {
         expect(
             toolsStrip().getByRole('tab', { name: 'Visualization 1' })
         ).toBeInTheDocument()
+    })
+
+    it('selects the view swapped from its menu, opened from the keyboard', async () => {
+        const { store } = await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        await userEvent.click(screen.getByTestId('add-view-visualization'))
+        await userEvent.click(
+            toolsStrip().getByRole('tab', { name: 'Visualization 1' })
+        )
+        expect(selectActiveView(store.getState())?.type).toBe('visualization')
+
+        /* No pointer on Map 1, which would select it on its own */
+        const mapCell = viewsGrid()
+            .getByRole('tab', { name: 'Map 1' })
+            .closest('.dv-groupview') as HTMLElement
+        within(mapCell).getByTestId('view-actions-button').focus()
+        await userEvent.keyboard('{Enter}')
+        await screen.findByText('Swap with Visualization 1')
+        await userEvent.keyboard('{Enter}')
+
+        /* Map 1's settings came forward, so Map 1 is selected */
+        await waitFor(() =>
+            expect(selectActiveView(store.getState())?.type).toBe('map')
+        )
+        expect(
+            toolsStrip().getByRole('tab', { name: 'Map 1' })
+        ).toHaveAttribute('aria-selected', 'true')
+    })
+
+    it('selects no view after swapping text views, which have no settings', async () => {
+        const { store } = await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-text'))
+        await userEvent.click(screen.getByTestId('add-view-text'))
+        const cellOf = (title: string) =>
+            viewsGrid()
+                .getByRole('tab', { name: title })
+                .closest('.dv-groupview') as HTMLElement
+        const secondCell = cellOf('Text 2')
+        within(cellOf('Text 1')).getByTestId('view-actions-button').focus()
+        await userEvent.keyboard('{Enter}')
+        await screen.findByText('Swap with Text 2')
+        await userEvent.keyboard('{Enter}')
+
+        await waitFor(() => expect(cellOf('Text 1')).toBe(secondCell))
+        expect(selectActiveView(store.getState())).toBeNull()
+    })
+
+    it('moves a view to a new row or column at the grid\u2019s edge from its menu', async () => {
+        await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        await userEvent.click(screen.getByTestId('add-view-visualization'))
+        const mapCell = () =>
+            viewsGrid()
+                .getByRole('tab', { name: 'Map 1' })
+                .closest('.dv-groupview') as HTMLElement
+
+        await userEvent.click(
+            within(mapCell()).getByTestId('view-actions-button')
+        )
+
+        /* The 1000x800 window stacks the views: Map 1 already runs along
+         * the top edge */
+        expect(
+            (await screen.findAllByRole('menuitem')).map(
+                (item) => item.textContent
+            )
+        ).toEqual([
+            'Swap with Visualization 1',
+            'Move to a new row at the bottom',
+            'Move to a new column on the left',
+            'Move to a new column on the right',
+        ])
+        await userEvent.click(
+            screen.getByText('Move to a new row at the bottom')
+        )
+
+        const viewOrder = () =>
+            [...document.querySelectorAll('.dv-grid-view .dv-groupview')].map(
+                (group) => group.querySelector('.dv-tab')?.textContent
+            )
+        await waitFor(() =>
+            expect(viewOrder()).toEqual(['Visualization 1', 'Map 1'])
+        )
+        expect(viewsGrid().getByRole('tab', { name: 'Map 1' })).toHaveFocus()
     })
 
     it('opens a view\u2019s settings on a double click on its header, expanding the strip', async () => {
