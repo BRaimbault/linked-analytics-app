@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
 import {
     decodeViewDrag,
     encodeViewDrag,
     getDraggedViewType,
     getViewTypeMime,
     VIEW_DRAG_MIME,
-} from '../drag-payload'
+} from '@modules/workspace/drag-payload'
+import { describe, expect, it } from 'vitest'
 
 describe('view drag payload', () => {
     it('round-trips each view type', () => {

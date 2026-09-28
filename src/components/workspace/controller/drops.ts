@@ -19,7 +19,6 @@ import {
 import { addView } from './add-view'
 import {
     getAddableDraggedType,
-    getDraggedPanel,
     getDraggedSizes,
     getDraggedView,
     getDragFormats,
@@ -126,7 +125,7 @@ export const dropOnInsertZone = (
     })
 }
 
-export const getDropPlacement = (
+const getDropPlacement = (
     group: DockviewGroupPanel | undefined,
     position: Position
 ): AddPanelPositionOptions => {
@@ -160,11 +159,7 @@ export const refuseDisallowedDrop = (
     event: DockviewWillShowOverlayLocationEvent
 ): void => {
     const tree = readGridTree(api)
-    const context = getDropContext(api, event, tree)
-    const dragged =
-        context.source === 'view'
-            ? getDraggedPanel(api, event.getData())
-            : undefined
+    const { context, draggedView } = getDropContext(api, event, tree)
     const placedSizes = getDraggedSizes(
         api,
         event.getData(),
@@ -173,7 +168,7 @@ export const refuseDisallowedDrop = (
     const hasRoom = hasRoomForDrop(tree, {
         group: event.group,
         position: event.position,
-        sourceGroupId: dragged?.group.id ?? null,
+        sourceGroupId: draggedView?.group.id ?? null,
         placedSizes: placedSizes ?? PLUGIN_SIZES,
     })
     if (!isAllowedDrop(context) || !hasRoom) {
@@ -187,26 +182,31 @@ export const swapOrExpectMove = (
     api: DockviewApi,
     event: DockviewWillDropEvent
 ): void => {
-    const context = getDropContext(api, event, readGridTree(api))
-    const dragged = getDraggedPanel(api, event.getData())
+    const { context, draggedView } = getDropContext(
+        api,
+        event,
+        readGridTree(api)
+    )
     const target = event.group?.activePanel
     if (isSwapDrop(context)) {
         event.preventDefault()
-        if (dragged && target) {
-            swapViews(api, dragged, target)
+        if (draggedView && target) {
+            swapViews(api, draggedView, target)
         }
         return
     }
-    if (context.source === 'view' && dragged) {
+    if (draggedView) {
         expectLayoutChange(
             api,
-            event.group && !context.targetIsEdgeGroup
+            /* A view is never dropped on the tools strip: that drop is
+             * refused before it happens (isAllowedDrop) */
+            event.group
                 ? {
                       kind: 'split',
-                      viewId: dragged.id,
+                      viewId: draggedView.id,
                       targetGroupId: event.group.id,
                   }
-                : { kind: 'insert', viewId: dragged.id }
+                : { kind: 'insert', viewId: draggedView.id }
         )
     }
 }

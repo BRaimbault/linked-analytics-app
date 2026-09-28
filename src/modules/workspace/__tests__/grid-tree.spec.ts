@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest'
 import {
     findLeafLocation,
     fromSerializedGrid,
     getLeafRects,
     PLUGIN_SIZES,
-    withViewSizes,
-} from '../grid-tree'
-import { getViewTypeSizes } from '../view-types'
+    withViewInfo,
+} from '@modules/workspace/grid-tree'
+import { getViewTypeSizes } from '@modules/workspace/view-types'
+import { describe, expect, it } from 'vitest'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 /* a | (b over c) */
@@ -104,19 +104,25 @@ describe('findLeafLocation', () => {
     })
 })
 
-describe('withViewSizes', () => {
+describe('withViewInfo', () => {
     const selectorSizes = getViewTypeSizes('org-unit-selector')
 
-    it('attaches each view\u2019s sizes by cell', () => {
-        const sized = withViewSizes(
+    it('attaches each view\u2019s sizes and kind by cell', () => {
+        const sized = withViewInfo(
             buildTree(1200, 800, row(1, view('a'), view('w'))),
-            (id) => (id === 'w' ? selectorSizes : PLUGIN_SIZES)
+            (id) =>
+                id === 'w'
+                    ? { sizes: selectorSizes, kind: 'selector' }
+                    : { sizes: PLUGIN_SIZES, kind: 'plugin' }
         )
 
         expect(
             sized.root.children.map(
-                (node) => node.type === 'leaf' && node.sizes
+                (node) => node.type === 'leaf' && [node.sizes, node.kind]
             )
-        ).toEqual([PLUGIN_SIZES, selectorSizes])
+        ).toEqual([
+            [PLUGIN_SIZES, 'plugin'],
+            [selectorSizes, 'selector'],
+        ])
     })
 })

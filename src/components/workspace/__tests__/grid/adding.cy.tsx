@@ -9,6 +9,7 @@ import {
     pointIn,
     PREVIEW,
     setUpSeventyThirty,
+    setUpRowOfThree,
     SMOKE,
     viewTitles,
 } from './grid-helpers'
@@ -37,32 +38,53 @@ describe('adding views', () => {
         expectLayout({ 'Visualization 1': { w: 100, h: 100 } })
     })
 
-    it('adds a clicked tile next to the selected view', SMOKE, () => {
+    it(
+        'adds a clicked tile beside the first view in a wide grid',
+        SMOKE,
+        () => {
+            mountWorkspace()
+            clickTile('map')
+            clickTile('visualization')
+
+            expectLayout({
+                'Map 1': { x: 0, w: 50, h: 100 },
+                'Visualization 1': { x: 50, w: 50, h: 100 },
+            })
+        }
+    )
+
+    it('makes four clicked tiles an even 2×2 grid', SMOKE, () => {
         mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
         clickTile('map')
         clickTile('visualization')
 
         expectLayout({
-            'Map 1': { x: 0, w: 50, h: 100 },
-            'Visualization 1': { x: 50, w: 50, h: 100 },
+            'Map 1': { x: 0, y: 0, w: 50, h: 50 },
+            'Visualization 1': { x: 50, y: 0, w: 50, h: 50 },
+            'Map 2': { x: 0, y: 50, w: 50, h: 50 },
+            'Visualization 2': { x: 50, y: 50, w: 50, h: 50 },
         })
     })
 
-    it('adds a clicked tile below the selected view once it is too narrow to split', () => {
+    it('makes four clicked tiles an even 2×2 grid in a tall window too', () => {
+        cy.viewport(600, 800)
         mountWorkspace()
         clickTile('map')
         clickTile('visualization')
+        expectLayout({
+            'Map 1': { y: 0, h: 50 },
+            'Visualization 1': { y: 50, h: 50 },
+        })
         clickTile('map')
         clickTile('visualization')
 
-        viewTitles().should('have.length', 4)
-        cy.document().then((doc) => {
-            const [third, fourth] = ['Map 2', 'Visualization 2'].map((title) =>
-                pointIn(doc, title, [0, 0])
-            )
-            /* Stacked in the same column */
-            expect(fourth[0]).to.be.closeTo(third[0], 1)
-            expect(fourth[1]).to.be.greaterThan(third[1])
+        expectLayout({
+            'Map 1': { x: 0, y: 0, w: 50, h: 50 },
+            'Map 2': { x: 50, y: 0, w: 50, h: 50 },
+            'Visualization 1': { x: 0, y: 50, w: 50, h: 50 },
+            'Visualization 2': { x: 50, y: 50, w: 50, h: 50 },
         })
     })
 
@@ -178,10 +200,7 @@ describe('adding views', () => {
     })
 
     it('offers no split of a view too small to halve', () => {
-        mountWorkspace()
-        clickTile('map')
-        clickTile('visualization')
-        clickTile('map')
+        setUpRowOfThree()
 
         /* Three columns of about 427px: halves would be under 240px */
         dragTo(

@@ -6,6 +6,10 @@
     isolation: isolate;
     flex: 1;
     min-block-size: 0;
+    /* dockview leaves the overlays of views and tools it hasn't shown yet
+     * unpositioned, below the grid; hidden, but they would still make the
+     * app scroll. Only the workspace's minimum size should. */
+    overflow: hidden;
 }
 
 /* dockview defines its colours as variables on the theme element; these
@@ -87,6 +91,27 @@
     flex-grow: 1;
 }
 
+/* Every tools tab has the same length, so the strip reads as a row of equal
+ * tabs; a longer name is cut short, and its tab's title shows it in full.
+ * Logical sizes follow the vertical strip's writing mode too. */
+.workspace :global(.dv-edge-group .dv-tab) {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    inline-size: 160px;
+}
+
+.workspace :global(.dv-edge-group .dv-default-tab) {
+    inline-size: 100%;
+}
+
+.workspace :global(.dv-edge-group .dv-default-tab-content) {
+    overflow: hidden;
+    flex: 1;
+    min-inline-size: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Panel bodies are drawn in overlays sized to their cell; a collapsed
  * tools strip shrinks its overlay to nothing, which must also hide what is
  * in it */
@@ -119,4 +144,41 @@
     ) {
     max-inline-size: none;
     max-block-size: 4px;
+}
+
+/* Headers on hover: a view's header floats over the top of its view
+ * instead of taking room, so no view (and no plugin's iframe) resizes as
+ * the pointer moves. It shows while the view is hovered (data-hovered, set
+ * by markHoveredView) or holds the focus, during a drag (its tab is the
+ * handle), and always on touch screens, which have no hover. */
+.workspace[data-view-headers='hover'] :global(.dv-grid-view .dv-groupview) {
+    position: relative;
+}
+
+.workspace[data-view-headers='hover']
+    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.workspace[data-view-headers='hover']
+    :global(
+        .dv-grid-view
+            .dv-groupview:is([data-hovered], :focus-within)
+            > .dv-tabs-and-actions-container
+    ),
+.workspace[data-view-headers='hover'][data-dragging]
+    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .workspace[data-view-headers='hover']
+        :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+        opacity: 1;
+    }
 }

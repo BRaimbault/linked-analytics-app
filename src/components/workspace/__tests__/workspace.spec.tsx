@@ -1,13 +1,18 @@
-import { getOuterEdgeDropModel } from '@components/workspace/workspace'
 import {
     getViewTypeMime,
     VIEW_DRAG_MIME,
 } from '@modules/workspace/drag-payload'
+import { viewHeadersChanged } from '@store/workspace-settings-slice'
 import { selectActiveView, selectViews } from '@store/workspace-slice'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { mockContainerSize, renderWorkspace } from './render-workspace'
+import {
+    mockContainerSize,
+    renderWorkspace,
+    toolsStrip,
+    viewsGrid,
+} from './render-workspace'
 
 mockContainerSize()
 
@@ -17,8 +22,13 @@ describe('Workspace', () => {
 
         expect(
             screen.getAllByRole('tab').map((tab) => tab.textContent)
-        ).toEqual(['Add views'])
-        expect(screen.getByTestId('workspace-watermark')).toBeInTheDocument()
+        ).toEqual(['Workspace', 'Add views'])
+        expect(
+            within(screen.getByTestId('workspace-watermark')).getByRole(
+                'heading',
+                { level: 2 }
+            )
+        ).toHaveTextContent('Drag a map or visualization here')
     })
 
     it('marks the workspace while something is dragged', async () => {
@@ -40,7 +50,7 @@ describe('Workspace', () => {
         await userEvent.click(screen.getByTestId('add-view-map'))
 
         expect(
-            await screen.findByRole('tab', { name: 'Map 1' })
+            await viewsGrid().findByRole('tab', { name: 'Map 1' })
         ).toBeInTheDocument()
         expect(screen.getByTestId('view-placeholder')).toBeInTheDocument()
         await waitFor(() =>
@@ -82,7 +92,7 @@ describe('Workspace', () => {
         fireEvent.drop(watermark, { dataTransfer: palette })
 
         expect(
-            await screen.findByRole('tab', { name: 'Map 1' })
+            await viewsGrid().findByRole('tab', { name: 'Map 1' })
         ).toBeInTheDocument()
     })
 
@@ -102,7 +112,7 @@ describe('Workspace', () => {
         await userEvent.click(screen.getByTestId('watermark-add-visualization'))
 
         expect(
-            await screen.findByRole('tab', { name: 'Visualization 1' })
+            await viewsGrid().findByRole('tab', { name: 'Visualization 1' })
         ).toBeInTheDocument()
     })
 
@@ -112,29 +122,67 @@ describe('Workspace', () => {
         await userEvent.click(screen.getByTestId('add-view-visualization'))
 
         expect(
-            await screen.findByRole('tab', { name: 'Map 1 settings' })
+            await toolsStrip().findByRole('tab', { name: 'Map 1' })
         ).toBeInTheDocument()
         expect(
-            screen.getByRole('tab', { name: 'Visualization 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Visualization 1' })
         ).toBeInTheDocument()
 
-        const mapTab = screen.getByRole('tab', { name: 'Map 1' })
+        const mapTab = viewsGrid().getByRole('tab', { name: 'Map 1' })
         await userEvent.click(
             within(mapTab).getByRole('button', { name: 'Close tab' })
         )
 
         await waitFor(() =>
             expect(
-                screen.queryByRole('tab', { name: 'Map 1 settings' })
+                toolsStrip().queryByRole('tab', { name: 'Map 1' })
             ).toBeNull()
         )
+    })
+
+    it('marks the Workspace and Add views tabs with an icon, and no other', async () => {
+        await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+
+        const hasIcon = (name: string) =>
+            within(toolsStrip().getByRole('tab', { name })).queryByTestId(
+                'tab-icon'
+            ) !== null
+
+        expect(hasIcon('Workspace')).toBe(true)
+        expect(hasIcon('Add views')).toBe(true)
+        expect(
+            await toolsStrip().findByRole('tab', { name: 'Map 1' })
+        ).toBeInTheDocument()
+        expect(hasIcon('Map 1')).toBe(false)
+    })
+
+    it('marks the view under the pointer, and follows the header setting', async () => {
+        const { store } = await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        const workspace = screen.getByTestId('workspace')
+        expect(workspace).toHaveAttribute('data-view-headers', 'always')
+
+        const body = await screen.findByTestId('view-placeholder')
+        const cell = viewsGrid()
+            .getByRole('tab', { name: 'Map 1' })
+            .closest('.dv-groupview') as HTMLElement
+        fireEvent.pointerOver(body)
+        expect(cell).toHaveAttribute('data-hovered')
+        fireEvent.pointerLeave(workspace)
+        expect(cell).not.toHaveAttribute('data-hovered')
+
+        act(() => {
+            store.dispatch(viewHeadersChanged('hover'))
+        })
+        expect(workspace).toHaveAttribute('data-view-headers', 'hover')
     })
 
     it('closes a view from its settings tab', async () => {
         await renderWorkspace()
         await userEvent.click(screen.getByTestId('add-view-map'))
-        const settingsTab = await screen.findByRole('tab', {
-            name: 'Map 1 settings',
+        const settingsTab = await toolsStrip().findByRole('tab', {
+            name: 'Map 1',
         })
 
         expect(
@@ -148,9 +196,9 @@ describe('Workspace', () => {
         )
 
         await waitFor(() =>
-            expect(screen.queryByRole('tab', { name: 'Map 1' })).toBeNull()
+            expect(viewsGrid().queryByRole('tab', { name: 'Map 1' })).toBeNull()
         )
-        expect(screen.queryByRole('tab', { name: 'Map 1 settings' })).toBeNull()
+        expect(toolsStrip().queryByRole('tab', { name: 'Map 1' })).toBeNull()
         expect(screen.getByTestId('workspace-watermark')).toBeInTheDocument()
     })
 
@@ -164,11 +212,11 @@ describe('Workspace', () => {
             'true'
         )
 
-        await userEvent.click(screen.getByRole('tab', { name: 'Map 1' }))
+        await userEvent.click(viewsGrid().getByRole('tab', { name: 'Map 1' }))
 
         await waitFor(() =>
             expect(
-                screen.getByRole('tab', { name: 'Map 1 settings' })
+                toolsStrip().getByRole('tab', { name: 'Map 1' })
             ).toHaveAttribute('aria-selected', 'true')
         )
         expect(screen.getByTestId('selected-view-tab')).toHaveTextContent(
@@ -191,47 +239,45 @@ describe('Workspace', () => {
             )
         )
         expect(
-            screen.getByRole('tab', { name: 'Map 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Map 1' })
         ).toHaveAttribute('aria-selected', 'true')
         expect(screen.getByTestId('selected-view-tab')).toHaveTextContent(
             'Map 1'
         )
     })
 
-    it('selects a neighbour when the selected view is closed', async () => {
+    it('goes back to the palette, with no view selected, when a view is closed', async () => {
         const { store } = await renderWorkspace()
         await userEvent.click(screen.getByTestId('add-view-map'))
         await userEvent.click(screen.getByTestId('add-view-visualization'))
         await userEvent.click(
-            screen.getByRole('tab', { name: 'Visualization 1' })
+            viewsGrid().getByRole('tab', { name: 'Visualization 1' })
         )
 
         await userEvent.click(
             within(
-                screen.getByRole('tab', { name: 'Visualization 1' })
+                viewsGrid().getByRole('tab', { name: 'Visualization 1' })
             ).getByRole('button', { name: 'Close tab' })
         )
 
         await waitFor(() =>
-            expect(selectActiveView(store.getState())).toEqual(
-                expect.objectContaining({ type: 'map', number: 1 })
-            )
+            expect(selectActiveView(store.getState())).toBeNull()
         )
         expect(
-            screen.getByRole('tab', { name: 'Map 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Add views' })
         ).toHaveAttribute('aria-selected', 'true')
     })
 
     it('goes back to the palette when the last view is closed', async () => {
         await renderWorkspace()
         await userEvent.click(screen.getByTestId('add-view-map'))
-        await userEvent.click(screen.getByRole('tab', { name: 'Map 1' }))
+        await userEvent.click(viewsGrid().getByRole('tab', { name: 'Map 1' }))
         expect(
-            screen.getByRole('tab', { name: 'Map 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Map 1' })
         ).toHaveAttribute('aria-selected', 'true')
 
         await userEvent.click(
-            within(screen.getByRole('tab', { name: 'Map 1' })).getByRole(
+            within(viewsGrid().getByRole('tab', { name: 'Map 1' })).getByRole(
                 'button',
                 { name: 'Close tab' }
             )
@@ -242,28 +288,5 @@ describe('Workspace', () => {
                 screen.getByRole('tab', { name: 'Add views' })
             ).toHaveAttribute('aria-selected', 'true')
         )
-    })
-})
-
-describe('getOuterEdgeDropModel', () => {
-    const pointer = (primary: 'coarse' | 'fine') =>
-        vi.stubGlobal('matchMedia', (query: string) => ({
-            matches: query === `(pointer: ${primary})`,
-        }))
-
-    it('keeps dockview’s outer edges on a touch screen, where drags use pointer events', () => {
-        pointer('coarse')
-
-        expect(getOuterEdgeDropModel()).toEqual(
-            expect.objectContaining({ activationSize: expect.any(Object) })
-        )
-    })
-
-    it('leaves the outer edges to the insert zones for a mouse, or without media queries', () => {
-        pointer('fine')
-        expect(getOuterEdgeDropModel()).toBe(false)
-
-        vi.stubGlobal('matchMedia', undefined)
-        expect(getOuterEdgeDropModel()).toBe(false)
     })
 })

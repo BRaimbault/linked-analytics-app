@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { VIEW_HEADER_HEIGHT } from '@modules/workspace/grid-tree'
 import {
     getInsertZones,
     INSERT_ZONE_THICKNESS,
     OUTER_ZONE_THICKNESS,
-    VIEW_HEADER_HEIGHT,
     type InsertZone,
-} from '../insert-zones'
-import { getViewTypeSizes } from '../view-types'
+} from '@modules/workspace/insert-zones'
+import { getViewTypeSizes } from '@modules/workspace/view-types'
+import { describe, expect, it } from 'vitest'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 const half = INSERT_ZONE_THICKNESS / 2

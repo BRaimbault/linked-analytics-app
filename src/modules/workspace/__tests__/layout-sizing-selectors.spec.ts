@@ -1,6 +1,6 @@
+import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
+import { computeLayoutSizes } from '@modules/workspace/layout-sizing'
 import { describe, expect, it } from 'vitest'
-import { PLUGIN_SIZES } from '../grid-tree'
-import { computeLayoutSizes } from '../layout-sizing'
 import { buildTree, column, row, view, selector } from './grid-tree-builders'
 
 /* 1200×800 grids. `before` is the user's layout; `after` is how dockview

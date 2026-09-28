@@ -1,8 +1,8 @@
+import { customBaseQuery } from '@api/custom-base-query'
+import type { BaseQueryApiWithExtraArg } from '@api/custom-base-query'
 import type { Query, Mutation } from '@dhis2/app-service-data'
 import type { DataEngine } from '@types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { customBaseQuery } from '../custom-base-query'
-import type { BaseQueryApiWithExtraArg } from '../custom-base-query'
 
 describe('customBaseQuery', () => {
     const mockQueryResult = { foo: 'bar' }

@@ -1,12 +1,11 @@
 import {
-    hasRoomToInsertLine,
+    hasRoomForGridLine,
     hasRoomToSplitCell,
     getSplitAxis,
 } from '@modules/workspace/drop-rules'
-import { getMinLength } from '@modules/workspace/grid-measures'
 import {
     along,
-    getGridLength,
+    crossAxis,
     type GridTree,
     type SplitAxis,
     type ViewSizes,
@@ -24,6 +23,8 @@ export const hasRoomToSplit = (
         targetMin: along(getPanelSizes(group.activePanel).min, axis),
         placedMin: along(placedSizes.min, axis),
         halves: !placedSizes.preferred,
+        crossLength: getCellLength(group, crossAxis(axis)),
+        placedCrossMin: along(placedSizes.min, crossAxis(axis)),
     })
 
 /* The dragged view is left out of the room checks: moving it frees its
@@ -51,13 +52,10 @@ export const hasRoomForDrop = (
     }
     return (
         !tree ||
-        hasRoomToInsertLine({
-            minLength: getMinLength(tree.root, tree.orientation, {
-                axis,
-                excludeId: sourceGroupId,
-            }),
-            length: getGridLength(tree, axis),
-            placedMin: along(placedSizes.min, axis),
+        hasRoomForGridLine(tree, {
+            axis,
+            placedSizes,
+            excludeId: sourceGroupId,
         })
     )
 }

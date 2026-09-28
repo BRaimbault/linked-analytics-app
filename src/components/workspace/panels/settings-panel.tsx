@@ -9,7 +9,8 @@ import type { FC } from 'react'
 import classes from './styles/panels.module.css'
 import { ToolPanel } from './tool-panel'
 
-const SETTINGS_HINTS: Record<ViewType, () => string> = {
+/* Text views are edited in place, so they have no settings tab */
+const SETTINGS_HINTS: Partial<Record<ViewType, () => string>> = {
     map: () =>
         i18n.t(
             'Choosing a saved map, or creating one with layers, will happen here.'
@@ -35,7 +36,8 @@ export const SettingsPanel: FC<
         ({ id }) => id === params.viewId
     )
 
-    if (!view) {
+    const hint = view && SETTINGS_HINTS[view.type]
+    if (!view || !hint) {
         return null
     }
 
@@ -45,7 +47,7 @@ export const SettingsPanel: FC<
                 <ViewTypeIcon type={view.type} />
                 {getViewTitle(view.type, view.number)}
             </p>
-            <p className={classes.toolHint}>{SETTINGS_HINTS[view.type]()}</p>
+            <p className={classes.toolHint}>{hint()}</p>
             <p className={classes.toolHint}>
                 {i18n.t('Links to other views will be set here.')}
             </p>

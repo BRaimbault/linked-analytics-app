@@ -1,5 +1,5 @@
+import { computeLayoutSizes } from '@modules/workspace/layout-sizing'
 import { describe, expect, it } from 'vitest'
-import { computeLayoutSizes } from '../layout-sizing'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 /* 1200×800 grids. `before` is the user's layout; `after` is how dockview
@@ -257,7 +257,7 @@ describe('computeLayoutSizes', () => {
         expect(computeLayoutSizes(before, unmeasured)).toEqual([])
     })
 
-    it('skips a branch that holds no view of its own to resize it by', () => {
+    it('sizes a branch that holds no view of its own through the view after it', () => {
         const before = buildTree(
             W,
             H,
@@ -285,10 +285,21 @@ describe('computeLayoutSizes', () => {
             )
         )
 
+        /* e is resized, and the block, which dockview resizes through no
+         * view of its own, takes the rest */
         expect(computeLayoutSizes(before, after)).toEqual([
+            { id: 'e', width: 300 },
             { id: 'a', height: 400 },
             { id: 'a', width: 450 },
             { id: 'c', width: 450 },
         ])
+    })
+
+    it('leaves a layout alone when it is off by no more than a pixel', () => {
+        const before = buildTree(W, H, row(1, view('a', 1), view('b', 1)))
+        /* dockview rounded a 600/600 split to 601/599 */
+        const after = buildTree(W, H, row(1, view('a', 601), view('b', 599)))
+
+        expect(computeLayoutSizes(before, after)).toEqual([])
     })
 })

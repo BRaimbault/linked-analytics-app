@@ -1,59 +1,47 @@
 import { getWorkspaceAnnouncement } from '@components/workspace/controller/announcements'
 import {
+    getDropOverlayModel,
+    getOuterEdgeDropModel,
+} from '@components/workspace/controller/drop-models'
+import {
     ADD_VIEWS_PANEL_ID,
     SWAP_SPACER_COMPONENT,
     VIEW_COMPONENT,
     VIEW_SETTINGS_COMPONENT,
+    WORKSPACE_PANEL_ID,
 } from '@components/workspace/controller/panels'
-import { showSettingsForTarget } from '@components/workspace/controller/settings'
+import {
+    keepCloseFromSelecting,
+    showSettingsForTarget,
+} from '@components/workspace/controller/settings'
 import { setupWorkspace } from '@components/workspace/controller/setup-workspace'
-import { SwapSpacer } from '@components/workspace/controller/swap-views'
+import { markHoveredView } from '@components/workspace/controller/views'
 import { InsertZones } from '@components/workspace/insert-zones/insert-zones'
 import { AddViewsPanel } from '@components/workspace/panels/add-views-panel'
 import { SettingsPanel } from '@components/workspace/panels/settings-panel'
-import { ViewPlaceholderPanel } from '@components/workspace/panels/view-placeholder-panel'
+import { SwapSpacer } from '@components/workspace/panels/swap-spacer'
+import { ViewPanel } from '@components/workspace/panels/view-panel'
 import { Watermark } from '@components/workspace/panels/watermark'
+import { WorkspacePanel } from '@components/workspace/panels/workspace-panel'
 import { HeaderActions } from '@components/workspace/tabs/header-actions'
 import { WorkspaceTab } from '@components/workspace/tabs/workspace-tab'
 import { useCurrentDrag } from '@components/workspace/use-current-drag'
+import { useWorkspaceMinimumSize } from '@components/workspace/use-workspace-minimum-size'
 import { WorkspaceApiContext } from '@components/workspace/workspace-api-context'
 import i18n from '@dhis2/d2-i18n'
-import { useAppDispatch } from '@hooks'
+import { useAppDispatch, useAppSelector } from '@hooks'
+import { selectViewHeaders } from '@store/workspace-settings-slice'
+import { activeViewChanged } from '@store/workspace-slice'
 import {
     DockviewReact,
     themeLight,
     type DockviewApi,
     type DockviewTheme,
     type DockviewReadyEvent,
-    type DroptargetOverlayModel,
-    type DropOverlayModelParams,
 } from 'dockview-react'
 import 'dockview-react/dist/styles/dockview.css'
-import { useEffect, useState, type FC } from 'react'
+import { useEffect, useRef, useState, type FC } from 'react'
 import classes from './styles/workspace.module.css'
-
-/* dockview's defaults are a 10px band at the outer edges and 20% per side
- * within a cell, which leaves most of a cell to swapping. Wider bands make
- * adding or moving a view to an edge easy to hit; the middle third of a
- * cell still swaps. */
-const OUTER_EDGE_DROP_MODEL: DroptargetOverlayModel = {
-    activationSize: { type: 'pixels', value: 48 },
-    size: { type: 'percentage', value: 25 },
-}
-
-/* The outer edges are InsertZones, like the lines between views, but those
- * only take mouse drags. On a touch screen dockview drags with pointer
- * events (it checks the same media queries), so its own outer edges stay. */
-export const getOuterEdgeDropModel = (): DroptargetOverlayModel | false =>
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(pointer: coarse)').matches &&
-    !window.matchMedia('(pointer: fine)').matches &&
-    OUTER_EDGE_DROP_MODEL
-const CELL_DROP_MODEL: DroptargetOverlayModel = {
-    activationSize: { type: 'percentage', value: 33 },
-}
-const getDropOverlayModel = ({ location }: DropOverlayModelParams) =>
-    location === 'content' ? CELL_DROP_MODEL : undefined
 
 /* Tabs are reordered only in the tools strip, and a tab dropped there lands
  * between two tabs, so its preview is a line at that tab edge rather than a
@@ -67,7 +55,8 @@ const THEME: DockviewTheme = {
 
 /* Defined once: a new object on every render makes dockview reconfigure */
 const components = {
-    [VIEW_COMPONENT]: ViewPlaceholderPanel,
+    [VIEW_COMPONENT]: ViewPanel,
+    [WORKSPACE_PANEL_ID]: WorkspacePanel,
     [ADD_VIEWS_PANEL_ID]: AddViewsPanel,
     [VIEW_SETTINGS_COMPONENT]: SettingsPanel,
     [SWAP_SPACER_COMPONENT]: SwapSpacer,
@@ -77,30 +66,50 @@ export const Workspace: FC = () => {
     const dispatch = useAppDispatch()
     const [api, setApi] = useState<DockviewApi | null>(null)
     const dragFormats = useCurrentDrag()
+    const minimumSize = useWorkspaceMinimumSize(api)
+    const viewHeaders = useAppSelector(selectViewHeaders)
+
+    /* A floating header gives a view's content its room: dockview places
+     * view bodies from their cell's content box, but only when it lays out */
+    const workspaceRef = useRef<HTMLDivElement>(null)
+    useEffect(() => {
+        const element = workspaceRef.current
+        if (api && element) {
+            api.layout(element.clientWidth, element.clientHeight, true)
+        }
+    }, [api, viewHeaders])
 
     useEffect(() => {
         if (!api) {
             return
         }
         return setupWorkspace(api, dispatch, {
+            workspace: i18n.t('Workspace'),
             addViews: i18n.t('Add views'),
-            viewSettings: (viewTitle) =>
-                i18n.t('{{title}} settings', {
-                    title: viewTitle,
-                    interpolation: { escapeValue: false },
-                }),
         })
     }, [api, dispatch])
 
     return (
         <WorkspaceApiContext.Provider value={api}>
             <div
+                ref={workspaceRef}
                 className={classes.workspace}
                 data-test="workspace"
                 data-dragging={dragFormats ? true : undefined}
-                onPointerDownCapture={(event) =>
-                    api && showSettingsForTarget(api, event.target)
-                }
+                data-view-headers={viewHeaders}
+                onPointerOver={(event) => markHoveredView(api, event.target)}
+                onPointerLeave={() => markHoveredView(api, null)}
+                style={minimumSize}
+                onPointerDownCapture={(event) => {
+                    if (keepCloseFromSelecting(event) || !api) {
+                        return
+                    }
+                    const viewId = showSettingsForTarget(api, event.target)
+                    if (viewId) {
+                        dispatch(activeViewChanged(viewId))
+                    }
+                }}
+                onClickCapture={keepCloseFromSelecting}
             >
                 <DockviewReact
                     theme={THEME}

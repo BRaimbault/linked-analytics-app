@@ -34,7 +34,7 @@ describe('SettingsPanel', () => {
             )
         })
 
-        expect(screen.getByText('Org unit selector 1')).toBeInTheDocument()
+        expect(screen.getByText('Org unit 1')).toBeInTheDocument()
         expect(
             screen.getByText(/org units this selector offers/)
         ).toBeInTheDocument()

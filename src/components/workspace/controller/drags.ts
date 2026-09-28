@@ -24,11 +24,11 @@ import {
     toWorkspaceView,
 } from './panels'
 
-export type DragData = { panelId: string | null; groupId: string } | undefined
+type DragData = { panelId: string | null; groupId: string } | undefined
 
 /* A tab drag carries the panel; a drag from a group's header carries only
  * the group, whose tab is its view */
-export const getDraggedPanel = (
+const getDraggedPanel = (
     api: DockviewApi,
     data: DragData
 ): IDockviewPanel | undefined => {
@@ -52,24 +52,26 @@ const getDragSource = (
     return isToolPanelId(id) ? 'tool' : 'view'
 }
 
-export type DropEvent = {
+type DropEvent = {
     kind: DropContext['kind']
     position: Position
     group?: DockviewGroupPanel
     getData: () => DragData
 }
 
+/* What the drop rules need to know about a drop, and the view being
+ * dragged, if it is one (read once, as the handlers need both) */
 export const getDropContext = (
     api: DockviewApi,
     event: DropEvent,
     tree: GridTree | null
-): DropContext => {
+): { context: DropContext; draggedView: IDockviewPanel | undefined } => {
     const data = event.getData()
     const panel = getDraggedPanel(api, data)
     const source = getDragSource(data, panel)
     const targetIsEdgeGroup = isEdgeGroup(event.group)
     const sourceGroupId = source === 'view' ? panel?.group.id : undefined
-    return {
+    const context: DropContext = {
         kind: event.kind,
         position: event.position,
         targetIsEdgeGroup,
@@ -93,6 +95,10 @@ export const getDropContext = (
                     : { type: 'edge', position: event.position }
             )
         ),
+    }
+    return {
+        context,
+        draggedView: source === 'view' ? panel : undefined,
     }
 }
 

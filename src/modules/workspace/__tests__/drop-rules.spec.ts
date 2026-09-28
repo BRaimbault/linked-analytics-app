@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
     getSplitAxis,
     hasRoomToInsertLine,
@@ -7,8 +6,9 @@ import {
     isNoOpMove,
     isSwapDrop,
     type DropContext,
-} from '../drop-rules'
-import { PLUGIN_SIZES } from '../grid-tree'
+} from '@modules/workspace/drop-rules'
+import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
+import { describe, expect, it } from 'vitest'
 import { buildTree, column, row, view } from './grid-tree-builders'
 
 describe('isAllowedDrop', () => {
@@ -119,8 +119,16 @@ describe('room to split', () => {
         expect(getSplitAxis('center')).toBeNull()
     })
 
+    /* Room across the split, for the cases about the length along it */
+    const roomy = { crossLength: 1000, placedCrossMin: height }
+
     it('halves a cell only when both halves keep their minimum size', () => {
-        const halving = { targetMin: width, placedMin: width, halves: true }
+        const halving = {
+            targetMin: width,
+            placedMin: width,
+            halves: true,
+            ...roomy,
+        }
 
         expect(hasRoomToSplitCell({ ...halving, length: width * 2 })).toBe(true)
         expect(hasRoomToSplitCell({ ...halving, length: width * 2 - 1 })).toBe(
@@ -133,6 +141,7 @@ describe('room to split', () => {
                 targetMin: 96,
                 placedMin: height,
                 halves: true,
+                ...roomy,
             })
         ).toBe(false)
     })
@@ -142,6 +151,7 @@ describe('room to split', () => {
             targetMin: height,
             placedMin: 96,
             halves: false,
+            ...roomy,
         }
 
         expect(
@@ -152,12 +162,45 @@ describe('room to split', () => {
         ).toBe(false)
     })
 
+    it('needs the placed view to fit across the split as it is', () => {
+        /* A map beside a selector in a 120px bar: the bar can't grow */
+        expect(
+            hasRoomToSplitCell({
+                length: 1000,
+                targetMin: width,
+                placedMin: width,
+                halves: true,
+                crossLength: 120,
+                placedCrossMin: height,
+            })
+        ).toBe(false)
+        expect(
+            hasRoomToInsertLine({
+                minLength: width,
+                length: 1000,
+                placedMin: width,
+                crossLength: height - 1,
+                placedCrossMin: height,
+            })
+        ).toBe(false)
+        expect(
+            hasRoomToInsertLine({
+                minLength: width,
+                length: 1000,
+                placedMin: width,
+                crossLength: height,
+                placedCrossMin: height,
+            })
+        ).toBe(true)
+    })
+
     it('inserts a line only when every line keeps its minimum size', () => {
         expect(
             hasRoomToInsertLine({
                 minLength: width * 2,
                 length: width * 3,
                 placedMin: width,
+                ...roomy,
             })
         ).toBe(true)
         expect(
@@ -165,6 +208,7 @@ describe('room to split', () => {
                 minLength: width * 2,
                 length: width * 3 - 1,
                 placedMin: width,
+                ...roomy,
             })
         ).toBe(false)
         expect(
@@ -172,6 +216,7 @@ describe('room to split', () => {
                 minLength: height,
                 length: height * 2,
                 placedMin: height,
+                ...roomy,
             })
         ).toBe(true)
         /* A selector needs less room than a plugin */
@@ -180,6 +225,7 @@ describe('room to split', () => {
                 minLength: height,
                 length: height + 96,
                 placedMin: 96,
+                ...roomy,
             })
         ).toBe(true)
     })

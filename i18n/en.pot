@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-25T20:01:52.517Z\n"
-"PO-Revision-Date: 2026-09-25T20:01:52.517Z\n"
+"POT-Creation-Date: 2026-09-28T10:25:31.325Z\n"
+"PO-Revision-Date: 2026-09-28T10:25:31.325Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -29,6 +29,12 @@ msgstr "Analytics"
 msgid "Selectors"
 msgstr "Selectors"
 
+msgid "Notes"
+msgstr "Notes"
+
+msgid "Restore the maximized view to add another"
+msgstr "Restore the maximized view to add another"
+
 msgid "Choosing a saved map, or creating one with layers, will happen here."
 msgstr "Choosing a saved map, or creating one with layers, will happen here."
 
@@ -50,6 +56,21 @@ msgstr "Choosing the data items this selector offers will happen here."
 
 msgid "Links to other views will be set here."
 msgstr "Links to other views will be set here."
+
+msgid "Write a title or a note"
+msgstr "Write a title or a note"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Done"
+msgstr "Done"
+
+msgid "No text yet"
+msgstr "No text yet"
+
+msgid "Edit text"
+msgstr "Edit text"
 
 msgid "The picker will render here"
 msgstr "The picker will render here"
@@ -75,6 +96,21 @@ msgid ""
 msgstr ""
 "Views tile side by side, with up to {{max}} maps and visualizations at a "
 "time."
+
+msgid "Layout"
+msgstr "Layout"
+
+msgid "Even out sizes"
+msgstr "Even out sizes"
+
+msgid "Gives maps and visualizations the same size, and selectors their usual size."
+msgstr "Gives maps and visualizations the same size, and selectors their usual size."
+
+msgid "Views"
+msgstr "Views"
+
+msgid "Show view headers only on hover"
+msgstr "Show view headers only on hover"
 
 msgid "Move to top"
 msgstr "Move to top"
@@ -116,21 +152,14 @@ msgstr ""
 "There is no room for another view. Make the window larger, or close or "
 "resize a view."
 
+msgid "Workspace"
+msgstr "Workspace"
+
 msgid "Add views"
 msgstr "Add views"
 
-msgid "{{title}} settings"
-msgstr "{{title}} settings"
-
 msgid "A workspace holds up to {{max}} maps and visualizations"
 msgstr "A workspace holds up to {{max}} maps and visualizations"
-
-msgid ""
-"A workspace holds at most one more {{selector}} selector than it has maps "
-"and visualizations"
-msgstr ""
-"A workspace holds at most one more {{selector}} selector than it has maps "
-"and visualizations"
 
 msgid "Map"
 msgstr "Map"
@@ -147,20 +176,56 @@ msgstr "Visualization {{number}}"
 msgid "Period"
 msgstr "Period"
 
-msgid "Period selector {{number}}"
-msgstr "Period selector {{number}}"
+msgid "Period {{number}}"
+msgstr "Period {{number}}"
+
+msgid ""
+"A workspace holds at most one more period selector than it has maps and "
+"visualizations"
+msgstr ""
+"A workspace holds at most one more period selector than it has maps and "
+"visualizations"
+
+msgid "A workspace holds up to {{max}} period selectors"
+msgstr "A workspace holds up to {{max}} period selectors"
 
 msgid "Org unit"
 msgstr "Org unit"
 
-msgid "Org unit selector {{number}}"
-msgstr "Org unit selector {{number}}"
+msgid "Org unit {{number}}"
+msgstr "Org unit {{number}}"
+
+msgid ""
+"A workspace holds at most one more org unit selector than it has maps and "
+"visualizations"
+msgstr ""
+"A workspace holds at most one more org unit selector than it has maps and "
+"visualizations"
+
+msgid "A workspace holds up to {{max}} org unit selectors"
+msgstr "A workspace holds up to {{max}} org unit selectors"
 
 msgid "Data"
 msgstr "Data"
 
-msgid "Data selector {{number}}"
-msgstr "Data selector {{number}}"
+msgid "Data {{number}}"
+msgstr "Data {{number}}"
+
+msgid ""
+"A workspace holds at most one more data selector than it has maps and "
+"visualizations"
+msgstr ""
+"A workspace holds at most one more data selector than it has maps and "
+"visualizations"
+
+msgid "A workspace holds up to {{max}} data selectors"
+msgstr "A workspace holds up to {{max}} data selectors"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "Text {{number}}"
+msgstr "Text {{number}}"
 
 msgctxt "Application title"
 msgid "__MANIFEST_APP_TITLE"

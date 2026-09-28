@@ -1,12 +1,24 @@
+/* The cell is the container, so a short cell (a selector at its preferred
+ * height) gets one row */
 .placeholder {
+    container-type: size;
+    block-size: 100%;
+    background: var(--colors-grey050);
+    color: var(--colors-grey600);
+}
+
+.placeholderContent {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: var(--spacers-dp8);
     block-size: 100%;
-    background: var(--colors-grey050);
-    color: var(--colors-grey600);
+    padding-inline: var(--spacers-dp8);
+}
+
+.placeholderContent > * {
+    flex-shrink: 0;
 }
 
 .placeholderType {
@@ -17,6 +29,24 @@
 
 .placeholderHint {
     font-size: 13px;
+}
+
+@container (block-size < 140px) {
+    .placeholderContent {
+        flex-direction: row;
+    }
+
+    .placeholderType {
+        flex-shrink: 1;
+        overflow: hidden;
+        min-inline-size: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .placeholderHint {
+        display: none;
+    }
 }
 
 .tool {
@@ -110,10 +140,6 @@
     color: var(--colors-grey900);
 }
 
-.placeholderActions {
-    margin-block-start: var(--spacers-dp8);
-}
-
 .watermark {
     position: relative;
     display: flex;
@@ -142,6 +168,7 @@
 }
 
 .watermarkTitle {
+    margin-block: 1em;
     font-size: 16px;
     font-weight: 500;
     color: var(--colors-grey900);
@@ -153,4 +180,17 @@
     grid-template-columns: repeat(2, 1fr);
     gap: var(--spacers-dp8);
     margin-block-start: var(--spacers-dp12);
+}
+
+.toolSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+}
+
+.toolSectionRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacers-dp8);
 }

@@ -1,16 +1,22 @@
 import {
     fromSerializedGrid,
-    withViewSizes,
+    withViewInfo,
     type GridTree,
     type SerializedGrid,
 } from '@modules/workspace/grid-tree'
 import {
+    computeEvenSizes,
     computeLayoutSizes,
-    type LayoutChange,
     type SizeRequest,
 } from '@modules/workspace/layout-sizing'
+import type { LayoutChange } from '@modules/workspace/layout-targets'
 import type { DockviewApi } from 'dockview-react'
-import { getGroupPanel, getPanelSizes, getViewGroups } from './panels'
+import {
+    getGroupPanel,
+    getPanelKind,
+    getPanelSizes,
+    getViewGroups,
+} from './panels'
 
 /* A plain copy of the grid's layout. dockview reports hidden sizes while
  * a view is maximized (and briefly restores the layout to serialize it,
@@ -19,16 +25,36 @@ export const readGridTree = (api: DockviewApi): GridTree | null => {
     if (api.hasMaximizedGroup()) {
         return null
     }
+    /* dockview types a node's data as a leaf's or a branch's whatever its
+     * `type` says; ours ties the data to the type */
     const tree = fromSerializedGrid(
         api.toJSON().grid as unknown as SerializedGrid
     )
     if (tree.width <= 0 || tree.height <= 0) {
         return null
     }
-    return withViewSizes(tree, (groupId) =>
-        getPanelSizes(getGroupPanel(api, groupId)?.activePanel)
-    )
+    return withViewInfo(tree, (groupId) => {
+        const panel = getGroupPanel(api, groupId)?.activePanel
+        return { sizes: getPanelSizes(panel), kind: getPanelKind(panel) }
+    })
 }
+
+const pausedSizing = new WeakSet<DockviewApi>()
+
+/* Runs a change made of several dockview steps as one: sizes are neither
+ * read nor fixed in between, while cells hold temporary panels (a swap
+ * shows a spacer, which has other sizes than the view it stands for) */
+export const withoutSizing = (api: DockviewApi, change: () => void): void => {
+    pausedSizing.add(api)
+    try {
+        change()
+    } finally {
+        pausedSizing.delete(api)
+    }
+}
+
+export const isSizingPaused = (api: DockviewApi): boolean =>
+    pausedSizing.has(api)
 
 /* A layout change about to happen, and the layout before it, so that
  * sizes can be put back in proportion once dockview has made it (see
@@ -38,7 +64,7 @@ export const readGridTree = (api: DockviewApi): GridTree | null => {
  * cell. Kept until the current task ends, as a move to the outer edge
  * reaches dockview as two changes (a new cell, then the view moving in),
  * and sizes are fixed after each. */
-export type ExpectedChange =
+type ExpectedChange =
     | { kind: 'split'; viewId: string; targetGroupId: string }
     | { kind: 'insert'; viewId: string }
 
@@ -102,4 +128,16 @@ export const restoreProportions = (
     }
     const change = expected && toLayoutChange(api, expected.change)
     applySizeRequests(api, computeLayoutSizes(before, after, change))
+}
+
+/* Gives the views even sizes (computeEvenSizes). A maximized view hides
+ * the grid, so maximize is left first. */
+export const evenOutSizes = (api: DockviewApi): void => {
+    if (api.hasMaximizedGroup()) {
+        api.exitMaximizedGroup()
+    }
+    const tree = readGridTree(api)
+    if (tree) {
+        applySizeRequests(api, computeEvenSizes(tree))
+    }
 }

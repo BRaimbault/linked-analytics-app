@@ -5,6 +5,7 @@ import {
 import {
     ADD_VIEWS_PANEL_ID,
     getEdgePosition,
+    WORKSPACE_PANEL_ID,
 } from '@components/workspace/controller/panels'
 import { moveTools } from '@components/workspace/controller/tools-strip'
 import { describe, expect, it, vi } from 'vitest'
@@ -20,7 +21,10 @@ describe('moveTools', () => {
         moveTools(fake.asApi, 'top', 'left')
 
         const left = fake.edgeGroups.get('left') as FakeGroup
-        expect(left.panels.map(({ id }) => id)).toEqual([ADD_VIEWS_PANEL_ID])
+        expect(left.panels.map(({ id }) => id)).toEqual([
+            WORKSPACE_PANEL_ID,
+            ADD_VIEWS_PANEL_ID,
+        ])
         expect(fake.api.removeEdgeGroup).toHaveBeenCalledWith('top')
         expect(addViews?.api.setActive).toHaveBeenCalledTimes(1)
         expect(left.api.collapse).not.toHaveBeenCalled()
@@ -38,18 +42,29 @@ describe('moveTools', () => {
         ).toHaveBeenCalled()
     })
 
-    it('does nothing without a strip to move, a new edge or a target', () => {
+    it('does nothing without a strip at that edge', () => {
         const fake = setup()
 
         moveTools(fake.asApi, 'left', 'top')
+
+        expect(fake.api.removeEdgeGroup).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the strip is already at that edge', () => {
+        const fake = setup()
+
         moveTools(fake.asApi, 'top', 'top')
-        const getGroup = vi
-            .spyOn(fake.api, 'getGroup')
-            .mockImplementation((id) =>
-                id === fake.toolGroup.id ? fake.toolGroup : undefined
-            )
+
+        expect(fake.api.removeEdgeGroup).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the new edge group can’t be found', () => {
+        const fake = setup()
+        vi.spyOn(fake.api, 'getGroup').mockImplementation((id) =>
+            id === fake.toolGroup.id ? fake.toolGroup : undefined
+        )
+
         moveTools(fake.asApi, 'top', 'right')
-        getGroup.mockRestore()
 
         expect(fake.api.removeEdgeGroup).not.toHaveBeenCalled()
     })

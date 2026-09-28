@@ -1,114 +1,42 @@
-import { getLineCount, getMinLength, getPreferredLength } from './grid-measures'
 import {
     axisOf,
     getGridLength,
-    getLeafRects,
-    getLeaves,
-    getViewSizes,
-    along,
-    lengthOf,
     orthogonal,
-    startOf,
     type GridBranch,
+    type GridLeaf,
+    type GridNode,
     type GridOrientation,
     type GridTree,
-    type Rect,
-    type SplitAxis,
 } from './grid-tree'
-import { fitToMinimums, roundToTotal, sum } from './line-lengths'
-
-/* How a view was placed: splitting another view's cell, or as a new line
- * (a row or column at the grid's outer edge or between two lines). A view
- * that moved counts as removed from where it was. */
-export type LayoutChange =
-    | { kind: 'split'; placedId: string; targetId: string }
-    | { kind: 'insert'; placedId: string }
+import {
+    getKnownRects,
+    getLineLengths,
+    SIZE_TOLERANCE,
+    type LayoutChange,
+} from './layout-targets'
 
 export type SizeRequest =
     { id: string; width: number } | { id: string; height: number }
 
-/* Sizes this close are left alone, which absorbs rounding */
-const TOLERANCE = 1
+/* The view a child is resized through: itself, or one of a branch's own
+ * views. A branch whose children are all branches has none. */
+const getResizeHandle = (child: GridNode): GridLeaf | undefined =>
+    child.type === 'leaf'
+        ? child
+        : child.children.find((node): node is GridLeaf => node.type === 'leaf')
 
-/* Cuts the rectangle in two along the axis, the first part `first` long */
-const cut = (rect: Rect, axis: SplitAxis, first: number): [Rect, Rect] => {
-    if (axis === 'horizontal') {
-        return [
-            { ...rect, width: first },
-            { ...rect, left: rect.left + first, width: rect.width - first },
-        ]
+/* The child that takes what the others leave, as it can't be resized
+ * itself: the last one, unless a child with no view of its own must take
+ * it. dockview takes a resize from the last child first, so that child
+ * can only be the last or the one before it; otherwise there is none, and
+ * no set of requests sizes the line. */
+const getRestTaker = (handles: (GridLeaf | undefined)[]): number | null => {
+    const last = handles.length - 1
+    const unsized = handles.flatMap((handle, index) => (handle ? [] : [index]))
+    if (unsized.length === 0) {
+        return last
     }
-    return [
-        { ...rect, height: first },
-        { ...rect, top: rect.top + first, height: rect.height - first },
-    ]
-}
-
-const isSideBySide = (a: Rect, b: Rect): boolean =>
-    Math.abs(a.top - b.top) <= TOLERANCE &&
-    Math.abs(a.height - b.height) <= TOLERANCE
-
-/* Where each view was before the change: the sizes to keep in proportion.
- * A view that split another one's cell takes half of that cell, or its
- * preferred length if it has one (a selector). */
-const getKnownRects = (
-    before: GridTree,
-    after: GridTree,
-    change: LayoutChange | undefined
-): Map<string, Rect> => {
-    const known = getLeafRects(before)
-    if (!change) {
-        return known
-    }
-    known.delete(change.placedId)
-    if (change.kind !== 'split') {
-        return known
-    }
-    const targetBefore = known.get(change.targetId)
-    const afterRects = getLeafRects(after)
-    const placed = afterRects.get(change.placedId)
-    const target = afterRects.get(change.targetId)
-    if (!targetBefore || !placed || !target) {
-        return known
-    }
-    const axis = isSideBySide(placed, target) ? 'horizontal' : 'vertical'
-    const placedLeaf = getLeaves(after.root).find(
-        (leaf) => leaf.id === change.placedId
-    )
-    const preferred = placedLeaf && getViewSizes(placedLeaf).preferred
-    const cellLength = lengthOf(targetBefore, axis)
-    const placedLength = preferred
-        ? Math.min(along(preferred, axis), cellLength)
-        : cellLength / 2
-    const placedFirst = startOf(placed, axis) < startOf(target, axis)
-    const [first, second] = cut(
-        targetBefore,
-        axis,
-        placedFirst ? placedLength : cellLength - placedLength
-    )
-    known.set(change.placedId, placedFirst ? first : second)
-    known.set(change.targetId, placedFirst ? second : first)
-    return known
-}
-
-/* The length the node's views covered along the axis before the change,
- * or null for a node holding only newly placed views */
-const getKnownExtent = (
-    leafIds: string[],
-    known: Map<string, Rect>,
-    axis: SplitAxis
-): number | null => {
-    const rects = leafIds
-        .map((id) => known.get(id))
-        .filter((rect): rect is Rect => Boolean(rect))
-    if (!rects.length) {
-        return null
-    }
-    const start = Math.min(...rects.map((rect) => startOf(rect, axis)))
-    const end = Math.max(
-        ...rects.map((rect) => startOf(rect, axis) + lengthOf(rect, axis))
-    )
-    return end - start
+    return unsized.length === 1 && unsized[0] >= last - 1 ? unsized[0] : null
 }
 
 /* The sizes that keep the user's proportions after a view is added,
@@ -146,86 +74,38 @@ export const computeLayoutSizes = (
         const axis = axisOf(orientation)
         const childOrientation = orthogonal(orientation)
         const { children } = branch
-        const extents = children.map((child) =>
-            getKnownExtent(
-                getLeaves(child).map((leaf) => leaf.id),
-                known,
-                axis
-            )
-        )
-        const measure = { axis }
-        const preferred = children.map((child) =>
-            getPreferredLength(child, childOrientation, measure)
-        )
-        /* With no map or visualization in the branch, nothing takes the
-         * rest of it, so its selector lines share it like any lines
-         * (e.g. a bar of selectors across the top) */
-        const hasPluginLine = preferred.some((length) => length === null)
-        const isSelectorLine = (index: number) =>
-            hasPluginLine && preferred[index] !== null
-        /* Lines of selectors alone keep their length, or ask for their own */
-        const selectorLengths = children.map((_, index) =>
-            isSelectorLine(index)
-                ? (extents[index] ?? (preferred[index] as number))
-                : 0
-        )
-        const pluginLength = length - sum(selectorLengths)
-        const lines = children.map((child, index) =>
-            isSelectorLine(index)
-                ? 0
-                : getLineCount(child, childOrientation, measure)
-        )
-        const newShares = extents.map((extent, index) =>
-            extent === null && !isSelectorLine(index)
-                ? (pluginLength * lines[index]) / sum(lines)
-                : 0
-        )
-        const knownPluginLength = pluginLength - sum(newShares)
-        const knownPluginTotal = sum(
-            extents.map((extent, index) =>
-                isSelectorLine(index) ? 0 : (extent ?? 0)
-            )
-        )
-        const shareOf = (index: number): number => {
-            if (isSelectorLine(index)) {
-                return selectorLengths[index]
-            }
-            const extent = extents[index]
-            return extent === null
-                ? newShares[index]
-                : (knownPluginLength * extent) / (knownPluginTotal || 1)
-        }
-        const targets = children.map((_, index) => shareOf(index))
-        const minimums = children.map((child) =>
-            getMinLength(child, childOrientation, measure)
-        )
-        const sizes = roundToTotal(
-            fitToMinimums(targets, minimums, length),
-            length
-        )
-
-        children.forEach((child, index) => {
-            if (Math.abs(sizes[index] - child.size) > TOLERANCE) {
-                changed = true
-            }
-            /* A branch is resized through one of its own views */
-            const leaf =
-                child.type === 'leaf'
-                    ? child
-                    : child.children.find((node) => node.type === 'leaf')
-            if (index < children.length - 1 && leaf?.type === 'leaf') {
-                requests.push(
-                    axis === 'horizontal'
-                        ? { id: leaf.id, width: sizes[index] }
-                        : { id: leaf.id, height: sizes[index] }
-                )
-            }
+        const sizes = getLineLengths(children, orientation, {
+            length,
+            known,
         })
+
+        const handles = children.map(getResizeHandle)
+        const taker = getRestTaker(handles)
+        /* With no child able to take the rest, the line stays as dockview
+         * laid it out, and its branches are sized within their real length */
+        const lengths =
+            taker === null ? children.map((child) => child.size) : sizes
+
+        if (taker !== null) {
+            children.forEach((child, index) => {
+                if (Math.abs(sizes[index] - child.size) > SIZE_TOLERANCE) {
+                    changed = true
+                }
+                const handle = handles[index]
+                if (index !== taker && handle) {
+                    requests.push(
+                        axis === 'horizontal'
+                            ? { id: handle.id, width: sizes[index] }
+                            : { id: handle.id, height: sizes[index] }
+                    )
+                }
+            })
+        }
         children.forEach((child, index) => {
             if (child.type === 'branch') {
                 sizeChildren(child, childOrientation, {
                     length: crossLength,
-                    crossLength: sizes[index],
+                    crossLength: lengths[index],
                 })
             }
         })
@@ -241,3 +121,9 @@ export const computeLayoutSizes = (
     })
     return changed ? requests : []
 }
+
+/* Every line sized as if new: lines of selectors alone at their preferred
+ * length, the others sharing the rest, one share per view met along them.
+ * So maps and visualizations get equal sizes. */
+export const computeEvenSizes = (tree: GridTree): SizeRequest[] =>
+    computeLayoutSizes({ ...tree, root: { ...tree.root, children: [] } }, tree)

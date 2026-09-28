@@ -35,9 +35,9 @@ export const Watermark: FC<IWatermarkPanelProps> = ({ containerApi }) => {
             data-drop-target={isActive || undefined}
             {...handlers}
         >
-            <p className={classes.watermarkTitle}>
+            <h2 className={classes.watermarkTitle}>
                 {i18n.t('Drag a map or visualization here')}
-            </p>
+            </h2>
             <p>
                 {i18n.t(
                     'Views tile side by side, with up to {{max}} maps and visualizations at a time.',

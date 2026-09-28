@@ -1,7 +1,7 @@
+import { parseEngineError } from '@api/parse-engine-error'
+import type { ResponseErrorReport } from '@api/parse-engine-error'
 import { FetchError } from '@dhis2/app-runtime'
 import { describe, it, expect } from 'vitest'
-import { parseEngineError } from '../parse-engine-error'
-import type { ResponseErrorReport } from '../parse-engine-error'
 
 const createErrorReport = (
     errorCode: string,

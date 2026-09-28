@@ -12,16 +12,45 @@ import type { DockviewApi } from 'dockview-react'
 import { describe, expect, it, vi } from 'vitest'
 import { panelProps } from './panel-props'
 
-const createApi = () =>
-    ({
+const createApi = () => {
+    let maximized = false
+    const listeners = new Set<() => void>()
+    return {
         panels: [],
         activeGroup: undefined,
         addPanel: vi.fn(),
-        hasMaximizedGroup: () => false,
+        hasMaximizedGroup: () => maximized,
+        onDidMaximizedGroupChange: (listener: () => void) => {
+            listeners.add(listener)
+            return { dispose: () => listeners.delete(listener) }
+        },
+        setMaximized: (value: boolean) => {
+            maximized = value
+            listeners.forEach((listener) => listener())
+        },
         toJSON: () => ({ grid: { root: { type: 'branch', data: [] } } }),
-    }) as unknown as DockviewApi & { addPanel: ReturnType<typeof vi.fn> }
+    } as unknown as DockviewApi & {
+        addPanel: ReturnType<typeof vi.fn>
+        setMaximized: (value: boolean) => void
+    }
+}
 
 describe('AddViewsPanel', () => {
+    it('adds nothing while a view is maximized, and says why', async () => {
+        const api = createApi()
+        renderWithStore(<AddViewsPanel {...panelProps({})} />, { api })
+
+        act(() => api.setMaximized(true))
+        expect(screen.getByTestId('add-view-map')).toBeDisabled()
+        await userEvent.hover(screen.getByTestId('add-view-map'))
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+            'Restore the maximized view to add another'
+        )
+
+        act(() => api.setMaximized(false))
+        expect(screen.getByTestId('add-view-map')).toBeEnabled()
+    })
+
     it('puts the view type on the drag payload', () => {
         renderWithStore(<AddViewsPanel {...panelProps({})} />)
         const setData = vi.fn()
@@ -37,7 +66,7 @@ describe('AddViewsPanel', () => {
         expect(setData).toHaveBeenCalledWith(getViewTypeMime('map'), '')
     })
 
-    it('groups analytics apart from selectors, each under a heading', () => {
+    it('groups analytics, selectors and notes, each under a heading', () => {
         renderWithStore(<AddViewsPanel {...panelProps({})} />)
 
         const tilesOf = (name: string) =>
@@ -47,9 +76,12 @@ describe('AddViewsPanel', () => {
 
         expect(tilesOf('Analytics')).toEqual(['Map', 'Visualization'])
         expect(tilesOf('Selectors')).toEqual(['Period', 'Org unit', 'Data'])
+        expect(tilesOf('Notes')).toEqual(['Text'])
         expect(
-            screen.getAllByRole('heading').map((heading) => heading.textContent)
-        ).toEqual(['Analytics', 'Selectors'])
+            screen
+                .getAllByRole('heading', { level: 2 })
+                .map((heading) => heading.textContent)
+        ).toEqual(['Analytics', 'Selectors', 'Notes'])
     })
 
     it('adds a view on click', async () => {

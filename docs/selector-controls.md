@@ -99,7 +99,7 @@ So the step to a drop-down happens late, and the options stay visible in most ce
 The grid already handles this ([workspace-grid.md](workspace-grid.md)); what changes when the real controls are built is where a selector's minimum and preferred sizes come from.
 
 - **Sizes per control, not per view type.** `withViewSizes` looks sizes up by view, so the lookup can read the view's control (from its settings in the store) instead of its type. The `*-selector` types keep one default control each.
-- **Placement**: `getSelectorPlacement` checks the control's family: fixed height goes to the bar, tall controls to a selector column.
+- **Placement**: `getBarPlacement` checks the control's family: fixed height goes to the bar, tall controls to a selector column.
 - **Preferred sizes**, used when a selector is placed, follow the controls: the natural height of fixed controls, the content height at the preferred width for groups, and about 300px for trees.
 
 ## 8. Open questions

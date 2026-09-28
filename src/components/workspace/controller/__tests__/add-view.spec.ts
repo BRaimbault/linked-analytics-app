@@ -52,63 +52,102 @@ describe('addView', () => {
         expect(fake.api.addPanel).not.toHaveBeenCalled()
     })
 
-    it('goes right of the selected view when it is wide enough', () => {
+    it('halves a cell wider than 16:9 side by side', () => {
+        const fake = createFakeDockview()
+        const wide = fake.addLaidOutView('wide', {
+            left: 0,
+            top: 0,
+            width: 1400,
+            height: 700,
+        })
+
+        addView(fake.asApi, 'map')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                position: { referenceGroup: wide.group, direction: 'right' },
+            })
+        )
+    })
+
+    it('halves any other cell top and bottom', () => {
+        const fake = createFakeDockview()
+        const half = fake.addLaidOutView('half', {
+            left: 0,
+            top: 0,
+            width: 700,
+            height: 700,
+        })
+
+        addView(fake.asApi, 'map')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                position: { referenceGroup: half.group, direction: 'below' },
+            })
+        )
+    })
+
+    it('halves the largest cell, whichever view is selected', () => {
         const fake = createFakeDockview()
         const [map] = twoColumns(fake)
-
-        addView(fake.asApi, 'map', { nextToViewId: 'map-a' })
-
-        expect(fake.api.addPanel).toHaveBeenCalledWith(
-            expect.objectContaining({
-                position: { referenceGroup: map.group, direction: 'right' },
-            })
-        )
-    })
-
-    it('goes below the selected view when it is too narrow', () => {
-        const fake = createFakeDockview()
-        const narrow = fake.addLaidOutView('narrow', {
-            left: 0,
+        const larger = fake.addLaidOutView('larger', {
+            left: 1000,
             top: 0,
-            width: 300,
+            width: 900,
             height: 800,
         })
+        fake.emit('onDidActivePanelChange', { panel: map, origin: 'user' })
 
-        addView(fake.asApi, 'map', { nextToViewId: 'narrow' })
+        addView(fake.asApi, 'map')
 
         expect(fake.api.addPanel).toHaveBeenCalledWith(
             expect.objectContaining({
-                position: { referenceGroup: narrow.group, direction: 'below' },
+                position: { referenceGroup: larger.group, direction: 'below' },
             })
         )
     })
 
-    it('falls back to the largest other view, next to the last one by default', () => {
+    it('splits the other way when the balanced way has no room', () => {
         const fake = createFakeDockview()
-        fake.addLaidOutView('small', {
+        /* Too short to halve top and bottom, not wider than 16:9 */
+        const short = fake.addLaidOutView('short', {
             left: 0,
             top: 0,
-            width: 300,
+            width: 500,
             height: 300,
         })
-        const large = fake.addLaidOutView('large', {
-            left: 300,
-            top: 0,
-            width: 600,
-            height: 600,
-        })
-        fake.addLaidOutView('tiny', {
-            left: 900,
-            top: 0,
-            width: 100,
-            height: 100,
-        })
 
-        addView(fake.asApi, 'map', { nextToViewId: 'unknown' })
+        addView(fake.asApi, 'map')
 
         expect(fake.api.addPanel).toHaveBeenCalledWith(
             expect.objectContaining({
-                position: { referenceGroup: large.group, direction: 'right' },
+                position: { referenceGroup: short.group, direction: 'right' },
+            })
+        )
+    })
+
+    it('moves on to the next largest cell when the largest has no room', () => {
+        const fake = createFakeDockview()
+        /* Too narrow and too short to halve either way */
+        fake.addLaidOutView('full', {
+            left: 0,
+            top: 0,
+            width: 470,
+            height: 300,
+        })
+        const next = fake.addLaidOutView('next', {
+            left: 470,
+            top: 0,
+            width: 400,
+            height: 340,
+        })
+
+        addView(fake.asApi, 'map')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                position: { referenceGroup: next.group, direction: 'below' },
             })
         )
     })
@@ -120,7 +159,21 @@ describe('addView', () => {
             buildTree(1000, 800, row(1, view(map.group.id), view(vis.group.id)))
         )
 
-        addView(fake.asApi, 'period-selector', { nextToViewId: map.id })
+        addView(fake.asApi, 'period-selector')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({ position: { direction: 'above' } })
+        )
+    })
+
+    it('puts a clicked text view in a row across the very top', () => {
+        const fake = createFakeDockview()
+        const [map, vis] = twoColumns(fake)
+        fake.setLayout(
+            buildTree(1000, 800, row(1, view(map.group.id), view(vis.group.id)))
+        )
+
+        addView(fake.asApi, 'text')
 
         expect(fake.api.addPanel).toHaveBeenCalledWith(
             expect.objectContaining({ position: { direction: 'above' } })
@@ -195,11 +248,64 @@ describe('addView', () => {
         const fake = createFakeDockview()
         const [map] = twoColumns(fake)
 
-        addView(fake.asApi, 'period-selector', { nextToViewId: map.id })
+        addView(fake.asApi, 'period-selector')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                position: { referenceGroup: map.group, direction: 'below' },
+            })
+        )
+    })
+
+    it('places a clicked selector like any view when the top has no room for a row', () => {
+        const fake = createFakeDockview()
+        const map = fake.addLaidOutView('map-a', {
+            left: 0,
+            top: 0,
+            width: 1200,
+            height: 250,
+        })
+        /* A new row needs 96px, which would leave the map below its 160px */
+        fake.setLayout(buildTree(1200, 250, row(1, view(map.group.id))))
+
+        addView(fake.asApi, 'period-selector')
 
         expect(fake.api.addPanel).toHaveBeenCalledWith(
             expect.objectContaining({
                 position: { referenceGroup: map.group, direction: 'right' },
+            })
+        )
+    })
+
+    it('adds nothing while a view is maximized', () => {
+        const fake = createFakeDockview()
+        twoColumns(fake)
+        fake.setMaximized(true)
+
+        expect(addView(fake.asApi, 'map')).toEqual({ status: 'maximized' })
+        expect(fake.api.exitMaximizedGroup).not.toHaveBeenCalled()
+        expect(fake.api.addPanel).not.toHaveBeenCalled()
+    })
+
+    it('keeps a clicked map out of the selector bar', () => {
+        const fake = createFakeDockview()
+        fake.addLaidOutView(
+            'pe-a',
+            { left: 0, top: 0, width: 1000, height: 120 },
+            { type: 'period-selector' }
+        )
+        const map = fake.addLaidOutView('map-a', {
+            left: 0,
+            top: 120,
+            width: 1000,
+            height: 580,
+        })
+
+        addView(fake.asApi, 'map')
+
+        expect(fake.api.addPanel).toHaveBeenCalledWith(
+            expect.objectContaining({
+                position: { referenceGroup: map.group, direction: 'below' },
             })
         )
     })

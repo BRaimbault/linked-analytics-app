@@ -1,0 +1,135 @@
+.textView {
+    --text-line-height: 20px;
+
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    block-size: 100%;
+    background: var(--colors-white);
+    font-size: 14px;
+    color: var(--colors-grey900);
+}
+
+/* Reading: the text takes the whole view, and scrolls in it; the edit
+ * button floats over its corner */
+.reading {
+    position: relative;
+    overflow: hidden;
+}
+
+.content {
+    flex: 1;
+    min-block-size: 0;
+    padding: var(--spacers-dp8) var(--spacers-dp12);
+    overflow: auto;
+
+    /* Like the text area, which breaks a word longer than the line */
+    overflow-wrap: break-word;
+}
+
+.content p {
+    margin-block: 0;
+    line-height: var(--text-line-height);
+}
+
+.empty {
+    color: var(--colors-grey600);
+}
+
+/* Shown while the view is hovered or holds the focus (so it can be
+ * reached with Tab), and always on touch screens, which have no hover */
+.editButton {
+    position: absolute;
+    inset-block-start: var(--spacers-dp4);
+    inset-inline-end: var(--spacers-dp4);
+    padding: 2px;
+    border-radius: 4px;
+    background: rgb(255 255 255 / 70%);
+    opacity: 0;
+    transition: opacity 0.15s;
+    backdrop-filter: blur(2px);
+}
+
+.reading:hover .editButton,
+.reading:focus-within .editButton {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .editButton {
+        opacity: 1;
+    }
+}
+
+/* Below the view's header, when it floats over the view's top on hover
+ * (35px, VIEW_HEADER_HEIGHT) */
+:global([data-view-headers='hover']) .editButton {
+    inset-block-start: calc(35px + var(--spacers-dp4));
+}
+
+/* Writing: the editor fills the view, 1px in so the text area's border
+ * doesn't touch the view's edge */
+.editing {
+    padding: 1px;
+}
+
+.editor {
+    flex: 1;
+    min-block-size: 0;
+}
+
+/* The text area writes the text where, and as, it reads: same font and
+ * line height, and the same text box as the reading view (12px in from
+ * each side, counting this view's 1px and the text area's 1px border), so
+ * lines break at the same words. Doubled classes outweigh the editor's
+ * own styles. */
+.editing .editor :global(.textarea.textarea) {
+    padding-block: 6px;
+    padding-inline: 10px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: var(--text-line-height);
+}
+
+/* Focus only turns the border blue: the editor's focus ring would also
+ * shrink and shift the text area, and so the text in it */
+.editing .editor :global(.textarea.textarea):focus {
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    border-color: var(--theme-focus);
+    box-shadow: none;
+}
+
+/* The preview reads like the view: same text box (12px in from each side,
+ * counting this view's 1px), line height and word breaking */
+.editing .editor :global(.preview.preview) {
+    padding-block: 7px;
+    padding-inline: 11px;
+    line-height: var(--text-line-height);
+    overflow-wrap: break-word;
+}
+
+.editing .editor :global(.preview.preview) p {
+    margin-block: 0;
+}
+
+/* Mentioning a user belongs to interpretations, not to notes. The editor
+ * has no option to leave it out, and its button has no hook of its own:
+ * it is the fourth of the main actions (bold, italic, link, mention),
+ * which a Cypress scenario checks. */
+.editor :global(.mainActions) > :nth-child(4) {
+    display: none;
+}
+
+/* A compact "Preview" keeps the toolbar on one row in the narrowest
+ * column (240px); "Back to write mode" matches it */
+.editor :global(.sideActions button.small),
+.editor :global(.previewWrapper button.small) {
+    padding-inline: 6px;
+    font-size: 13px;
+}
+
+.editActions {
+    padding: var(--spacers-dp8);
+}

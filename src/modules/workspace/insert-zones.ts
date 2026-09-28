@@ -1,12 +1,13 @@
-import { getSplitAxis, hasRoomToInsertLine, isNoOpMove } from './drop-rules'
-import { getMinLength } from './grid-measures'
+import {
+    getSplitAxis,
+    hasRoomForGridLine,
+    hasRoomForNewLine,
+    isNoOpMove,
+} from './drop-rules'
 import {
     axisOf,
-    along,
-    getGridLength,
     getLeaves,
     getNodeRects,
-    lengthOf,
     orthogonal,
     startOf,
     type GridNode,
@@ -15,10 +16,11 @@ import {
     type Rect,
     type SplitAxis,
     PLUGIN_SIZES,
+    VIEW_HEADER_HEIGHT,
     type ViewSizes,
 } from './grid-tree'
 
-export type InsertPosition = 'left' | 'right' | 'top' | 'bottom'
+type InsertPosition = 'left' | 'right' | 'top' | 'bottom'
 
 /* A strip where a dragged view can be dropped to become a new line: over
  * the divider between two lines, or along an outer edge of the grid. A
@@ -33,11 +35,6 @@ export type InsertZone = {
 }
 
 export const INSERT_ZONE_THICKNESS = 24
-/* The tab header at the top of every view. A header sits right under a
- * line (the divider above it, or the grid's top edge, whose strip is
- * thicker), so a divider's strip reaches down over the headers below it:
- * a view dragged by its tab is then dropped on a line, not in a tab bar. */
-export const VIEW_HEADER_HEIGHT = 35
 /* Wider, as the pointer is easily pushed past the grid's edge */
 export const OUTER_ZONE_THICKNESS = 40
 
@@ -64,13 +61,10 @@ const getOuterZones = (
     }
     return OUTER_POSITIONS.flatMap((position) => {
         const axis = getSplitAxis(position) as SplitAxis
-        const hasRoom = hasRoomToInsertLine({
-            minLength: getMinLength(tree.root, tree.orientation, {
-                axis,
-                excludeId: sourceId,
-            }),
-            length: getGridLength(tree, axis),
-            placedMin: along(placedSizes.min, axis),
+        const hasRoom = hasRoomForGridLine(tree, {
+            axis,
+            placedSizes,
+            excludeId: sourceId,
         })
         const isNoOp =
             sourceId !== null &&
@@ -119,6 +113,10 @@ export const getInsertZones = (
         placedSizes?: ViewSizes
         thickness?: number
         outerThickness?: number
+        /* A header sits right under a line (the divider above it, or the
+         * grid's top edge, whose strip is thicker), so a divider's strip
+         * reaches down over the headers below it: a view dragged by its tab
+         * is then dropped on a line, not in a tab bar. */
         headerHeight?: number
     } = {}
 ): InsertZone[] => {
@@ -135,14 +133,10 @@ export const getInsertZones = (
         }
         const axis = axisOf(orientation)
         const branchRect = rects.get(node) as Rect
-        const hasRoom = hasRoomToInsertLine({
-            minLength: getMinLength(node, orientation, {
-                axis,
-                excludeId: sourceId,
-            }),
-            length: lengthOf(branchRect, axis),
-            placedMin: along(placedSizes.min, axis),
-        })
+        const hasRoom = hasRoomForNewLine(
+            { node, orientation, rect: branchRect },
+            { axis, placedSizes, excludeId: sourceId }
+        )
 
         node.children.forEach((after, index) => {
             const before = node.children[index - 1]

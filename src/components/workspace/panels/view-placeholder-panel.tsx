@@ -21,16 +21,16 @@ export const ViewPlaceholderPanel: FC<IDockviewPanelProps<ViewPanelParams>> = ({
             data-test="view-placeholder"
             data-view-id={api.id}
         >
-            <ViewTypeIcon type={params.type} />
-            <span className={classes.placeholderType}>
-                {getViewTypeLabel(params.type)}
-            </span>
-            <span className={classes.placeholderHint}>
-                {getViewKind(params.type) === 'selector'
-                    ? i18n.t('The picker will render here')
-                    : i18n.t('The plugin will render here')}
-            </span>
-            <div className={classes.placeholderActions}>
+            <div className={classes.placeholderContent}>
+                <ViewTypeIcon type={params.type} />
+                <span className={classes.placeholderType}>
+                    {getViewTypeLabel(params.type)}
+                </span>
+                <span className={classes.placeholderHint}>
+                    {getViewKind(params.type) === 'selector'
+                        ? i18n.t('The picker will render here')
+                        : i18n.t('The plugin will render here')}
+                </span>
                 <Button
                     small
                     secondary

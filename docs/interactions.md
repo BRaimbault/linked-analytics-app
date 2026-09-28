@@ -118,7 +118,7 @@ Two ways for a receiver to react:
     - Maps: style the matching features (outline, others faded).
     - Both must apply it **without refetching**. DV's `VisualizationPluginWrapper` refetches when `visualization`, `filters` or `forDashboard` change, so the new prop must stay out of that dependency list.
 - **Contract**: one more optional prop in the same PRs as `onDataClick` ([§6](#6-upstream-prs)): `highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }`.
-- **In the app**: each receiving member gets a mode, `filter` or `highlight` (Power BI's two icons). A sender always gets `highlight` for its own clicks, when the plugin supports it. The default for receivers is `filter` until the plugins support highlight.
+- **In the app**: each receiving member gets a mode, `filter` or `highlight` (Power BI's two icons). A sender always gets `highlight` for its own clicks, when the plugin supports it. The default for receivers is `filter` until the plugins support highlight; it's a workspace setting ([§5.1](#51-zero-configuration-by-default)).
 - **Later, once highlight exists**: hover sync (Grafana's shared crosshair), which needs an `onDataHover` callback. And multi-select with Ctrl/Cmd-click, which adds to the channel value instead of replacing it: `onDataClick(click, { additive: boolean })`.
 
 ## 3. What the plugins allow without upstream changes
@@ -267,11 +267,13 @@ Three layers. Most users never go past the first.
 - **New views join existing channels** the same way.
 - Result: add a map and a chart, click a district, and the chart follows.
 
-**Workspace settings**, in the menu of the "Links" button in the tools strip header ([§5.4](#54-where-the-wiring-is-set-no-separate-tab)). They change the defaults only; link mode can still override any single view.
+**Workspace settings**, in the **Workspace tab** of the tools strip ([§5.4](#54-where-the-wiring-is-set-no-separate-tab)). Only what applies to the whole workspace goes there; a setting of one view or one selector goes in its own settings tab. They change the defaults only; link mode can still override any single view.
 
 - **Views send clicks** (on). When off, new views only receive, and clicks keep the plugin's own behavior (e.g. the drill menu).
 - **New views join existing channels** (on). When off, a new view starts unlinked.
-- **Pause links**: receivers show their saved visualization, and channels keep their values. The badges show the paused state.
+- **Receivers filter or highlight** on a click (filter, until the plugins support highlight: [Filter vs highlight](#filter-vs-highlight)). A single view can still use the other mode, from link mode or its Links section.
+
+**Pause links** is an action rather than a setting, so it stays one click away in the "Links" button's menu: receivers show their saved visualization, and channels keep their values. The badges show the paused state.
 
 ### 5.2 Channels are visible in the grid
 
@@ -309,20 +311,21 @@ Three layers. Most users never go past the first.
 
 There is no Interactions tab. Its jobs have better homes:
 
-| Job                                                      | Home                                                                                                                                                                         |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One view's wiring (channel, send, receive per dimension) | A **"Links" section in the view's settings tab**, with the same card as in link mode. A selector's settings tab holds its channel choice.                                    |
-| The keyboard and screen-reader path                      | Select a view and its settings tab, with Links, comes forward, like every other setting.                                                                                     |
-| An overview of all the wiring                            | **Link mode** on the grid. With at most 4 plugins and a few selectors, outlines and badges say more than a table.                                                            |
-| Workspace settings (§5.1)                                | A **"Links" button in the tools strip header**, next to collapse and move. It turns link mode on, and its menu holds the settings. "Pause links" is one click from anywhere. |
+| Job                                                      | Home                                                                                                                                                       |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One view's wiring (channel, send, receive per dimension) | A **"Links" section in the view's settings tab**, with the same card as in link mode. A selector's settings tab holds its channel choice.                  |
+| The keyboard and screen-reader path                      | Select a view and its settings tab, with Links, comes forward, like every other setting.                                                                   |
+| An overview of all the wiring                            | **Link mode** on the grid. With at most 4 plugins and a few selectors, outlines and badges say more than a table.                                          |
+| Workspace settings (§5.1)                                | The **Workspace tab**, first in the tools strip: settings that apply to every view, next to the layout ones.                                               |
+| Link actions                                             | A **"Links" button in the tools strip header**, next to collapse and move. It turns link mode on, and its menu has "Pause links", one click from anywhere. |
 
-So the tools strip holds "Add views" and one settings tab per view, and there is one rule: select something to configure it.
+So the tools strip holds "Workspace", "Add views" and one settings tab per view, and there is one rule: the Workspace tab configures what applies to every view, and selecting a view or a selector configures that one.
 
-What this gives up: a list of every channel, including those without a selector. They show as badges and in link mode, and they're deleted once no view uses them. If channels ever need names or more management, a channel list can come back in the Links menu.
+What this gives up: a list of every channel, including those without a selector. They show as badges and in link mode, and they're deleted once no view uses them. If channels ever need names or more management, a channel list can come back in the Workspace tab.
 
 ### 5.5 Selectors live in grid cells
 
-- Selector types appear in the "Add views" palette. They have no iframe, so they **don't count toward the 4-plugin limit**; each selector type is capped at the number of plugins + 1.
+- Selector types appear in the "Add views" palette. They have no iframe, so they **don't count toward the 4-plugin limit**; each selector type is capped at the number of plugins + 1, and never more than 4.
 - **Placing and sizing** follow the grid rules ([workspace-grid.md §2–4](workspace-grid.md#2-view-kinds-and-limits)):
     - a clicked selector joins the **selector bar** across the top, or starts it; dragged, a selector goes anywhere, like any view. Tall controls such as trees are proposed to go to a **selector column** instead ([selector-controls.md §6](selector-controls.md#6-where-selectors-go));
     - it gets its preferred size when placed, and has **no maximum**: it can be dragged as big as a plugin, and scales with the window like any view;
@@ -415,7 +418,7 @@ In the browser, with the plugins served locally:
 ## 7. Order of work
 
 1. **Grid prerequisites** (done in the grid milestone): view kinds (plugin or selector), a plugin-only view limit, and a minimum and preferred size per view type ([workspace-grid.md](workspace-grid.md#2-view-kinds-and-limits)).
-2. Channels, selectors, link mode, the Links button and the settings tab's Links section, with `ou` and `pe` receivers in DV and Maps. Needs plugins rendered (plan step 3), or the fake plugins of [demo-mode.md](demo-mode.md).
+2. Channels, selectors, link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section, with `ou` and `pe` receivers in DV and Maps. Needs plugins rendered (plan step 3), or the fake plugins of [demo-mode.md](demo-mode.md).
 3. DV `onDrill` as the interim `ou` sender. Maps views remount for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
 4. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight.
 5. Period selector play mode (on a fixed delay until the PRs add `onLoadingComplete`).

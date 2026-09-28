@@ -1,4 +1,5 @@
 import { Workspace } from '@components/workspace/workspace'
+import { CustomDataProvider } from '@dhis2/app-runtime'
 import { CssVariables } from '@dhis2/ui'
 import type { ViewType } from '@modules/workspace/view-types'
 import { createStore } from '@store/store'
@@ -15,20 +16,27 @@ export type Point = [number, number]
 
 const TOLERANCE = 1.5
 
+/* Mounted like the app: a column that scrolls once the views need more
+ * room than it has */
 export const mountWorkspace = () => {
     cy.mount(
-        <Provider store={createStore({} as DataEngine)}>
-            <CssVariables colors spacers theme />
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '800px',
-                }}
-            >
-                <Workspace />
-            </div>
-        </Provider>
+        /* Text views' editor queries users for mentions */
+        <CustomDataProvider data={{}}>
+            <Provider store={createStore({} as DataEngine)}>
+                <CssVariables colors spacers theme />
+                <div
+                    data-test="workspace-scroller"
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '800px',
+                        overflow: 'auto',
+                    }}
+                >
+                    <Workspace />
+                </div>
+            </Provider>
+        </CustomDataProvider>
     )
     cy.get('[data-test="add-view-map"]').should('be.visible')
 }
@@ -85,15 +93,21 @@ export const readLayout = (doc: Document): Record<string, Box> => {
     )
 }
 
-/* A view's size on screen, in pixels */
+/* A view's size on screen, in pixels. Built from queries, so an assertion
+ * chained on it (`.its('width').should(…)`) measures again until it passes */
 export const cellSize = (title: string) =>
-    cy.document().then((doc) => {
-        const rect = getCell(doc, title).getBoundingClientRect()
-        return { width: rect.width, height: rect.height }
-    })
+    cy
+        .get('.dv-grid-view .dv-groupview')
+        .filter(
+            (_, cell) =>
+                cell.querySelector('.dv-tab')?.textContent?.trim() === title
+        )
+        .invoke('get', 0)
+        .invoke('getBoundingClientRect')
 
+/* Retries until the layout matches, as dockview may still be laying out */
 export const expectLayout = (expected: Record<string, Partial<Box>>) =>
-    cy.document().then((doc) => {
+    cy.document().should((doc) => {
         const layout = readLayout(doc)
         expect(Object.keys(layout).sort()).to.deep.equal(
             Object.keys(expected).sort()
@@ -281,6 +295,23 @@ export const setUpSeventyThirty = () => {
     clickTile('visualization')
     dragDivider('Map 1', 'right', 0.7)
     expectLayout({ 'Map 1': { w: 70 }, 'Visualization 1': { w: 30 } })
+}
+
+/* Map 1 | Visualization 1 | Map 2, a third each (clicks alone would
+ * make a 2×2 grid) */
+export const setUpRowOfThree = () => {
+    mountWorkspace()
+    clickTile('map')
+    clickTile('visualization')
+    dragTo({ tile: 'map' }, (doc) => outerEdge(doc, 'right', 0.5)).should(
+        'deep.equal',
+        INSERT_LINE
+    )
+    expectLayout({
+        'Map 1': { x: 0, w: 33.3 },
+        'Visualization 1': { x: 33.3, w: 33.3 },
+        'Map 2': { x: 66.7, w: 33.3 },
+    })
 }
 
 /* Tagged tests make the smoke run (pnpm cy:comp:smoke) */

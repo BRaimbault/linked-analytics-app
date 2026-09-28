@@ -1,5 +1,9 @@
-import type { ViewSizes } from '@modules/workspace/grid-tree'
-import { getSelectorPlacement } from '@modules/workspace/selector-placement'
+import {
+    getBalancedSplitOrder,
+    type SplitDirection,
+} from '@modules/workspace/balanced-split'
+import { getBarPlacement, type BarKind } from '@modules/workspace/bar-placement'
+import type { SplitAxis, ViewSizes } from '@modules/workspace/grid-tree'
 import { canAddView, getNextViewNumber } from '@modules/workspace/view-limits'
 import {
     getViewKind,
@@ -22,62 +26,83 @@ import {
 } from './panels'
 import { hasRoomToSplit } from './room'
 
-/* A click adds the view next to the selected one (or the last one), to its
- * right or else below it, in the first cell with room for a split. The
- * tools strip takes focus when its tile is clicked, so the selected view
- * comes from the caller. Returns null when no cell has room. */
+/* Where a new view goes, and how the sizes follow: a split halves the
+ * reference cell, an insert adds a new line (see computeLayoutSizes) */
+type Placement = {
+    position: AddPanelPositionOptions
+    sizing: 'split' | 'insert'
+}
+
+const SPLIT_AXIS: Record<SplitDirection, SplitAxis> = {
+    right: 'horizontal',
+    below: 'vertical',
+}
+
+const getArea = (group: DockviewGroupPanel): number =>
+    group.api.width * group.api.height
+
+/* A click halves the largest cell, the way that keeps views balanced
+ * (getBalancedSplitOrder), or else the other way, or the next largest cell
+ * with room. Exact placement is for drags. Returns null when no cell has
+ * room. */
 const getDefaultPlacement = (
     api: DockviewApi,
-    nextToViewId: string | null,
     placedSizes: ViewSizes
-): AddPanelPositionOptions | null => {
+): Placement | null => {
     const groups = getViewGroups(api)
     if (!groups.length) {
-        return { direction: 'right' }
+        return { position: { direction: 'right' }, sizing: 'insert' }
     }
-    const preferred =
-        (nextToViewId && api.getPanel(nextToViewId)?.group) || groups.at(-1)
-    const candidates = [
-        preferred,
-        ...groups
-            .filter((group) => group !== preferred)
-            .sort(
-                (a, b) =>
-                    b.api.width * b.api.height - a.api.width * a.api.height
-            ),
-    ].filter((group): group is DockviewGroupPanel => Boolean(group))
-
-    for (const group of candidates) {
-        if (hasRoomToSplit(group, 'horizontal', placedSizes)) {
-            return { referenceGroup: group, direction: 'right' }
-        }
-        if (hasRoomToSplit(group, 'vertical', placedSizes)) {
-            return { referenceGroup: group, direction: 'below' }
+    const tree = readGridTree(api)
+    const largestFirst = [...groups].sort((a, b) => getArea(b) - getArea(a))
+    for (const group of largestFirst) {
+        const directions = getBalancedSplitOrder(tree, {
+            id: group.id,
+            width: group.api.width,
+            height: group.api.height,
+        })
+        const direction = directions.find((candidate) =>
+            hasRoomToSplit(group, SPLIT_AXIS[candidate], placedSizes)
+        )
+        if (direction) {
+            return {
+                position: { referenceGroup: group, direction },
+                sizing: 'split',
+            }
         }
     }
     return null
 }
 
-/* A clicked selector joins the bar of selectors across the top, or starts
- * one (see getSelectorPlacement); it is a new line either way */
-const getSelectorPosition = (
+/* A clicked text or selector view joins its bar across the top, or starts
+ * one (see getBarPlacement); it is a new line either way */
+const getClickedBarPlacement = (
     api: DockviewApi,
+    kind: BarKind,
     sizes: ViewSizes
-): AddPanelPositionOptions | null => {
+): Placement | null => {
     const tree = readGridTree(api)
-    const placement = tree && getSelectorPlacement(tree, sizes)
+    const placement = tree && getBarPlacement(tree, kind, sizes)
     if (!placement) {
         return null
     }
-    return 'edge' in placement
-        ? { direction: 'above' }
-        : { referenceGroup: placement.referenceId, direction: 'right' }
+    return {
+        position:
+            'edge' in placement
+                ? { direction: 'above' }
+                : {
+                      referenceGroup: placement.referenceId,
+                      direction: placement.direction,
+                  },
+        sizing: 'insert',
+    }
 }
 
-export type AddViewResult =
+type AddViewResult =
     | { status: 'added'; viewId: string }
     | { status: 'full' }
     | { status: 'no-room' }
+    | { status: 'maximized' }
 
 const getReferenceGroupId = (
     position: AddPanelPositionOptions
@@ -94,11 +119,9 @@ export const addView = (
     type: ViewType,
     {
         placement,
-        nextToViewId = null,
         sizing,
     }: {
         placement?: AddPanelPositionOptions
-        nextToViewId?: string | null
         /* A split halves the reference cell; an insert adds a new line.
          * Defaults to a split when there is a reference cell. */
         sizing?: 'split' | 'insert'
@@ -108,25 +131,36 @@ export const addView = (
     if (!canAddView(type, views)) {
         return { status: 'full' }
     }
+    /* A maximized view hides the grid: the new view would land out of
+     * sight (the palette's tiles are disabled then) */
+    if (api.hasMaximizedGroup()) {
+        return { status: 'maximized' }
+    }
+    const kind = getViewKind(type)
     const sizes = getViewTypeSizes(type)
-    const selectorPosition =
-        placement || getViewKind(type) !== 'selector'
-            ? null
-            : getSelectorPosition(api, sizes)
-    const position =
-        placement ??
-        selectorPosition ??
-        getDefaultPlacement(api, nextToViewId, sizes)
-    if (!position) {
+    const given: Placement | null = placement
+        ? {
+              position: placement,
+              sizing:
+                  sizing ??
+                  (getReferenceGroupId(placement) ? 'split' : 'insert'),
+          }
+        : null
+    const chosen =
+        given ??
+        (kind === 'plugin' ? null : getClickedBarPlacement(api, kind, sizes)) ??
+        getDefaultPlacement(api, sizes)
+    if (!chosen) {
         return { status: 'no-room' }
     }
+    const { position } = chosen
     const number = getNextViewNumber(type, views)
     const params: ViewPanelParams = { type, number }
     const viewId = `${type}-${crypto.randomUUID()}`
     const targetGroupId = getReferenceGroupId(position)
     expectLayoutChange(
         api,
-        targetGroupId && sizing !== 'insert' && !selectorPosition
+        chosen.sizing === 'split' && targetGroupId
             ? { kind: 'split', viewId, targetGroupId }
             : { kind: 'insert', viewId }
     )

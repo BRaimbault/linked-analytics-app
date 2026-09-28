@@ -40,3 +40,24 @@
     padding-block: var(--spacers-dp4);
     padding-inline: 0;
 }
+
+/* Fills the tab, so the tooltip points at it */
+.tabNameTooltip {
+    block-size: 100%;
+    inline-size: 100%;
+}
+
+/* The icon and its label share one 16px line, so both are centred in the
+ * tab together; with boxes of different heights, each would be rounded to
+ * the pixel on its own, and drift apart at some window sizes */
+.tabIcon {
+    display: flex;
+    flex-shrink: 0;
+    block-size: 16px;
+    margin-inline-end: var(--spacers-dp4);
+    color: var(--colors-grey700);
+}
+
+.tabIconLabel {
+    line-height: 16px;
+}

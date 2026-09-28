@@ -1,4 +1,5 @@
 import type { DockviewApi, IDockviewPanel } from 'dockview-react'
+import { withoutSizing } from './grid-layout'
 import { SWAP_SPACER_COMPONENT } from './panels'
 import { showViewSettings } from './settings'
 
@@ -16,17 +17,20 @@ export const swapViews = (
     if (firstGroup === secondGroup) {
         return
     }
-    const spacers = [firstGroup, secondGroup].map((group, index) =>
-        api.addPanel({
-            id: `swap-spacer-${index}-${crypto.randomUUID()}`,
-            component: SWAP_SPACER_COMPONENT,
-            position: { referenceGroup: group },
-            inactive: true,
-        })
-    )
-    first.api.moveTo({ group: secondGroup })
-    second.api.moveTo({ group: firstGroup })
-    spacers.forEach((spacer) => api.removePanel(spacer))
+    /* A swap leaves every size as it was */
+    withoutSizing(api, () => {
+        const spacers = [firstGroup, secondGroup].map((group, index) =>
+            api.addPanel({
+                id: `swap-spacer-${index}-${crypto.randomUUID()}`,
+                component: SWAP_SPACER_COMPONENT,
+                position: { referenceGroup: group },
+                inactive: true,
+            })
+        )
+        first.api.moveTo({ group: secondGroup })
+        second.api.moveTo({ group: firstGroup })
+        spacers.forEach((spacer) => api.removePanel(spacer))
+    })
     first.api.setActive()
     showViewSettings(api, first.id)
 }
@@ -44,6 +48,3 @@ export const swapViewsById = (
         swapViews(api, first, second)
     }
 }
-
-/* Swap spacers are added and removed within one call, so they never paint */
-export const SwapSpacer = (): null => null

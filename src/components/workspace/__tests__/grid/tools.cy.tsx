@@ -11,6 +11,9 @@ import {
     viewTitles,
 } from './grid-helpers'
 
+const viewTab = (title: string) =>
+    cy.get('.dv-grid-view .dv-tab').contains(title)
+
 const toolTab = (title: string) =>
     cy.get('.dv-edge-group .dv-tab').contains(title)
 
@@ -35,10 +38,7 @@ describe('tools strip and settings', () => {
             clickTile('visualization')
 
             const intoMapSettings = (doc: Document): [number, number] => {
-                const rect = getToolTab(
-                    doc,
-                    'Map 1 settings'
-                ).getBoundingClientRect()
+                const rect = getToolTab(doc, 'Map 1').getBoundingClientRect()
                 return [
                     rect.left + rect.width * 0.2,
                     rect.top + rect.height / 2,
@@ -46,16 +46,17 @@ describe('tools strip and settings', () => {
             }
             let line: number | null = null
 
-            dragTo({ toolTab: 'Visualization 1 settings' }, intoMapSettings, {
+            dragTo({ toolTab: 'Visualization 1' }, intoMapSettings, {
                 whileOver: (doc) => (line = toolDropLine(doc)),
             })
 
             cy.then(() => expect(line).to.be.within(1, 4))
 
             toolTabs().should('deep.equal', [
+                'Workspace',
                 'Add views',
-                'Visualization 1 settings',
-                'Map 1 settings',
+                'Visualization 1',
+                'Map 1',
             ])
         }
     )
@@ -67,7 +68,7 @@ describe('tools strip and settings', () => {
         const pastTheLastTab = (doc: Document): [number, number] => {
             const rect = getToolTab(
                 doc,
-                'Visualization 1 settings'
+                'Visualization 1'
             ).getBoundingClientRect()
             return [rect.right + 200, rect.top + rect.height / 2]
         }
@@ -80,8 +81,9 @@ describe('tools strip and settings', () => {
         cy.then(() => expect(line).to.be.within(1, 4))
 
         toolTabs().should('deep.equal', [
-            'Map 1 settings',
-            'Visualization 1 settings',
+            'Workspace',
+            'Map 1',
+            'Visualization 1',
             'Add views',
         ])
     })
@@ -96,10 +98,11 @@ describe('tools strip and settings', () => {
             clickTile('visualization')
 
             toolTabs().should('deep.equal', [
+                'Workspace',
                 'Add views',
-                'Map 1 settings',
-                'Period selector 1 settings',
-                'Visualization 1 settings',
+                'Map 1',
+                'Period 1',
+                'Visualization 1',
             ])
         }
     )
@@ -125,15 +128,12 @@ describe('tools strip and settings', () => {
                 'have.text',
                 'Map 1'
             )
-            cy.get('.dv-edge-group .dv-active-tab').should(
-                'have.text',
-                'Map 1 settings'
-            )
+            cy.get('.dv-edge-group .dv-active-tab').should('have.text', 'Map 1')
 
             cy.get('[data-test="view-placeholder"]').last().click()
             cy.get('.dv-edge-group .dv-active-tab').should(
                 'have.text',
-                'Visualization 1 settings'
+                'Visualization 1'
             )
         }
     )
@@ -144,10 +144,7 @@ describe('tools strip and settings', () => {
 
         cy.get('[data-test="edit-view-settings"]').click()
 
-        cy.get('.dv-edge-group .dv-active-tab').should(
-            'have.text',
-            'Map 1 settings'
-        )
+        cy.get('.dv-edge-group .dv-active-tab').should('have.text', 'Map 1')
         cy.contains('Links to other views will be set here.').should(
             'be.visible'
         )
@@ -158,7 +155,7 @@ describe('tools strip and settings', () => {
         clickTile('map')
         clickTile('visualization')
 
-        toolTab('Map 1 settings')
+        toolTab('Map 1')
             .closest('.dv-tab')
             .find('.dv-default-tab-action')
             /* shown on hover, like any tab that isn't the open one */
@@ -166,23 +163,58 @@ describe('tools strip and settings', () => {
 
         viewTitles().should('deep.equal', ['Visualization 1'])
         toolTabs().should('deep.equal', [
+            'Workspace',
             'Add views',
-            'Visualization 1 settings',
+            'Visualization 1',
         ])
         expectLayout({ 'Visualization 1': { w: 100 } })
+        cy.get('.dv-edge-group .dv-active-tab').should('have.text', 'Add views')
     })
 
-    it('selects a neighbour when the selected view closes, and the palette once none is left', () => {
+    it(
+        'goes back to the palette, with no view selected, when a view closes',
+        SMOKE,
+        () => {
+            mountWorkspace()
+            clickTile('map')
+            clickTile('visualization')
+            viewTab('Map 1').click()
+            cy.get('[data-test="selected-view-tab"]').should(
+                'have.text',
+                'Map 1'
+            )
+
+            closeView('Visualization 1')
+            cy.get('.dv-edge-group .dv-active-tab').should(
+                'have.text',
+                'Add views'
+            )
+            cy.get('[data-test="selected-view-tab"]').should('not.exist')
+
+            viewTab('Map 1').click()
+            closeView('Map 1')
+            cy.get('[data-test="workspace-watermark"]').should('be.visible')
+            cy.get('.dv-edge-group .dv-active-tab').should(
+                'have.text',
+                'Add views'
+            )
+        }
+    )
+
+    it('selects the view whose settings tab is opened, and none on the other tools', () => {
         mountWorkspace()
         clickTile('map')
         clickTile('visualization')
 
-        closeView('Visualization 1')
+        toolTab('Map 1').click()
         cy.get('[data-test="selected-view-tab"]').should('have.text', 'Map 1')
 
-        closeView('Map 1')
-        cy.get('[data-test="workspace-watermark"]').should('be.visible')
-        cy.get('.dv-edge-group .dv-active-tab').should('have.text', 'Add views')
+        toolTab('Add views').click()
+        cy.get('[data-test="selected-view-tab"]').should('not.exist')
+
+        toolTab('Map 1').click()
+        toolTab('Workspace').click()
+        cy.get('[data-test="selected-view-tab"]').should('not.exist')
     })
 
     it('moves the tools strip to another edge and back, still adding views', () => {
@@ -268,6 +300,82 @@ describe('tools strip and settings', () => {
         )
     })
 
+    it('gives every tools tab one length, cutting no default name short', () => {
+        mountWorkspace()
+        clickTile('visualization')
+        clickTile('org-unit-selector')
+
+        cy.get('.dv-edge-group .dv-tab').should((tabs) => {
+            const widths = [...tabs].map((tab) => tab.offsetWidth)
+            expect(widths).to.have.length(4)
+            expect(new Set(widths).size, widths.join()).to.equal(1)
+        })
+        cy.get('.dv-edge-group .dv-default-tab-content').each(([name]) =>
+            expect(name.scrollWidth, name.textContent ?? '').to.equal(
+                name.clientWidth
+            )
+        )
+    })
+
+    /* The side of the tab the tooltip must open on: towards the grid */
+    const TOOLTIP_SIDES = {
+        top: (tooltip: DOMRect, tab: DOMRect) =>
+            expect(tooltip.top).to.be.at.least(tab.bottom),
+        bottom: (tooltip: DOMRect, tab: DOMRect) =>
+            expect(tooltip.bottom).to.be.at.most(tab.top),
+        left: (tooltip: DOMRect, tab: DOMRect) =>
+            expect(tooltip.left).to.be.at.least(tab.right),
+        right: (tooltip: DOMRect, tab: DOMRect) =>
+            expect(tooltip.right).to.be.at.most(tab.left),
+    }
+
+    for (const edge of ['top', 'bottom', 'left', 'right'] as const) {
+        it(`shows a cut-short tab name in a tooltip towards the grid, with the tools at the ${edge}`, () => {
+            mountWorkspace()
+            clickTile('visualization')
+            if (edge !== 'top') {
+                cy.get('[data-test="move-tools-button"]').click()
+                /* Cypress may report a menu item near the page's edge as
+                 * hidden; the element at its centre is its own label */
+                cy.get(
+                    `[data-test="move-tools-${edge}"] [role="menuitem"]`
+                ).click({ force: true })
+            }
+            /* Default names fit, so the tabs are made shorter than one */
+            cy.document().then((doc) => {
+                const style = doc.createElement('style')
+                style.textContent =
+                    '.dv-edge-group .dv-tab { inline-size: 90px !important }'
+                doc.head.appendChild(style)
+            })
+
+            cy.get('.dv-edge-group .dv-default-tab-content')
+                .contains('Visualization 1')
+                .should(([name]) =>
+                    expect(
+                        Math.max(
+                            name.scrollWidth - name.clientWidth,
+                            name.scrollHeight - name.clientHeight
+                        )
+                    ).to.be.greaterThan(0)
+                )
+                .trigger('mouseover')
+
+            cy.get('[role="tooltip"]')
+                .should('have.text', 'Visualization 1')
+                .then(([tooltip]) =>
+                    toolTab('Visualization 1').then(([name]) =>
+                        TOOLTIP_SIDES[edge](
+                            tooltip.getBoundingClientRect(),
+                            (
+                                name.closest('.dv-tab') as HTMLElement
+                            ).getBoundingClientRect()
+                        )
+                    )
+                )
+        })
+    }
+
     it('keeps the palette tiles the same size when some run out', () => {
         mountWorkspace()
         clickTile('period-selector')
@@ -279,5 +387,28 @@ describe('tools strip and settings', () => {
         cy.get('[data-test="add-view-map"]')
             .invoke('outerWidth')
             .should('equal', 160)
+    })
+
+    it('keeps the icon of a tab level with its name, at any window size', () => {
+        for (const [width, height] of [
+            [1280, 800],
+            [1111, 777],
+            [987, 733],
+        ]) {
+            cy.viewport(width, height)
+            mountWorkspace()
+            cy.get('[data-test="tab-icon"]').should((icons) => {
+                expect(icons).to.have.length(2)
+                for (const icon of icons) {
+                    const label = icon.nextElementSibling as HTMLElement
+                    const iconBox = icon.getBoundingClientRect()
+                    const labelBox = label.getBoundingClientRect()
+                    expect(iconBox.top, label.textContent ?? '').to.equal(
+                        labelBox.top
+                    )
+                    expect(iconBox.height).to.equal(labelBox.height)
+                }
+            })
+        }
     })
 })

@@ -5,6 +5,7 @@ import {
     inHeader,
     INSERT_LINE,
     mountWorkspace,
+    setUpRowOfThree,
     NO_PREVIEW,
     outerEdge,
     pointIn,
@@ -73,10 +74,7 @@ describe('moving views', () => {
     })
 
     it('moves a view between two others', () => {
-        mountWorkspace()
-        clickTile('map')
-        clickTile('visualization')
-        clickTile('map')
+        setUpRowOfThree()
 
         dragTo({ tab: 'Map 1' }, (doc) =>
             pointIn(doc, 'Map 2', [0, 0.5])
@@ -175,10 +173,7 @@ describe('moving views', () => {
     )
 
     it('offers no line next to the view being moved', () => {
-        mountWorkspace()
-        clickTile('map')
-        clickTile('visualization')
-        clickTile('map')
+        setUpRowOfThree()
 
         /* The lines on both sides of Visualization 1 would leave it there */
         dragTo(

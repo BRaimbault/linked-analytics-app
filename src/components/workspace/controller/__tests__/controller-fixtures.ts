@@ -11,8 +11,8 @@ import type { ViewType } from '@modules/workspace/view-types'
 import { vi } from 'vitest'
 
 export const titles = {
+    workspace: 'Workspace',
     addViews: 'Add views',
-    viewSettings: (title: string) => `${title} settings`,
 }
 
 export const setup = () => {

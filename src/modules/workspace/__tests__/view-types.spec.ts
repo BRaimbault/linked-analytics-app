@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest'
-import { PLUGIN_SIZES } from '../grid-tree'
+import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
 import {
     getViewKind,
     getViewTitle,
@@ -8,7 +7,8 @@ import {
     isViewType,
     PLUGIN_VIEW_TYPES,
     VIEW_TYPES,
-} from '../view-types'
+} from '@modules/workspace/view-types'
+import { describe, expect, it } from 'vitest'
 
 describe('view types', () => {
     it('knows each type, and nothing else', () => {
@@ -18,6 +18,7 @@ describe('view types', () => {
             'period-selector',
             'org-unit-selector',
             'data-selector',
+            'text',
         ])
         expect(isViewType('org-unit-selector')).toBe(true)
         expect(isViewType('table')).toBe(false)
@@ -32,23 +33,26 @@ describe('view types', () => {
             'Period',
             'Org unit',
             'Data',
+            'Text',
         ])
         expect(VIEW_TYPES.map((type) => getViewTitle(type, 2))).toEqual([
             'Map 2',
             'Visualization 2',
-            'Period selector 2',
-            'Org unit selector 2',
-            'Data selector 2',
+            'Period 2',
+            'Org unit 2',
+            'Data 2',
+            'Text 2',
         ])
     })
 
-    it('tells plugins from selectors', () => {
+    it('tells plugins, selectors and text apart', () => {
         expect(VIEW_TYPES.map(getViewKind)).toEqual([
             'plugin',
             'plugin',
             'selector',
             'selector',
             'selector',
+            'text',
         ])
         expect(
             VIEW_TYPES.filter((type) => getViewKind(type) === 'plugin')

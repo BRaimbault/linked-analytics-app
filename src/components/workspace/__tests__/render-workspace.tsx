@@ -1,5 +1,5 @@
 import { Workspace } from '@components/workspace/workspace'
-import { screen } from '@testing-library/react'
+import { within, screen } from '@testing-library/react'
 import { afterAll, beforeAll, vi } from 'vitest'
 import { renderWithStore } from './render-with-store'
 
@@ -25,3 +25,12 @@ export const renderWorkspace = async () => {
     await screen.findByRole('tab', { name: 'Add views' })
     return view
 }
+
+/* Settings tabs share their view's name, so they are looked up in the
+ * tools strip */
+export const toolsStrip = () =>
+    within(document.querySelector('.dv-edge-group') as HTMLElement)
+
+/* The grid of views, without the tools strip */
+export const viewsGrid = () =>
+    within(document.querySelector('.dv-grid-view') as HTMLElement)

@@ -70,18 +70,18 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
     - **Maps** updates in place only for changes in `filters` and `rows` (so `ou` and `pe` on thematic layers). A new data item, a style change, an event layer's dates, `relativePeriodDate`, or a changed number of layers need a **remount** (a new `key`, so a new iframe) until the Maps PR; an added layer otherwise crashes the plugin.
     - **Line Listing** freezes the object at mount, so it takes links by remounting. **EV** fetches by id and needs an upstream change.
 - **No plugin gives a load signal, and only DV sends clicks** (`onDrill`, org units only), until the upstream PRs. The planned contract (`onDataClick`, `highlight`, `onLoadingComplete`) is in [docs/interactions.md §6](docs/interactions.md#6-upstream-prs).
-- **The dimension pickers come from `@dhis2/analytics`** (`DataDimension`, `PeriodDimension`, `OrgUnitDimension`, `DynamicDimension`, and `OpenFileDialog` through `FileMenu`), as in DV, Maps and LL. See [docs/view-settings.md](docs/view-settings.md#what-dhis2analytics-offers).
+- **The dimension pickers come from `@dhis2/analytics`** (`DataDimension`, `PeriodDimension`, `OrgUnitDimension`, `DynamicDimension`, and `OpenFileDialog` through `FileMenu`), as in DV, Maps and LL. See [docs/view-settings.md](docs/view-settings.md#what-dhis2analytics-offers). It ships no types: declare what the app uses in `src/types/dhis2-analytics.d.ts`.
 - **Each plugin loads a full app in its own iframe**, so 4 at once is heavy: watch performance ([docs/plugins.md §3](docs/plugins.md#3-cost)).
 
 ## Plan
 
 1. **Tooling** (done): the EV setup: Vitest, strict TypeScript, path aliases, ESLint, Stylelint, ls-lint, Prettier, commitlint and git hooks, the RTK Query data layer, generated API types, CI.
-2. **Workspace grid with placeholders** (in progress): the dockview workspace, with view kinds (plugin or selector) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md).
+2. **Workspace grid with placeholders** (in progress): the dockview workspace, with view kinds (plugin or selector) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md). What's left from the external review is listed in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review).
 3. **Render plugins** (next): replace the placeholders with the DV and Maps plugins, and check performance with 4 at once, including memory and main-thread cost on a deployed build. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. See [docs/plugins.md](docs/plugins.md).
     - **Demo mode**, alongside it ([docs/demo-mode.md](docs/demo-mode.md)): fake DV and Maps plugins on synthetic data, mounted by the same plugin adapter. Each fake acts like the released plugins or like the proposed upstream contract, so the interactions can be built and shown before the upstream PRs.
 4. **View settings** (planned; [docs/view-settings.md §7](docs/view-settings.md#7-order-of-work)): pick a saved item with `OpenFileDialog` (together with step 3), hand off to DV or Maps for full editing, then in-app editors for visualizations and map layers, with Save as, Save and Revert. The map editor's scope depends on [docs/map-layers.md](docs/map-layers.md).
 5. **Interactions** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): channels, selectors and link mode, with a pure, unit-tested `applyLinks`; then click-driven links once the upstream `onDataClick` and `highlight` props land. Needs only step 3, so it can run alongside step 4.
-6. **Persistence** (planned): save workspaces, in the URL first, then the dataStore.
+6. **Persistence** (planned): save workspaces, in the URL first, then the dataStore. With sharing come a **layout lock** (a Workspace setting: views keep working, the layout can't change) and then a **presentation mode** built on it (no headers, no tools strip). Design in [docs/workspace-grid.md §11](docs/workspace-grid.md#11-later-lock-and-presentation).
 
 ## Workspace
 
@@ -89,12 +89,14 @@ The grid is `dockview-react`, one view per cell. Detail and reasons: [docs/works
 
 - **Code layout**: pure layout logic in `src/modules/workspace/` (no dockview, unit-tested); **every dockview call** in `src/components/workspace/controller/`, one file per topic, with `setup-workspace.ts` only wiring events to named handlers; components in `src/components/workspace/` (`tabs/`, `panels/`, `insert-zones/`). The file map is in [docs/workspace-grid.md §9](docs/workspace-grid.md#9-code-layout).
 - **dockview is the source of truth**; the `workspace` Redux slice mirrors it from dockview events. Share the api through `WorkspaceApiContext`, not Redux.
-- **Views**: at most 4 plugins (`MAX_PLUGIN_VIEWS`); each selector type is capped at the number of plugins + 1. Sizes come from the registry (`sizes.min`, and `sizes.preferred` for selectors). Selectors have **no maximum size**.
+- **Views**: at most 4 plugins (`MAX_PLUGIN_VIEWS`); each selector type is capped at the number of plugins + 1, and never more than 4 (`MAX_SELECTORS_PER_TYPE`). Text views have no cap and no settings tab (edited in place). Sizes come from the registry (`sizes.min`, and `sizes.preferred` for selectors and text). Selectors have **no maximum size**.
 - **Sizes**: after every add, move or close, the controller restores the user's proportions (`computeLayoutSizes`), reading the layout in `onWillMutateLayout` (or `onWillDrop` for a tab dropped at the outer edge) and applying `group.api.setSize` in `onDidMutateLayout`, parents first. **Never read the grid while a view is maximized**: dockview re-applies stored sizes when it restores one.
+- **Plugin size**: size a plugin from its body element, not from dockview's content dimensions, which subtract the header even while it floats (headers on hover).
 - **Iframes**: `renderer: 'always'` keeps them alive when panels move. View bodies live in an overlay above the grid, so during a drag `workspace.tsx` sets `data-dragging` and CSS turns off pointer events on view overlays (`.dv-render-overlay:has([data-view-id])`) and iframes, never on all overlays (the tools live in overlays too). **A view's body must keep `data-view-id`.** jsdom can't evaluate this CSS: check real drags in Cypress or the browser.
 - **dockview gotchas**:
     - `onReady` runs twice under StrictMode: setup must be idempotent and disposable.
-    - There is no built-in swap; `swapViews` moves panels through temporary spacer tabs, since dockview removes a group as soon as it's empty.
+    - There is no built-in swap; `swapViews` moves panels through temporary spacer tabs, since dockview removes a group as soon as it's empty. Sizing is paused while it runs (`withoutSizing`): a spacer has other sizes than the view it stands for.
+    - `group.api.setSize` takes the difference from the last child of the line first, and a branch can only be resized through a cell of its own. See [docs/workspace-grid.md §4](docs/workspace-grid.md#4-sizes-keep-the-users-proportions).
     - `DockviewDefaultTab` overrides `className`: mark tabs with `data-*` attributes.
     - Our padding on `.dv-default-tab` needs `box-sizing: border-box`, or the tab row overflows and hides the close button.
     - The theme sets `tabAnimation: 'default'` explicitly (unset, dockview opens a gap in a view's header when another view is dragged over it) and `dndTabIndicator: 'line'`.
@@ -120,7 +122,7 @@ A helper lives in the domain of what it **produces**, not the domains it reads f
 ### TypeScript and imports
 
 - **Strict mode** is on. **No `any`** unless absolutely necessary.
-- **Path aliases** always (`@hooks`, `@components/*`, `@api/*`, `@modules/*`, `@store/*`, `@locales/*`, `@types`), **never relative parent imports** (`../`) in source files. Aliases are defined in `import-aliases.mts` (Vite and Vitest) and `tsconfig.json` (TypeScript); keep them in sync.
+- **Path aliases** always (`@hooks`, `@components/*`, `@api/*`, `@modules/*`, `@store/*`, `@locales/*`, `@types`), **never relative parent imports** (`../`), in tests too. Aliases are defined in `import-aliases.mts` (Vite and Vitest) and `tsconfig.json` (TypeScript); keep them in sync.
 - **`import type`** for type-only imports.
 - **No default exports**, except entry points and config files.
 
@@ -145,10 +147,10 @@ A helper lives in the domain of what it **produces**, not the domains it reads f
 - **Test behavior, not implementation details**, and **cover new functionality in the same change**, including edge cases and errors.
 - **Vitest**: `*.spec.ts(x)`, co-located or in `__tests__`; import `describe`, `it` and `expect` from `vitest`; `@testing-library/react` for components; test ids use the `data-test` attribute. `clearMocks`, `unstubEnvs` and `unstubGlobals` are on, so don't hand-write a `beforeEach` to reset mocks. Vitest owns the **100% coverage** (lines, functions, branches, statements), and CI fails below it.
 - **Cypress component tests** (`*.cy.tsx` in `__tests__`, mounted with `cy.mount`) cover only what jsdom can't: real layout, CSS and drag and drop.
-    - The workspace scenarios are in `src/components/workspace/__tests__/grid/`, one spec per group, sharing `grid-helpers.tsx`.
+    - The workspace scenarios are in `src/components/workspace/__tests__/grid/`, one spec per group, sharing `grid-helpers.tsx`. Its layout checks (`expectLayout`, `cellSize`) retry until they pass; keep new checks retrying (`.should(callback)` or query chains), not one-off reads in `.then`.
     - A few scenarios per group are tagged `SMOKE` (`{ tags: '@smoke' }`, through `@cypress/grep`): the ones that would catch a broken group fastest. Tag a new scenario only when it covers something no smoke test does.
     - CI runs them all; the git hooks don't.
-    - Pitfalls: a DHIS2 `MenuItem` ignores clicks on its `li` (click its `[role="menuitem"]`); aliases of `invoke()` queries are re-run when read (store values in variables); the mount has no DHIS2 header, so tooltips at the top flip over their buttons; the 800px mount is taller than the screenshot viewport, so focusing or clicking can scroll the page (`dragTo` scrolls its source into view first).
+    - Pitfalls: a DHIS2 `MenuItem` ignores clicks on its `li` (click its `[role="menuitem"]`); aliases of `invoke()` queries are re-run when read (store values in variables); the mount has no DHIS2 header, so tooltips at the top flip over their buttons; the 800px mount is taller than the screenshot viewport, so focusing or clicking can scroll the page (`dragTo` scrolls its source into view first); after a failure screenshot, animation frames nearly stop in the retry, so dockview never positions view bodies there: measure against a view's cell, not its body.
 
 ### Running checks
 

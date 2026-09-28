@@ -41,7 +41,8 @@ export type FakeGroup = {
     element: {
         getBoundingClientRect: () => DOMRect
         contains: (node: unknown) => boolean
-        /* The dockview shell the grid lives in */
+        querySelector: (selector: string) => HTMLElement | null
+        toggleAttribute: (name: string, force: boolean) => void
     }
     model: { openPanel: Mock<(panel: FakePanel) => void> }
     api: {
@@ -89,6 +90,13 @@ const toSerializedNode = (node: GridNode): SerializedGridNode =>
               data: node.children.map(toSerializedNode),
               size: node.size,
           }
+
+/* While a view is maximized, dockview reports the other cells as hidden,
+ * with no size: a layout nobody may size anything from */
+const withHiddenSizes = (node: SerializedGridNode): SerializedGridNode =>
+    node.type === 'leaf'
+        ? { ...node, size: 0 }
+        : { ...node, size: 0, data: node.data.map(withHiddenSizes) }
 
 const EMPTY_GRID: SerializedGrid = {
     orientation: 'HORIZONTAL',
@@ -162,6 +170,8 @@ export const createFakeDockview = () => {
             element: {
                 getBoundingClientRect: () => toDomRect(rect),
                 contains: () => false,
+                querySelector: () => null,
+                toggleAttribute: vi.fn(),
             },
             model: {
                 openPanel: vi.fn((panel: FakePanel) => {
@@ -188,10 +198,17 @@ export const createFakeDockview = () => {
         return group
     }
 
+    /* Like dockview, the cell a panel leaves shows its next tab, and the
+     * panel becomes the shown tab of the cell it joins */
     const placePanel = (panel: FakePanel, group: FakeGroup, index?: number) => {
-        panel.group.panels = panel.group.panels.filter((p) => p !== panel)
+        const source = panel.group
+        source.panels = source.panels.filter((p) => p !== panel)
+        if (source.activePanel === panel) {
+            source.activePanel = source.panels[0]
+        }
         panel.group = group
         group.panels.splice(index ?? group.panels.length, 0, panel)
+        group.activePanel = panel
     }
 
     const createPanel = ({
@@ -239,6 +256,9 @@ export const createFakeDockview = () => {
 
     const api = {
         activePanel: undefined as FakePanel | undefined,
+        /* The grid's minimum, without the edge groups, like dockview's */
+        minimumWidth: 0,
+        minimumHeight: 0,
         get panels() {
             return panels
         },
@@ -291,8 +311,18 @@ export const createFakeDockview = () => {
                 emit('onDidRemovePanel', panel)
             })
         ),
-        toJSON: vi.fn(() => ({ grid })),
+        toJSON: vi.fn(() => ({
+            grid: maximized
+                ? { ...grid, root: withHiddenSizes(grid.root) }
+                : grid,
+        })),
         hasMaximizedGroup: () => maximized,
+        /* Like dockview, leaving maximize is a layout change */
+        exitMaximizedGroup: vi.fn(() =>
+            mutate(() => {
+                maximized = false
+            })
+        ),
         getEdgeGroup: (position: string) => edgeGroups.get(position)?.api,
         addEdgeGroup: vi.fn(
             (
@@ -308,8 +338,18 @@ export const createFakeDockview = () => {
                 return group.api
             }
         ),
+        /* Like dockview, removing an edge group disposes of its panels */
         removeEdgeGroup: vi.fn((position: string) => {
+            const group = edgeGroups.get(position)
             edgeGroups.delete(position)
+            if (!group) {
+                return
+            }
+            for (const panel of group.panels) {
+                panels.splice(panels.indexOf(panel), 1)
+            }
+            group.panels = []
+            groups.splice(groups.indexOf(group), 1)
         }),
         onDidAddPanel: on('onDidAddPanel'),
         onDidRemovePanel: on('onDidRemovePanel'),

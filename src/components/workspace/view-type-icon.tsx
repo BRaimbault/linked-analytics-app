@@ -2,6 +2,7 @@ import {
     IconCalendar24,
     IconList24,
     IconLocation24,
+    IconTextBox24,
     IconVisualizationColumn24,
     IconWorld24,
 } from '@dhis2/ui'
@@ -14,6 +15,7 @@ const ICONS: Record<ViewType, () => ReactElement> = {
     'period-selector': () => <IconCalendar24 />,
     'org-unit-selector': () => <IconLocation24 />,
     'data-selector': () => <IconList24 />,
+    text: () => <IconTextBox24 />,
 }
 
 export const ViewTypeIcon: FC<{ type: ViewType }> = ({ type }) => ICONS[type]()

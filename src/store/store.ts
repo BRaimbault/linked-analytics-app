@@ -2,6 +2,7 @@ import { api } from '@api/api'
 import { isDebugMode } from '@modules/debug-mode'
 import { configureStore } from '@reduxjs/toolkit'
 import type { DataEngine } from '@types'
+import { workspaceSettingsSlice } from './workspace-settings-slice'
 import { workspaceSlice } from './workspace-slice'
 
 export const createStore = (engine: DataEngine) =>
@@ -9,6 +10,8 @@ export const createStore = (engine: DataEngine) =>
         reducer: {
             [api.reducerPath]: api.reducer,
             [workspaceSlice.reducerPath]: workspaceSlice.reducer,
+            [workspaceSettingsSlice.reducerPath]:
+                workspaceSettingsSlice.reducer,
         },
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware({

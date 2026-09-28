@@ -1,4 +1,5 @@
 import { useAddView } from '@components/workspace/use-add-view'
+import { useDockviewValue } from '@components/workspace/use-dockview-value'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import i18n from '@dhis2/d2-i18n'
@@ -17,19 +18,20 @@ import {
     type ViewKind,
     type ViewType,
 } from '@modules/workspace/view-types'
-import { selectActiveView, selectViews } from '@store/workspace-slice'
+import { selectViews } from '@store/workspace-slice'
 import type { IDockviewPanelProps } from 'dockview-react'
-import type { DragEvent, FC } from 'react'
+import { useCallback, type DragEvent, type FC } from 'react'
 import classes from './styles/panels.module.css'
 import { ToolPanel } from './tool-panel'
 
-const ViewTile: FC<{ type: ViewType; disabled: boolean }> = ({
+/* A tile that can't add its view says why in its tooltip */
+const ViewTile: FC<{ type: ViewType; disabledReason: string | null }> = ({
     type,
-    disabled,
+    disabledReason,
 }) => {
     const api = useWorkspaceApi()
-    const activeViewId = useAppSelector(selectActiveView)?.id ?? null
-    const addView = useAddView(api, activeViewId)
+    const addView = useAddView(api)
+    const disabled = disabledReason !== null
 
     const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
         event.dataTransfer.setData(VIEW_DRAG_MIME, encodeViewDrag(type))
@@ -52,20 +54,39 @@ const ViewTile: FC<{ type: ViewType; disabled: boolean }> = ({
         </button>
     )
 
-    return disabled ? (
-        <Tooltip content={getViewLimitMessage(type)}>{tile}</Tooltip>
-    ) : (
-        tile
-    )
+    return disabled ? <Tooltip content={disabledReason}>{tile}</Tooltip> : tile
 }
 
 const TILE_GROUPS: { kind: ViewKind; heading: () => string }[] = [
     { kind: 'plugin', heading: () => i18n.t('Analytics') },
     { kind: 'selector', heading: () => i18n.t('Selectors') },
+    { kind: 'text', heading: () => i18n.t('Notes') },
 ]
+
+/* A maximized view hides the grid: a new view would land out of sight */
+const useIsViewMaximized = (): boolean => {
+    const api = useWorkspaceApi()
+    return useDockviewValue(
+        useCallback(() => api?.hasMaximizedGroup() ?? false, [api]),
+        useCallback(
+            (listener: () => void) =>
+                api?.onDidMaximizedGroupChange(listener) ?? {
+                    dispose: () => {},
+                },
+            [api]
+        )
+    )
+}
 
 export const AddViewsPanel: FC<IDockviewPanelProps> = ({ api }) => {
     const views = useAppSelector(selectViews)
+    const isViewMaximized = useIsViewMaximized()
+    const getDisabledReason = (type: ViewType): string | null => {
+        if (isViewMaximized) {
+            return i18n.t('Restore the maximized view to add another')
+        }
+        return canAddView(type, views) ? null : getViewLimitMessage(type, views)
+    }
 
     return (
         <ToolPanel api={api}>
@@ -77,9 +98,9 @@ export const AddViewsPanel: FC<IDockviewPanelProps> = ({ api }) => {
                         aria-label={heading()}
                         data-test={`add-views-${kind}s`}
                     >
-                        <h3 className={classes.tileGroupHeading}>
+                        <h2 className={classes.tileGroupHeading}>
                             {heading()}
-                        </h3>
+                        </h2>
                         <div className={classes.tiles}>
                             {VIEW_TYPES.filter(
                                 (type) => getViewKind(type) === kind
@@ -87,7 +108,7 @@ export const AddViewsPanel: FC<IDockviewPanelProps> = ({ api }) => {
                                 <ViewTile
                                     key={type}
                                     type={type}
-                                    disabled={!canAddView(type, views)}
+                                    disabledReason={getDisabledReason(type)}
                                 />
                             ))}
                         </div>

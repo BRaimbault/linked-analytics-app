@@ -7,7 +7,7 @@ import {
     refuseDisallowedDrop,
     swapOrExpectMove,
 } from './drops'
-import { readGridTree, restoreProportions } from './grid-layout'
+import { isSizingPaused, readGridTree, restoreProportions } from './grid-layout'
 import { addToolPanels, type ToolTitles } from './settings'
 import { createViewEvents } from './view-events'
 
@@ -20,23 +20,28 @@ export const setupWorkspace = (
     toolTitles: ToolTitles
 ): (() => void) => {
     addToolPanels(api, toolTitles)
-    const { onViewAdded, onViewRemoved, onViewSelected } = createViewEvents(
-        api,
-        dispatch,
-        toolTitles
-    )
     /* The layout as the user last left it, read before each change while
      * no view is maximized, so leaving maximize puts it back */
     let layoutBefore: GridTree | null = null
+    const { onViewAdded, onViewRemoved, onViewSelected } = createViewEvents(
+        api,
+        dispatch
+    )
 
     const disposables = [
         api.onDidAddPanel(onViewAdded),
         api.onDidRemovePanel(onViewRemoved),
         api.onDidActivePanelChange(onViewSelected),
         api.onWillMutateLayout(() => {
-            layoutBefore = readGridTree(api) ?? layoutBefore
+            if (!isSizingPaused(api)) {
+                layoutBefore = readGridTree(api) ?? layoutBefore
+            }
         }),
-        api.onDidMutateLayout(() => restoreProportions(api, layoutBefore)),
+        api.onDidMutateLayout(() => {
+            if (!isSizingPaused(api)) {
+                restoreProportions(api, layoutBefore)
+            }
+        }),
         api.onUnhandledDragOver((event) => acceptPaletteDrag(api, event)),
         api.onWillShowOverlay((event) => refuseDisallowedDrop(api, event)),
         api.onWillDrop((event) => swapOrExpectMove(api, event)),

@@ -58,6 +58,7 @@
         "vitest": "^4.1.11"
     },
     "dependencies": {
+        "@dhis2/analytics": "^29.8.1",
         "@dhis2/app-runtime": "^3.17.4",
         "@dhis2/ui": "^10.17.0",
         "@reduxjs/toolkit": "^2.11.2",

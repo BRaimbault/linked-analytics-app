@@ -1,9 +1,18 @@
-import type { GridNode, GridTree, ViewSizes } from '../grid-tree'
-import { getViewTypeSizes } from '../view-types'
+import type {
+    GridNode,
+    GridTree,
+    ViewSizes,
+} from '@modules/workspace/grid-tree'
+import { getViewTypeSizes, type ViewKind } from '@modules/workspace/view-types'
 
 /* Describes a layout by relative weights: `row` lays its children out side
  * by side, `column` stacks them. Weights are shares of the parent. */
-type ViewSpec = { id: string; weight: number; sizes?: ViewSizes }
+type ViewSpec = {
+    id: string
+    weight: number
+    sizes?: ViewSizes
+    viewKind?: ViewKind
+}
 type BranchSpec = {
     kind: 'row' | 'column'
     weight: number
@@ -18,6 +27,15 @@ export const selector = (id: string, weight = 1): ViewSpec => ({
     id,
     weight,
     sizes: getViewTypeSizes('org-unit-selector'),
+    viewKind: 'selector',
+})
+
+/* A text view, with its minimum and preferred sizes */
+export const text = (id: string, weight = 1): ViewSpec => ({
+    id,
+    weight,
+    sizes: getViewTypeSizes('text'),
+    viewKind: 'text',
 })
 
 export const row = (weight: number, ...children: Spec[]): BranchSpec => ({
@@ -36,9 +54,14 @@ export const column = (weight: number, ...children: Spec[]): BranchSpec => ({
  * its children share */
 const toNode = (spec: Spec, size: number, ownLength: number): GridNode => {
     if (!('kind' in spec)) {
-        return spec.sizes
-            ? { type: 'leaf', id: spec.id, size, sizes: spec.sizes }
-            : { type: 'leaf', id: spec.id, size }
+        const { id, sizes, viewKind } = spec
+        return {
+            type: 'leaf',
+            id,
+            size,
+            ...(sizes && { sizes }),
+            ...(viewKind && { kind: viewKind }),
+        }
     }
     const total = spec.children.reduce((sum, child) => sum + child.weight, 0)
     return {

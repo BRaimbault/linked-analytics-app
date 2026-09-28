@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
 import {
     getLineCount,
     getMinLength,
     getPreferredLength,
-} from '../grid-measures'
-import { PLUGIN_SIZES } from '../grid-tree'
-import { getViewTypeSizes } from '../view-types'
+} from '@modules/workspace/grid-measures'
+import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
+import { getViewTypeSizes } from '@modules/workspace/view-types'
+import { describe, expect, it } from 'vitest'
 import { buildTree, column, row, selector, view } from './grid-tree-builders'
 
 /* a | (b over c) */

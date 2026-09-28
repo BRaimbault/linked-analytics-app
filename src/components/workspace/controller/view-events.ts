@@ -8,63 +8,53 @@ import type { DockviewApi, IDockviewPanel } from 'dockview-react'
 import {
     ADD_VIEWS_PANEL_ID,
     getSettingsPanelId,
-    getViewPanels,
+    getSettingsViewId,
+    isToolPanelId,
     isViewPanel,
+    isViewSettingsPanel,
     toWorkspaceView,
 } from './panels'
 import {
     addViewSettingsPanel,
+    focusToolTab,
     showToolPanel,
     showViewSettings,
-    type ToolTitles,
 } from './settings'
 
 /* Keeps the store, the settings tabs and the selection in step as views
- * are added, closed and selected */
-export const createViewEvents = (
-    api: DockviewApi,
-    dispatch: AppDispatch,
-    toolTitles: ToolTitles
-) => {
-    let selectedViewId: string | null = null
+ * are added, closed and selected. A view is selected only while its
+ * settings tab is shown: "Workspace" and "Add views" select none. */
+export const createViewEvents = (api: DockviewApi, dispatch: AppDispatch) => {
+    const select = (viewId: string | null) =>
+        dispatch(activeViewChanged(viewId))
 
     const onViewAdded = (panel: IDockviewPanel) => {
         if (isViewPanel(panel)) {
             dispatch(viewAdded(toWorkspaceView(panel)))
-            addViewSettingsPanel(api, panel, toolTitles)
+            addViewSettingsPanel(api, panel)
         }
     }
 
-    /* Closing the selected view selects a neighbour, like closing an editor
-     * in VS Code; the strip then shows that view's settings, or the palette
-     * once the grid is empty, instead of whichever tab dockview falls back to. */
+    /* Closing a view goes back to the palette, the likely next step while
+     * arranging, with no view selected. The tab closed may have had the
+     * focus, which then goes to the palette's tab. */
     const onViewRemoved = (panel: IDockviewPanel) => {
         if (!isViewPanel(panel)) {
             return
         }
         dispatch(viewRemoved(panel.id))
         const settings = api.getPanel(getSettingsPanelId(panel.id))
-        const settingsWasShown = Boolean(
-            settings && settings.group.activePanel?.id === settings.id
-        )
         if (settings) {
             api.removePanel(settings)
         }
-        if (selectedViewId === panel.id) {
-            selectedViewId = null
-            getViewPanels(api)[0]?.api.setActive()
-        }
-        if (!settingsWasShown && selectedViewId !== null) {
-            return
-        }
-        if (selectedViewId) {
-            showViewSettings(api, selectedViewId)
-        } else {
-            showToolPanel(api, ADD_VIEWS_PANEL_ID)
+        showToolPanel(api, ADD_VIEWS_PANEL_ID)
+        select(null)
+        if (document.activeElement === document.body) {
+            focusToolTab(api, ADD_VIEWS_PANEL_ID)
         }
     }
 
-    /* Only a view the user picks shows its settings; one just added from
+    /* A view the user picks shows its settings, and one just added from
      * the palette leaves the palette open for the next add. */
     const onViewSelected = ({
         panel,
@@ -73,13 +63,19 @@ export const createViewEvents = (
         panel?: IDockviewPanel
         origin: string
     }) => {
-        if (!panel || !isViewPanel(panel)) {
+        if (!panel) {
             return
         }
-        selectedViewId = panel.id
-        dispatch(activeViewChanged(panel.id))
-        if (origin === 'user') {
+        if (isViewSettingsPanel(panel)) {
+            select(getSettingsViewId(panel))
+        } else if (isToolPanelId(panel.id)) {
+            select(null)
+        } else if (
+            isViewPanel(panel) &&
+            origin === 'user' &&
             showViewSettings(api, panel.id)
+        ) {
+            select(panel.id)
         }
     }
 

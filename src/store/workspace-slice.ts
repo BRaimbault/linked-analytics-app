@@ -3,11 +3,7 @@ import {
     type ViewKind,
     type ViewType,
 } from '@modules/workspace/view-types'
-import {
-    createSelector,
-    createSlice,
-    type PayloadAction,
-} from '@reduxjs/toolkit'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 export type WorkspaceView = {
     id: string
@@ -66,7 +62,3 @@ export const workspaceSlice = createSlice({
 export const { viewAdded, viewRemoved, activeViewChanged } =
     workspaceSlice.actions
 export const { selectViews, selectActiveView } = workspaceSlice.selectors
-
-export const selectPluginViews = createSelector([selectViews], (views) =>
-    views.filter((view) => view.kind === 'plugin')
-)

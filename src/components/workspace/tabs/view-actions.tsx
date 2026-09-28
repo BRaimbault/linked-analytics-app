@@ -1,4 +1,5 @@
 import { swapViewsById } from '@components/workspace/controller/swap-views'
+import { focusViewTab } from '@components/workspace/controller/views'
 import { useDockviewValue } from '@components/workspace/use-dockview-value'
 import i18n from '@dhis2/d2-i18n'
 import { IconFullscreen16, IconFullscreenExit16 } from '@dhis2/ui'
@@ -39,7 +40,10 @@ const SwapMenu: FC<{ api: DockviewApi; view: IDockviewPanel }> = ({
                     interpolation: { escapeValue: false },
                 }),
                 dataTest: `swap-with-${target.id}`,
-                onClick: () => swapViewsById(api, view.id, target.id),
+                onClick: () => {
+                    swapViewsById(api, view.id, target.id)
+                    focusViewTab(api, view.id)
+                },
             }))}
         />
     )

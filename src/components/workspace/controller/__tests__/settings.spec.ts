@@ -1,9 +1,9 @@
 import {
-    closeView,
+    keepCloseFromSelecting,
     openSettings,
     showSettingsForTarget,
 } from '@components/workspace/controller/settings'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { addMapPanel, setup, twoColumns } from './controller-fixtures'
 
 describe('openSettings', () => {
@@ -19,6 +19,28 @@ describe('openSettings', () => {
         expect(
             fake.api.getPanel('settings-map-a')?.api.setActive
         ).toHaveBeenCalled()
+    })
+})
+
+describe('keepCloseFromSelecting', () => {
+    it('marks presses on a tab’s close button as handled, and only those', () => {
+        const close = document.createElement('button')
+        close.className = 'dv-default-tab-action'
+        const icon = document.createElement('svg')
+        close.appendChild(icon)
+        const pressOn = (target: EventTarget | null) => ({
+            target,
+            preventDefault: vi.fn(),
+        })
+        const onIcon = pressOn(icon)
+        const onTab = pressOn(document.createElement('div'))
+        const onNothing = pressOn(null)
+
+        expect(keepCloseFromSelecting(onIcon)).toBe(true)
+        expect(keepCloseFromSelecting(onTab)).toBe(false)
+        expect(keepCloseFromSelecting(onNothing)).toBe(false)
+        expect(onIcon.preventDefault).toHaveBeenCalled()
+        expect(onTab.preventDefault).not.toHaveBeenCalled()
     })
 })
 
@@ -67,18 +89,5 @@ describe('showSettingsForTarget', () => {
         showSettingsForTarget(fake.asApi, document.createTextNode('text'))
 
         expect(fake.toolGroup.model.openPanel).not.toHaveBeenCalled()
-    })
-})
-
-describe('closeView', () => {
-    it('closes a view, and does nothing for one that is gone', () => {
-        const fake = setup()
-        const [map] = twoColumns(fake)
-
-        closeView(fake.asApi, 'gone')
-        closeView(fake.asApi, map.id)
-
-        expect(fake.api.removePanel).toHaveBeenCalledTimes(1)
-        expect(fake.api.getPanel(map.id)).toBeUndefined()
     })
 })

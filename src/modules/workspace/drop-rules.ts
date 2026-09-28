@@ -1,9 +1,17 @@
+import { getMinLength } from './grid-measures'
 import {
+    along,
     axisOf,
+    crossAxis,
     findLeafLocation,
     getLeaves,
+    lengthOf,
+    type GridNode,
+    type GridOrientation,
     type GridTree,
+    type Rect,
     type SplitAxis,
+    type ViewSizes,
 } from './grid-tree'
 
 export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
@@ -16,6 +24,15 @@ export const getSplitAxis = (position: DropPosition): SplitAxis | null => {
     return null
 }
 
+/* The room a placed view needs across the split: a split or a new line
+ * never makes the space it lands in longer that way, so the placed view
+ * must fit its length as it is (a map can't go beside a 120px selector) */
+type CrossRoom = {
+    /* The length across the split: the cell's, or the branch's */
+    crossLength: number
+    placedCrossMin: number
+}
+
 /* Splitting a cell halves it, unless the placed view is a selector, which
  * takes its preferred size and leaves the rest; either way both views keep
  * their minimum length. */
@@ -24,15 +41,18 @@ export const hasRoomToSplitCell = ({
     targetMin,
     placedMin,
     halves,
+    crossLength,
+    placedCrossMin,
 }: {
     length: number
     targetMin: number
     placedMin: number
     halves: boolean
-}): boolean =>
-    halves
+} & CrossRoom): boolean =>
+    placedCrossMin <= crossLength &&
+    (halves
         ? length / 2 >= Math.max(targetMin, placedMin)
-        : targetMin + placedMin <= length
+        : targetMin + placedMin <= length)
 
 /* A new line (a row or column added at the grid's outer edge or between
  * two lines) takes its room from the others, so it fits as long as every
@@ -41,14 +61,52 @@ export const hasRoomToInsertLine = ({
     minLength,
     length,
     placedMin,
+    crossLength,
+    placedCrossMin,
 }: {
     /* The smallest length the existing lines can shrink to */
     minLength: number
     length: number
     placedMin: number
-}): boolean => minLength + placedMin <= length
+} & CrossRoom): boolean =>
+    placedCrossMin <= crossLength && minLength + placedMin <= length
 
-export type DropKind = 'tab' | 'header_space' | 'content' | 'edge'
+type NewLine = {
+    axis: SplitAxis
+    placedSizes: ViewSizes
+    /* A view about to move away, whose space is free */
+    excludeId?: string | null
+}
+
+/* Whether a new line along the axis fits in the space a node covers (a
+ * branch, between two of its lines, or the whole grid at an outer edge) */
+export const hasRoomForNewLine = (
+    space: { node: GridNode; orientation: GridOrientation; rect: Rect },
+    { axis, placedSizes, excludeId = null }: NewLine
+): boolean =>
+    hasRoomToInsertLine({
+        minLength: getMinLength(space.node, space.orientation, {
+            axis,
+            excludeId,
+        }),
+        length: lengthOf(space.rect, axis),
+        placedMin: along(placedSizes.min, axis),
+        crossLength: lengthOf(space.rect, crossAxis(axis)),
+        placedCrossMin: along(placedSizes.min, crossAxis(axis)),
+    })
+
+/* A new row or column along one of the grid's outer edges */
+export const hasRoomForGridLine = (tree: GridTree, line: NewLine): boolean =>
+    hasRoomForNewLine(
+        {
+            node: tree.root,
+            orientation: tree.orientation,
+            rect: { left: 0, top: 0, width: tree.width, height: tree.height },
+        },
+        line
+    )
+
+type DropKind = 'tab' | 'header_space' | 'content' | 'edge'
 export type DropPosition = 'top' | 'bottom' | 'left' | 'right' | 'center'
 export type DragSource = 'view' | 'tool' | 'external'
 
@@ -64,7 +122,7 @@ export type DropContext = {
     isNoOpMove: boolean
 }
 
-export type MoveTarget =
+type MoveTarget =
     | { type: 'cell'; id: string; position: DropPosition }
     | { type: 'edge'; position: DropPosition }
 

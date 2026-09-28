@@ -1,6 +1,8 @@
 import {
     mockContainerSize,
     renderWorkspace,
+    toolsStrip,
+    viewsGrid,
 } from '@components/workspace/__tests__/render-workspace'
 import { selectViews } from '@store/workspace-slice'
 import { screen, waitFor, within } from '@testing-library/react'
@@ -56,7 +58,7 @@ describe('header actions', () => {
          * rebuilt, which is what will keep a plugin's iframe from reloading */
         const placeholdersBefore = screen.getAllByTestId('view-placeholder')
 
-        const mapTab = screen.getByRole('tab', { name: 'Map 1' })
+        const mapTab = viewsGrid().getByRole('tab', { name: 'Map 1' })
         const mapCell = mapTab.closest('.dv-groupview') as HTMLElement
         await userEvent.click(
             within(mapCell).getByTestId('view-actions-button')
@@ -74,6 +76,8 @@ describe('header actions', () => {
         await waitFor(() =>
             expect(groupTitles()).toEqual(['Visualization 1', 'Map 1'])
         )
+        /* Focus follows the swapped view to its new cell */
+        expect(viewsGrid().getByRole('tab', { name: 'Map 1' })).toHaveFocus()
         const placeholdersAfter = screen.getAllByTestId('view-placeholder')
         expect(placeholdersAfter).toHaveLength(2)
         placeholdersBefore.forEach((placeholder) =>
@@ -81,11 +85,37 @@ describe('header actions', () => {
         )
         expect(selectViews(store.getState())).toEqual(viewsBefore)
         expect(
-            screen.getByRole('tab', { name: 'Map 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Map 1' })
         ).toHaveAttribute('aria-selected', 'true')
         expect(
-            screen.getByRole('tab', { name: 'Visualization 1 settings' })
+            toolsStrip().getByRole('tab', { name: 'Visualization 1' })
         ).toBeInTheDocument()
+    })
+
+    it('opens a view\u2019s settings on a double click on its header, expanding the strip', async () => {
+        await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        await userEvent.click(screen.getByTestId('collapse-tools-button'))
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('collapse-tools-button')
+            ).toHaveAccessibleName('Expand')
+        )
+
+        await userEvent.dblClick(
+            within(viewsGrid().getByRole('tab', { name: 'Map 1' })).getByText(
+                'Map 1'
+            )
+        )
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('collapse-tools-button')
+            ).toHaveAccessibleName('Collapse')
+        )
+        expect(
+            toolsStrip().getByRole('tab', { name: 'Map 1' })
+        ).toHaveAttribute('aria-selected', 'true')
     })
 
     it('collapses and expands the tools strip', async () => {
@@ -124,6 +154,26 @@ describe('header actions', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Restore' }))
         await waitFor(() =>
             expect(screen.queryByRole('button', { name: 'Restore' })).toBeNull()
+        )
+    })
+
+    it('announces a maximized view that is closed as closed, not restored', async () => {
+        await renderWorkspace()
+        await userEvent.click(screen.getByTestId('add-view-map'))
+        await userEvent.click(screen.getByTestId('add-view-visualization'))
+        const [maximize] = await screen.findAllByTestId('maximize-view-button')
+        await userEvent.click(maximize)
+        await screen.findByRole('button', { name: 'Restore' })
+
+        const mapTab = viewsGrid().getByRole('tab', { name: 'Map 1' })
+        await userEvent.click(
+            within(mapTab).getByRole('button', { name: /close/i })
+        )
+
+        await waitFor(() =>
+            expect(
+                document.querySelector('[aria-live="polite"]')?.textContent
+            ).toBe('Map 1 closed')
         )
     })
 })

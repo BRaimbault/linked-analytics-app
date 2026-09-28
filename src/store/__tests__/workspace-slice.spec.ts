@@ -1,14 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
-import { describe, expect, it } from 'vitest'
 import {
     activeViewChanged,
     selectActiveView,
-    selectPluginViews,
     selectViews,
     viewAdded,
     viewRemoved,
     workspaceSlice,
-} from '../workspace-slice'
+} from '@store/workspace-slice'
+import { describe, expect, it } from 'vitest'
 
 const createTestStore = () =>
     configureStore({
@@ -64,6 +63,5 @@ describe('workspace slice', () => {
         store.dispatch(viewAdded(orgUnit1))
 
         expect(selectViews(store.getState())[1].kind).toBe('selector')
-        expect(selectPluginViews(store.getState())).toEqual([plugin(map1)])
     })
 })

@@ -1,8 +1,8 @@
+import { App } from '@components/app/app'
 import { CustomDataProvider } from '@dhis2/app-runtime'
 import { render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import { describe, expect, it } from 'vitest'
-import { App } from '../app'
 
 type CustomData = ComponentProps<typeof CustomDataProvider>['data']
 

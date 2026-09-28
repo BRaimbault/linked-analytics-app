@@ -1,3 +1,4 @@
+import type { ViewKind } from './view-types'
 export type SplitAxis = 'horizontal' | 'vertical'
 
 export type Size = { width: number; height: number }
@@ -6,6 +7,9 @@ export type Size = { width: number; height: number }
  * selector) gets that size when it has a line to itself, instead of a share
  * of the grid. */
 export type ViewSizes = { min: Size; preferred?: Size }
+
+/* dockview's tab header, at the top of every view */
+export const VIEW_HEADER_HEIGHT = 35
 
 /* Below this a plugin has no room to be readable */
 export const PLUGIN_SIZES: ViewSizes = { min: { width: 240, height: 160 } }
@@ -19,8 +23,9 @@ export type GridLeaf = {
     type: 'leaf'
     id: string
     size: number
-    /* Plugin sizes when left out */
+    /* Plugin sizes and kind when left out */
     sizes?: ViewSizes
+    kind?: ViewKind
 }
 export type GridBranch = { type: 'branch'; size: number; children: GridNode[] }
 export type GridNode = GridLeaf | GridBranch
@@ -67,13 +72,14 @@ export const fromSerializedGrid = (grid: SerializedGrid): GridTree => {
 }
 
 /* The tree with each view's sizes, looked up by cell */
-export const withViewSizes = (
+/* Attaches what the layout rules need to know of each cell's view */
+export const withViewInfo = (
     tree: GridTree,
-    getSizes: (leafId: string) => ViewSizes
+    getInfo: (leafId: string) => { sizes: ViewSizes; kind: ViewKind }
 ): GridTree => {
     const attach = (node: GridNode): GridNode =>
         node.type === 'leaf'
-            ? { ...node, sizes: getSizes(node.id) }
+            ? { ...node, ...getInfo(node.id) }
             : { ...node, children: node.children.map(attach) }
     return { ...tree, root: attach(tree.root) as GridBranch }
 }
@@ -83,6 +89,9 @@ export const orthogonal = (orientation: GridOrientation): GridOrientation =>
 
 export const axisOf = (orientation: GridOrientation): SplitAxis =>
     orientation === 'HORIZONTAL' ? 'horizontal' : 'vertical'
+
+export const crossAxis = (axis: SplitAxis): SplitAxis =>
+    axis === 'horizontal' ? 'vertical' : 'horizontal'
 
 export const along = (size: Size, axis: SplitAxis): number =>
     axis === 'horizontal' ? size.width : size.height
@@ -143,7 +152,7 @@ export const getLeafRects = (tree: GridTree): Map<string, Rect> =>
             .map(([node, rect]) => [(node as GridLeaf).id, rect])
     )
 
-export type LeafLocation = {
+type LeafLocation = {
     parent: GridBranch
     orientation: GridOrientation
     index: number

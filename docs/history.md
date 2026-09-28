@@ -7,17 +7,18 @@ How the repo got where it is: a timeline from the git history, then the reports 
 
 ## 1. Timeline
 
-| Date              | Milestone                                                                                                    | Commits and PRs                         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| 24 September 2026 | Scaffold with `@dhis2/create-app`                                                                            | `548d4b7`                               |
-| 25 September 2026 | Tooling ported from event-visualizer-app ([§2](#2-tooling-port-25-september-2026))                           | #1 (`94b3f76`)                          |
-| 25 September 2026 | Dependabot updates: jsdom, `@dhis2/config-prettier`, `@dhis2/config-eslint`                                  | #2, #5, #3                              |
-| 25 September 2026 | Unit test coverage, with a report on each PR                                                                 | #6 (`4608bf1`)                          |
-| 25 September 2026 | 100% coverage required, tests tightened, git hooks run with the project's Node                               | #8 (`621f9c6`)                          |
-| 25 September 2026 | Workspace grid with placeholder views (dockview)                                                             | `5927ebd`, branch `feat/workspace-grid` |
-| 25 September 2026 | Layout proportions, insert lines between views and at the edges, no-op drops hidden, Cypress component tests | `ef0201a`                               |
-| 25 September 2026 | Selector views next to maps and visualizations                                                               | `6d4d8b1`                               |
-| September 2026    | In progress on `feat/workspace-grid`, not yet committed: see [§3](#3-in-progress-on-featworkspace-grid)      | —                                       |
+| Date              | Milestone                                                                                                                                    | Commits and PRs                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 24 September 2026 | Scaffold with `@dhis2/create-app`                                                                                                            | `548d4b7`                               |
+| 25 September 2026 | Tooling ported from event-visualizer-app ([§2](#2-tooling-port-25-september-2026))                                                           | #1 (`94b3f76`)                          |
+| 25 September 2026 | Dependabot updates: jsdom, `@dhis2/config-prettier`, `@dhis2/config-eslint`                                                                  | #2, #5, #3                              |
+| 25 September 2026 | Unit test coverage, with a report on each PR                                                                                                 | #6 (`4608bf1`)                          |
+| 25 September 2026 | 100% coverage required, tests tightened, git hooks run with the project's Node                                                               | #8 (`621f9c6`)                          |
+| 25 September 2026 | Workspace grid with placeholder views (dockview)                                                                                             | `5927ebd`, branch `feat/workspace-grid` |
+| 25 September 2026 | Layout proportions, insert lines between views and at the edges, no-op drops hidden, Cypress component tests                                 | `ef0201a`                               |
+| 25 September 2026 | Selector views next to maps and visualizations                                                                                               | `6d4d8b1`                               |
+| 26 September 2026 | Workspace restructure, grid refinements, accessibility fixes, design docs ([§3](#3-workspace-restructure-and-design-docs-26-september-2026)) | `08bccd7`                               |
+| September 2026    | In progress, not yet committed: fixes from an external review ([§4](#4-in-progress-fixes-from-an-external-review))                           | —                                       |
 
 ## 2. Tooling port (25 September 2026)
 
@@ -173,12 +174,53 @@ Added after the report, without changing it:
 - **The git hooks run with the project's Node** (#8), through `scripts/use-project-node.sh`.
 - **The welcome page** was replaced by the workspace, and `dockview-react` joined the dependencies.
 
-## 3. In progress on `feat/workspace-grid`
+## 3. Workspace restructure and design docs (26 September 2026)
 
-Work done after `6d4d8b1`, not yet committed:
+Commit `08bccd7`, on `feat/workspace-grid`:
 
 - **Code restructure**: the workspace controller split into one file per topic (`src/components/workspace/controller/`), components into `tabs/`, `panels/` and `insert-zones/`, and the pure layout logic into separate modules.
 - **Grid behavior**: tools tabs reorder with an insertion line; a view dropped on another view's header lands on the line above it; clicked selectors go to a bar across the top.
 - **Selectors have no maximum size**; the cap code was removed.
 - **Accessibility**: no clipped close buttons, one Tab stop per button, focus rings on tabs, and a collapsed tools strip made `inert`.
 - **Design docs** in `docs/`: [interactions](interactions.md), [view settings](view-settings.md), [plugins](plugins.md) (with a live spike of DV and Maps), [demo mode](demo-mode.md), [map layers](map-layers.md), [selector controls](selector-controls.md), [workspace grid](workspace-grid.md), and this history.
+
+## 4. In progress: fixes from an external review
+
+After `08bccd7`, 4 independent reviews ran: correctness, tests, code quality, and the feature in a real browser. The problems they confirmed are fixed, each with a test that fails without the fix (and a Cypress scenario for the grid bugs):
+
+- a block of views (a column made only of rows) beside a new selector column is sized, instead of keeping dockview's even split with views below their minimum;
+- swapping two selectors keeps the bar's height (sizing is paused during a swap);
+- a clicked map stays out of the selector bar: room is also checked across a split or new line;
+- adding a view while another is maximized leaves maximize first;
+- closing the selected view selects the nearest view, not the first one;
+- the ⋯ menus work from the keyboard, and focus follows a view swapped from its menu;
+- closing a maximized view is announced as closed, not restored;
+- the view limit message is a whole sentence per selector type, so it translates;
+- test gaps: the fake dockview copies more of dockview (hidden sizes while maximized, a leaving view's cell, edge groups discarding their panels), so the maximize guard and the tools strip move are now tested; boundary tests for rounding, minimums and the 1px tolerance; the fallback to the largest cell is tested; two conditions no test could reach were removed; Cypress layout checks retry; tests use the path aliases.
+- tidy-ups: the placement of a new view carries how its sizes follow (split or new line); `layout-targets.ts`, `views.ts`, `drop-models.ts` and `panels/swap-spacer.tsx` split out of larger files; the drop handlers read the dragged view once; types and helpers used in one file are no longer exported, and an unused selector is gone.
+- smaller issues from the browser review:
+    - closing a view that isn't selected keeps the palette open;
+    - opening a settings tab selects its view, so the settings shown and the selected view agree;
+    - a narrow window scrolls to views instead of cutting them off (and only then: the workspace clips the hidden overlays dockview leaves below the grid);
+    - a selector's placeholder fits in one row at its preferred height.
+    - where a clicked selector goes when the top has no room for a row is documented and tested.
+- nits: the header height is one constant (`VIEW_HEADER_HEIGHT` in `grid-tree.ts`) that the selector sizes build on; the tab reuses the panel checks; the palette's group headings and the empty grid's title are `h2`s, the first level on the page.
+- a selector type is also capped at 4 (`MAX_SELECTORS_PER_TYPE`), so 4 maps and visualizations no longer allow 5 of a type; the limit message says which cap is reached.
+- clicking a tile keeps the views balanced: it halves the largest cell across its line (`balanced-split.ts`), so four clicked views make an even 2×2 grid in any window, instead of going next to the selected view.
+- tools tabs are all one length, with shorter default names (settings tabs take their view's title; selectors are "Period 1", "Org unit 1", "Data 1"); a name cut short shows in full in a DHIS2 tooltip that opens towards the grid, whichever edge the strip is at.
+- a "Workspace" tab comes first in the tools strip, for settings of the whole workspace; it starts with "Even out sizes". It and "Add views" carry an icon.
+- text views: a third view kind for titles and notes, with no cap and no settings tab, written in place with the DHIS2 rich-text editor (`@dhis2/analytics` added); clicked, they go to a text row at the very top, above the selector bar.
+- while a view is maximized, no view can be added: the palette's tiles are disabled, with the reason (this replaces leaving maximize to add).
+- a view is selected only while its settings tab is shown; closing a view goes back to "Add views" with none selected (this replaces selecting the nearest view, from the first round of fixes). A double click on a view's header opens its settings.
+- a workspace setting shows view headers only on hover, floating over the view, with the selected view's blue top line kept over its body.
+- planned for persistence: a layout lock and a presentation mode ([workspace-grid.md §11](workspace-grid.md#11-later-lock-and-presentation)).
+- Left as known limits: Tab reaches a view's body only after every header (bodies live in overlays).
+
+Still to do from the review, smallest first:
+
+1. **A disabled palette tile doesn't tell a screen reader why.** The reason is in a tooltip on a wrapper around the native `disabled` button, so it shows on hover but isn't read with the button. Use `aria-disabled` instead, guard the click and the drag, and attach the reason (`panels/add-views-panel.tsx`).
+2. **One or two layout changes?** `controller/grid-layout.ts` and [workspace-grid.md §4](workspace-grid.md#4-sizes-keep-the-users-proportions) say a tab dropped at the outer edge reaches dockview as two layout changes. The correctness review says dockview 8.3.1 runs it as one. Check it in the dockview source or with a log in Cypress, then fix the comment and the doc.
+3. **Cypress retries.** After a failure screenshot, a retry gets almost no animation frames, so view bodies aren't positioned and a retry can pass by mistake. Consider `retries: 0`, and replace the fixed sleeps in `dragTo` with retrying checks.
+4. **A keyboard path to move a view to a new row or column.** The ⋯ menu only swaps, and the insert strips take mouse drags only. Add menu items such as "Move to a new row above" that call the controller, or record it as a known limit in [workspace-grid.md §8](workspace-grid.md#8-accessibility).
+
+Nothing else from the review is open. `.backup/` is untracked on purpose (its content is in §2 above).

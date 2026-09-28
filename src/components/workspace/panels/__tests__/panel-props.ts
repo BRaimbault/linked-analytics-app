@@ -34,9 +34,21 @@ export const createFakeGroup = (collapsed = false) => {
  * change */
 export const createFakePanel = <T extends object>(params: T, id = 'map-a') => {
     const groupChanges = createListeners()
+    let maximized = false
     const api = {
         id,
         setActive: vi.fn(),
+        updateParameters: vi.fn(),
+        /* The body of a text row at its preferred size */
+        width: 320,
+        height: 85,
+        isMaximized: vi.fn(() => maximized),
+        maximize: vi.fn(() => {
+            maximized = true
+        }),
+        exitMaximized: vi.fn(() => {
+            maximized = false
+        }),
         group: createFakeGroup(),
         onDidGroupChange: groupChanges.subscribe,
     }

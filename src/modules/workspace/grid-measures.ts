@@ -12,7 +12,7 @@ import {
 } from './grid-tree'
 import { sum } from './line-lengths'
 
-export type Measure = {
+type Measure = {
     axis: SplitAxis
     /* A view about to move away, left out of the count */
     excludeId?: string | null

@@ -8,6 +8,9 @@ const EDGE_GROUP_SIZE: Record<EdgePosition, number> = {
     right: 280,
 }
 
+/* Room for the tab row and a line of the panel below it */
+const TOOLS_MIN_SIZE = 80
+
 export const getOrAddEdgeGroupId = (
     api: DockviewApi,
     position: EdgePosition
@@ -17,7 +20,7 @@ export const getOrAddEdgeGroupId = (
         api.addEdgeGroup(position, {
             id: `tools-${position}`,
             initialSize: EDGE_GROUP_SIZE[position],
-            minimumSize: 80,
+            minimumSize: TOOLS_MIN_SIZE,
         })
     ).id
 

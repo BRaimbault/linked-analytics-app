@@ -68,13 +68,10 @@ describe('swapping views', () => {
         )
 
         toolTabs().should('deep.equal', [
+            'Workspace',
             'Add views',
-            'Map 1 settings',
-            'Visualization 1 settings',
+            'Map 1',
+            'Visualization 1',
         ])
-        cy.get('[data-test="selected-view-tab"]').should(
-            'have.text',
-            'Visualization 1'
-        )
     })
 })
