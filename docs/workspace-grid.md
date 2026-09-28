@@ -134,6 +134,8 @@ Checked with Chrome's touch emulation:
 - Vitest covers the pure modules and the controller (against `__tests__/fake-dockview.ts`), and the components in jsdom. It owns the 100% coverage.
 - The fake dockview copies the behavior the controller relies on: will and did events around each layout change; hidden (zero) sizes while a view is maximized; the cell a view leaves showing its next tab; removing an edge group discarding its panels; leaving maximize as a layout change. When the controller starts relying on more, the fake learns it first.
 - Cypress component tests cover what jsdom can't: real layout, CSS and drag and drop. The scenarios live in `src/components/workspace/__tests__/grid/`, one spec per group (adding, moving, swapping, sizing, selectors, tools), sharing `grid-helpers.tsx`.
+- The mount renders like the app shell: Roboto (`typeface-roboto`, imported in `cypress/support/component.ts`) and DHIS2's `CssReset`, which makes buttons take the page's font. Without them each browser measured text in its own fallback font, and layout checks tested what no user sees.
+- They pass in Chrome and in Firefox (`pnpm cy:comp:run --browser firefox`). Two Firefox differences shaped the palette: a wrapping flex row is sized from its items' content, so tiles have a width and not only a flex basis; and a drag starts only on what a button holds, not on the button itself, so a tile's content fills its whole face.
 
 ## 11. Later: lock and presentation
 

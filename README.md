@@ -24,19 +24,19 @@ The git hooks switch to the `.nvmrc` version themselves when nvm is installed, s
 
 ## Scripts
 
-| Script                | What it does                                                                                                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm start`          | Runs the app in development mode on http://localhost:3000 (add `--proxy <server>` as above).                                                                                                               |
-| `pnpm test`           | Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.                                                                                                                                |
-| `pnpm test:coverage`  | Runs the unit tests with coverage: a terminal summary, an HTML report in `coverage/index.html` and an `lcov.info` file. Fails below 100%, so new code needs tests. CI posts the coverage on pull requests. |
-| `pnpm cy:comp:run`    | Runs every Cypress component test headless. They check what unit tests can't: layout, CSS and drag and drop. CI runs them on every pull request.                                                           |
-| `pnpm cy:comp:smoke`  | Runs only the smoke tests, a few per group: a check in a few seconds.                                                                                                                                      |
-| `pnpm cy:comp:open`   | Opens the Cypress interactive runner.                                                                                                                                                                      |
-| `pnpm lint`           | Runs the TypeScript, ESLint, Stylelint, ls-lint and Prettier checks.                                                                                                                                       |
-| `pnpm format`         | Fixes what the linters can fix automatically.                                                                                                                                                              |
-| `pnpm build`          | Builds the app for production into `build/`, with a deployable `.zip` in `build/bundle`.                                                                                                                   |
-| `pnpm run deploy`     | Deploys the built app to a running DHIS2 instance; run `pnpm build` first. (`pnpm deploy` alone is a pnpm command.)                                                                                        |
-| `pnpm generate-types` | Regenerates the API types from the server in `dhis2.env.json`, e.g. after it moves to a new DHIS2 version.                                                                                                 |
+| Script                | What it does                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm start`          | Runs the app in development mode on http://localhost:3000 (add `--proxy <server>` as above).                                                                                                                            |
+| `pnpm test`           | Runs the unit tests with Vitest. `pnpm test:watch` runs them in watch mode.                                                                                                                                             |
+| `pnpm test:coverage`  | Runs the unit tests with coverage: a terminal summary, an HTML report in `coverage/index.html` and an `lcov.info` file. Fails below 100%, so new code needs tests. CI posts the coverage on pull requests.              |
+| `pnpm cy:comp:run`    | Runs every Cypress component test headless. They check what unit tests can't: layout, CSS and drag and drop. Add `--browser firefox` to run them in Firefox. CI runs them on every pull request, in Chrome and Firefox. |
+| `pnpm cy:comp:smoke`  | Runs only the smoke tests, a few per group: a check in a few seconds.                                                                                                                                                   |
+| `pnpm cy:comp:open`   | Opens the Cypress interactive runner.                                                                                                                                                                                   |
+| `pnpm lint`           | Runs the TypeScript, ESLint, Stylelint, ls-lint and Prettier checks.                                                                                                                                                    |
+| `pnpm format`         | Fixes what the linters can fix automatically.                                                                                                                                                                           |
+| `pnpm build`          | Builds the app for production into `build/`, with a deployable `.zip` in `build/bundle`.                                                                                                                                |
+| `pnpm run deploy`     | Deploys the built app to a running DHIS2 instance; run `pnpm build` first. (`pnpm deploy` alone is a pnpm command.)                                                                                                     |
+| `pnpm generate-types` | Regenerates the API types from the server in `dhis2.env.json`, e.g. after it moves to a new DHIS2 version.                                                                                                              |
 
 From VS Code's terminal, run the Cypress scripts as `env -u ELECTRON_RUN_AS_NODE pnpm cy:comp:run`: VS Code sets that variable, and Cypress then fails to start.
 

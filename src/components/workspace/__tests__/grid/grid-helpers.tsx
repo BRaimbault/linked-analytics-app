@@ -1,6 +1,6 @@
 import { Workspace } from '@components/workspace/workspace'
 import { CustomDataProvider } from '@dhis2/app-runtime'
-import { CssVariables } from '@dhis2/ui'
+import { CssReset, CssVariables } from '@dhis2/ui'
 import type { ViewType } from '@modules/workspace/view-types'
 import { createStore } from '@store/store'
 import type { DataEngine } from '@types'
@@ -23,6 +23,8 @@ export const mountWorkspace = () => {
         /* Text views' editor queries users for mentions */
         <CustomDataProvider data={{}}>
             <Provider store={createStore({} as DataEngine)}>
+                {/* As the app shell does: buttons take the page's font */}
+                <CssReset />
                 <CssVariables colors spacers theme />
                 <div
                     data-test="workspace-scroller"

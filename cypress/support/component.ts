@@ -1,5 +1,8 @@
 import { register as registerCypressGrep } from '@cypress/grep'
 import { mount } from 'cypress/react'
+/* The font the app shell loads: without it, each browser measures text in
+ * its own fallback font, and layout checks test what no user sees */
+import 'typeface-roboto'
 
 registerCypressGrep()
 

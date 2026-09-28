@@ -51,8 +51,10 @@ const ViewTile: FC<{ type: ViewType; disabledReason: string | null }> = ({
             onDragStart={onDragStart}
             onClick={() => addView(type)}
         >
-            <ViewTypeIcon type={type} />
-            {getViewTypeLabel(type)}
+            <span className={classes.tileContent}>
+                <ViewTypeIcon type={type} />
+                {getViewTypeLabel(type)}
+            </span>
         </button>
     )
 

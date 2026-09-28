@@ -95,24 +95,40 @@
     gap: var(--spacers-dp8);
 }
 
+/* A width, not only a flex basis: Firefox sizes a wrapping row from its
+ * items' content, so the row came out narrower than its tiles, and they
+ * wrapped with room to spare */
 .tiles > * {
-    flex: 0 0 160px;
+    flex: none;
+    box-sizing: border-box;
+    inline-size: 160px;
 }
 
-/* Fills its cell also when a disabled tile sits in its tooltip's wrapper */
+/* A disabled tile sits in its tooltip's wrapper, which takes the width */
+.tiles > * > .tile {
+    inline-size: 100%;
+}
+
 .tile {
     display: inline-flex;
-    inline-size: 100%;
-    align-items: center;
-    gap: var(--spacers-dp8);
-    padding-block: var(--spacers-dp8);
-    padding-inline: var(--spacers-dp12);
+    padding: 0;
     border: 1px solid var(--colors-grey400);
     border-radius: 4px;
     background: var(--colors-white);
     color: var(--colors-grey900);
     font-size: 14px;
     cursor: grab;
+}
+
+/* Fills the tile: Firefox starts no drag on a button itself, only on
+ * what it holds, so its whole face must be content */
+.tileContent {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
 }
 
 .tile:hover:not(:disabled) {
