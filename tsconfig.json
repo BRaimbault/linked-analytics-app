@@ -10,7 +10,13 @@
         "target": "ESNext",
         "module": "esnext",
         "moduleResolution": "bundler",
-        "types": ["vite/client", "@testing-library/jest-dom"],
+        "types": [
+            "vite/client",
+            "@testing-library/jest-dom",
+            "cypress",
+            "cypress/react",
+            "@cypress/grep"
+        ],
         "paths": {
             /* Use this as the definitive source for type imports, mainly to prevent
              * a suggestion overload from all the generated types */
@@ -30,5 +36,13 @@
             }
         ]
     },
-    "include": ["src/**/*.ts", "src/**/*.tsx", "*.d.ts", "*.mts", "vitest.*.ts"]
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "*.d.ts",
+        "*.mts",
+        "vitest.*.ts",
+        "cypress.config.ts",
+        "cypress/**/*.ts"
+    ]
 }

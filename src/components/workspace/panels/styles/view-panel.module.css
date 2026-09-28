@@ -1,0 +1,23 @@
+.viewBody {
+    position: relative;
+    block-size: 100%;
+}
+
+/* The selected tab's blue top line, drawn over the body's content
+ * (including a plugin's iframe) while the header is out of sight; it takes
+ * no pointer, so the view stays usable */
+.selectedFrame {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-block-start: 2px solid var(--colors-blue600);
+    pointer-events: none;
+}
+
+/* Without hover, headers take their room (see the workspace CSS), and the
+ * selected tab shows its own line */
+@media (hover: none) {
+    .selectedFrame {
+        display: none;
+    }
+}

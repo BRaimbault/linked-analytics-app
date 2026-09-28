@@ -1,0 +1,272 @@
+/* dockview layers its parts with z-indexes (view overlays, drop targets);
+ * isolation keeps them inside the workspace, so DHIS2 menus and popovers,
+ * rendered at the end of the page, stay above them */
+.workspace {
+    position: relative;
+    isolation: isolate;
+    flex: 1;
+    min-block-size: 0;
+    /* dockview leaves the overlays of views and tools it hasn't shown yet
+     * unpositioned, below the grid; hidden, but they would still make the
+     * app scroll. Only the workspace's minimum size should. */
+    overflow: hidden;
+}
+
+/* dockview defines its colours as variables on the theme element; these
+ * map them onto the DHIS2 palette. */
+.workspace :global(.dockview-theme-light) {
+    --dv-group-view-background-color: var(--colors-white);
+    --dv-tabs-and-actions-container-background-color: var(--colors-grey100);
+    --dv-tabs-and-actions-container-font-size: 13px;
+    --dv-activegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-activegroup-visiblepanel-tab-color: var(--colors-grey900);
+    --dv-activegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-activegroup-hiddenpanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-visiblepanel-tab-background-color: var(--colors-white);
+    --dv-inactivegroup-visiblepanel-tab-color: var(--colors-grey700);
+    --dv-inactivegroup-hiddenpanel-tab-background-color: var(--colors-grey100);
+    --dv-inactivegroup-hiddenpanel-tab-color: var(--colors-grey600);
+    --dv-separator-border: var(--colors-grey400);
+    --dv-paneview-header-border-color: var(--colors-grey400);
+    --dv-active-sash-color: var(--colors-blue500);
+    --dv-drag-over-background-color: rgba(33, 150, 243, 0.15);
+    --dv-drag-over-border-color: var(--colors-blue500);
+
+    font-family: inherit;
+}
+
+/* dockview sizes the tab at 100%: the padding must fit inside it, or the
+ * tab overflows its row, which then scrolls and hides the close button */
+.workspace :global(.dv-default-tab) {
+    box-sizing: border-box;
+    padding-inline: var(--spacers-dp8);
+}
+
+/* dockview's margin before the close button is a right margin: across the
+ * tab in a vertical strip, where it would push the name off centre */
+.workspace :global(.dv-tab .dv-default-tab .dv-default-tab-content) {
+    margin: 0;
+    margin-inline-end: var(--spacers-dp4);
+}
+
+.workspace :global(.dv-tab) [data-selected='true'] {
+    box-shadow: inset 0 2px 0 var(--colors-blue600);
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* View bodies (and plugin iframes) are rendered in an overlay above the
+ * grid, so during a drag they would catch the pointer and hide the drop
+ * zones underneath; only the tab bar would stay reachable. Only view
+ * overlays are affected: the tools live in the same kind of overlay, and a
+ * drag is cancelled when its source (a palette tile) stops taking the
+ * pointer. */
+.workspace[data-dragging] :global(.dv-render-overlay:has([data-view-id])),
+.workspace[data-dragging] iframe {
+    pointer-events: none;
+}
+
+/* A view's only tab fills its header (singleTabMode="fullwidth"). The
+ * tools strip keeps its tabs at their own size, so "Add views" looks the
+ * same alone or next to settings tabs. */
+.workspace
+    :global(.dv-edge-group .dv-single-tab.dv-full-width-single-tab)
+    :is(
+        :global(.dv-scrollable),
+        :global(.dv-tabs-container),
+        :global(.dv-tab)
+    ) {
+    flex-grow: 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-tabs-container
+            .dv-tab
+    ) {
+    padding: 4px 8px;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-single-tab.dv-full-width-single-tab
+            .dv-void-container
+    ) {
+    flex-grow: 1;
+}
+
+/* Every tools tab has the same length, so the strip reads as a row of equal
+ * tabs; a longer name is cut short, and its tab's title shows it in full.
+ * Logical sizes follow the vertical strip's writing mode too. */
+.workspace :global(.dv-edge-group .dv-tab) {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    inline-size: 160px;
+}
+
+.workspace :global(.dv-edge-group .dv-default-tab) {
+    inline-size: 100%;
+}
+
+.workspace :global(.dv-edge-group .dv-default-tab-content) {
+    overflow: hidden;
+    flex: 1;
+    min-inline-size: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Panel bodies are drawn in overlays sized to their cell; a collapsed
+ * tools strip shrinks its overlay to nothing, which must also hide what is
+ * in it */
+.workspace :global(.dv-render-overlay) {
+    overflow: hidden;
+}
+
+/* A tools tab dropped in the tab row lands between two tabs, or after the
+ * last one when dropped on the empty part of the row: both show a line
+ * there, like the insertion line between views */
+.workspace :global(.dv-edge-group .dv-tab .dv-drop-target-selection-line),
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    border: none;
+    background-color: var(--colors-blue500);
+}
+
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    max-inline-size: 4px;
+}
+
+/* "Workspace" and "Add views" stay first; a line sets them apart from the
+ * settings tabs, which reorder after them */
+.workspace :global(.dv-edge-group .dv-tab[data-tab-panel-id='add-views']) {
+    border-inline-end: 1px solid var(--colors-grey400);
+}
+
+/* A line jumps from one side of a tab to the other: sliding there, as
+ * dockview animates it, it would show in the middle of the tab */
+.workspace :global(.dv-edge-group .dv-drop-target-selection-line) {
+    transition-property: opacity;
+}
+
+/* The same drop point shows on either side of two tabs: inside the first
+ * one's end, or inside the next one's start (a 4px line each). Moving both
+ * lines 2px onto the boundary draws them in one place (with translate:
+ * dockview sets the lines' transform inline). */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-right
+    ) {
+    translate: 2px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-left
+    ) {
+    translate: -2px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-bottom
+    ) {
+    translate: 0 2px;
+}
+
+.workspace
+    :global(
+        .dv-edge-group .dv-tab .dv-drop-target-selection-line.dv-drop-target-top
+    ) {
+    translate: 0 -2px;
+}
+
+/* At the end of the row, the tab row clips at the last tab's end: the
+ * line on that tab's second half stays inside it, and the line after it,
+ * on the empty part of the row, moves back onto it */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab:last-child
+            .dv-drop-target-selection-line:is(
+                .dv-drop-target-right,
+                .dv-drop-target-bottom
+            )
+    ) {
+    translate: none;
+}
+
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    translate: -4px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-groupview-header-vertical
+            .dv-void-container
+            .dv-drop-target-selection
+    ) {
+    translate: 0 -4px;
+}
+
+/* A strip on the left or right edge stacks its tabs */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-groupview-header-vertical
+            .dv-void-container
+            .dv-drop-target-selection
+    ) {
+    max-inline-size: none;
+    max-block-size: 4px;
+}
+
+/* Headers on hover: a view's header floats over the top of its view
+ * instead of taking room, so no view (and no plugin's iframe) resizes as
+ * the pointer moves. It shows while the view is hovered (data-hovered, set
+ * by markHoveredView), holds the focus or has its menu open (the menu is in
+ * a layer outside it), and during a drag (its tab is the handle). Only where a pointer can hover: on a touch screen a floating
+ * header would always show, over the top of its view, so headers take their
+ * room there, as with "always". */
+@media (hover: hover) {
+    .workspace[data-view-headers='hover'] :global(.dv-grid-view .dv-groupview) {
+        position: relative;
+    }
+
+    .workspace[data-view-headers='hover']
+        :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline: 0;
+        z-index: 2;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .workspace[data-view-headers='hover']
+        :global(
+            .dv-grid-view
+                .dv-groupview:is(
+                    [data-hovered],
+                    :focus-within,
+                    :has([data-menu-open])
+                )
+                > .dv-tabs-and-actions-container
+        ),
+    .workspace[data-view-headers='hover'][data-dragging]
+        :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+        opacity: 1;
+    }
+}

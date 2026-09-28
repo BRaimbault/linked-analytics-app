@@ -1,0 +1,84 @@
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp2);
+    block-size: 100%;
+    padding-inline: var(--spacers-dp4);
+}
+
+.iconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 24px;
+    block-size: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--colors-grey700);
+    cursor: pointer;
+}
+
+.iconButton:hover {
+    background: var(--colors-grey200);
+    color: var(--colors-grey900);
+}
+
+/* dockview's tabs and their close button get the same ring */
+.iconButton:focus-visible,
+:global(.dv-tab:focus-visible),
+:global(.dv-default-tab-action:focus-visible) {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}
+
+/* In a vertical tab strip (tools docked left or right) the actions stack */
+:global(.dv-right-actions-container-vertical) .headerActions {
+    flex-direction: column;
+    block-size: auto;
+    padding-block: var(--spacers-dp4);
+    padding-inline: 0;
+}
+
+/* Fills the tab, so the tooltip points at it */
+.tabNameTooltip {
+    block-size: 100%;
+    inline-size: 100%;
+}
+
+/* The icon and its label share one 16px line, so both are centred in the
+ * tab together; with boxes of different heights, each would be rounded to
+ * the pixel on its own, and drift apart at some window sizes */
+.tabIcon {
+    display: flex;
+    flex-shrink: 0;
+    block-size: 16px;
+    margin-inline-end: var(--spacers-dp4);
+    color: var(--colors-grey700);
+}
+
+.tabIconLabel {
+    line-height: 16px;
+}
+
+/* The wrapper takes the tab's start padding, before its icon (doubled
+ * class: the workspace pads every default tab, with the same specificity) */
+.withTabIcon {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    block-size: 100%;
+    inline-size: 100%;
+    padding-inline-start: var(--spacers-dp8);
+}
+
+.withTabIcon.withTabIcon > :global(.dv-default-tab) {
+    flex: 1;
+    min-inline-size: 0;
+    padding-inline-start: 0;
+}
+
+.withTabIcon :global(.dv-default-tab-content) {
+    line-height: 16px;
+}

@@ -1,0 +1,251 @@
+/* The cell is the container, so a short cell (a selector at its preferred
+ * height) gets one row */
+.placeholder {
+    container-type: size;
+    block-size: 100%;
+    background: var(--colors-grey050);
+    color: var(--colors-grey600);
+}
+
+.placeholderContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    padding-inline: var(--spacers-dp8);
+}
+
+.placeholderContent > * {
+    flex-shrink: 0;
+}
+
+.placeholderType {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey800);
+}
+
+.placeholderHint {
+    font-size: 13px;
+}
+
+@container (block-size < 140px) {
+    .placeholderContent {
+        flex-direction: row;
+    }
+
+    .placeholderType {
+        flex-shrink: 1;
+        overflow: hidden;
+        min-inline-size: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .placeholderHint {
+        display: none;
+    }
+}
+
+.tool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+    block-size: 100%;
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+    overflow: auto;
+    background: var(--colors-white);
+    font-size: 13px;
+    color: var(--colors-grey800);
+}
+
+.toolHint {
+    margin-block: 0;
+    color: var(--colors-grey700);
+}
+
+/* Side by side, stacking when the strip is too narrow for both */
+.tileGroups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8) var(--spacers-dp24);
+}
+
+.tileGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp4);
+    min-inline-size: 0;
+}
+
+.tileGroupHeading {
+    margin-block: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--colors-grey700);
+}
+
+/* Equal tiles, wrapping when the group is too narrow */
+.tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp8);
+}
+
+/* A width, not only a flex basis: Firefox sizes a wrapping row from its
+ * items' content, so the row came out narrower than its tiles, and they
+ * wrapped with room to spare */
+.tiles > * {
+    flex: none;
+    box-sizing: border-box;
+    inline-size: 160px;
+}
+
+.tile {
+    display: inline-flex;
+    padding: 0;
+    border: 1px solid var(--colors-grey400);
+    border-radius: 4px;
+    background: var(--colors-white);
+    color: var(--colors-grey900);
+    font-size: 14px;
+    cursor: grab;
+}
+
+/* Fills the tile: Firefox starts no drag on a button itself, only on
+ * what it holds, so its whole face must be content */
+.tileContent {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp12);
+}
+
+.tile:hover:not([aria-disabled='true']) {
+    background: var(--colors-grey100);
+    border-color: var(--colors-grey500);
+}
+
+.tile:focus-visible {
+    outline: 3px solid var(--theme-focus);
+    outline-offset: -3px;
+}
+
+/* Still focusable, so the reason can be read (see ViewTile) */
+.tile[aria-disabled='true'] {
+    color: var(--colors-grey500);
+    cursor: not-allowed;
+}
+
+.settingsTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    margin-block: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+.watermark {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    block-size: 100%;
+    background: var(--colors-grey200);
+    color: var(--colors-grey700);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* The same preview dockview draws over a cell a view can be dropped on */
+.watermark[data-drop-target]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--dv-drag-over-border);
+    background-color: var(--dv-drag-over-background-color);
+    pointer-events: none;
+}
+
+.watermark p {
+    margin-block: var(--spacers-dp4);
+}
+
+.watermarkTitle {
+    margin-block: 1em;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--colors-grey900);
+}
+
+/* Equal columns, so neither choice looks like the default */
+.watermarkActions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacers-dp8);
+    margin-block-start: var(--spacers-dp12);
+}
+
+/* A group of settings in the Workspace tab: its controls keep their own
+ * width rather than stretching to the group's */
+.settingGroup {
+    align-items: flex-start;
+}
+
+/* A setting's control and its name. The controls take the checkbox's
+ * 24px box, and the names start 8px after it, so both line up. */
+.settingControl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-block-size: 24px;
+}
+
+/* A 22px square, 3px around its icon, centred in the 24px box. Doubled
+ * classes outweigh the button's own styles. */
+.settingControl :global(button.small.small) {
+    inline-size: 22px;
+    min-inline-size: 0;
+    block-size: 22px;
+    margin-inline: 1px;
+    padding: 0;
+}
+
+/* The checkbox spaces its own label: 8px, like the button's name */
+.settingControl :global(label .icon.icon) {
+    margin-inline-end: 8px;
+}
+
+/* An even line height centres the names on their 24px controls exactly
+ * (the checkbox's own is 19px; the attribute outweighs its rule) */
+.settingControl :global(label[data-test]),
+.settingLabel {
+    line-height: 20px;
+}
+
+/* A 2px focus ring rather than the checkbox's 3px, still against the
+ * square drawn 3px inside the box; the extra class outweighs the
+ * checkbox's own rule, injected after ours */
+.settingControl :global(input:focus + .icon.icon.icon) {
+    outline-width: 2px;
+    outline-offset: -3px;
+}
+
+.settingLabel {
+    font-size: 14px;
+    color: var(--colors-grey900);
+    cursor: pointer;
+}
+
+.settingLabel[data-disabled] {
+    color: var(--colors-grey500);
+    cursor: default;
+}

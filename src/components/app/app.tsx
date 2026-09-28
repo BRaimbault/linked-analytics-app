@@ -1,4 +1,5 @@
-import { AppWrapper } from '@components/app-wrapper'
+import { AppWrapper } from '@components/app-wrapper/app-wrapper'
+import { Workspace } from '@components/workspace/workspace'
 import i18n from '@dhis2/d2-i18n'
 import { Center, CircularLoader, CssVariables, NoticeBox } from '@dhis2/ui'
 import { useRtkQuery } from '@hooks'
@@ -7,9 +8,9 @@ import type { FC } from 'react'
 import classes from './styles/app.module.css'
 
 const LinkedAnalytics: FC = () => {
-    const { data, error, isLoading } = useRtkQuery<Pick<MeDto, 'name'>>({
+    const { error, isLoading } = useRtkQuery<Pick<MeDto, 'id'>>({
         resource: 'me',
-        params: { fields: 'name' },
+        params: { fields: 'id' },
     })
 
     if (isLoading) {
@@ -29,19 +30,8 @@ const LinkedAnalytics: FC = () => {
     }
 
     return (
-        <div className={classes.container} data-test="app-container">
-            <h1 className={classes.title}>
-                {i18n.t('Welcome, {{name}}!', {
-                    name: data.name,
-                    // React escapes text itself; i18next escaping would show entities literally
-                    interpolation: { escapeValue: false },
-                })}
-            </h1>
-            <p className={classes.subtitle}>
-                {i18n.t(
-                    'Your maps and charts are warming up. Soon they will sit side by side and finish each other’s sentences.'
-                )}
-            </p>
+        <div className={classes.app} data-test="app-container">
+            <Workspace />
         </div>
     )
 }

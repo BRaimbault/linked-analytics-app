@@ -10,3 +10,8 @@ dhis2.env.json
 .claude/settings.local.json
 .vscode
 opensrc
+
+# Cypress
+cypress/screenshots
+cypress/downloads
+cypress/videos
