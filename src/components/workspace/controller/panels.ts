@@ -4,6 +4,7 @@ import {
     getViewKind,
     getViewTypeSizes,
     type ViewKind,
+    type ViewType,
 } from '@modules/workspace/view-types'
 import type { WorkspaceView } from '@store/workspace-slice'
 import type {
@@ -26,6 +27,12 @@ const SETTINGS_PANEL_PREFIX = 'settings-'
 
 export const getSettingsPanelId = (viewId: string): string =>
     `${SETTINGS_PANEL_PREFIX}${viewId}`
+
+/* The tools that stay first in the strip, in this order */
+const FIXED_TOOL_PANEL_IDS = [WORKSPACE_PANEL_ID, ADD_VIEWS_PANEL_ID]
+
+export const isFixedToolPanelId = (id: string): boolean =>
+    FIXED_TOOL_PANEL_IDS.includes(id)
 
 export const isToolPanelId = (id: string): boolean =>
     id === WORKSPACE_PANEL_ID ||
@@ -69,7 +76,7 @@ export const getViewPanels = (api: DockviewApi): IDockviewPanel[] =>
     api.panels.filter(isViewPanel)
 
 /* A view panel's params, which dockview types loosely */
-const getViewParams = (panel: IDockviewPanel): ViewPanelParams =>
+const getViewParams = (panel: PanelLike): ViewPanelParams =>
     panel.params as ViewPanelParams
 
 export const toWorkspaceView = (
@@ -106,3 +113,14 @@ export const getGroupPanel = (
     id: string
 ): DockviewGroupPanel | undefined =>
     api.getGroup(id) as DockviewGroupPanel | undefined
+
+/* The type of the view a tab shows: a view's, or a settings tab's view's */
+export const getTabViewType = (
+    api: DockviewApi,
+    tab: PanelLike
+): ViewType | null => {
+    const view = isViewSettingsPanel(tab)
+        ? api.getPanel(getSettingsViewId(tab))
+        : tab
+    return view && isViewPanel(view) ? getViewParams(view).type : null
+}

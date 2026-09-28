@@ -37,6 +37,22 @@ describe('WorkspacePanel', () => {
         expect(evenOutSizes).toHaveBeenCalledWith(workspaceApi)
     })
 
+    it('does nothing before the workspace is ready', async () => {
+        const { store } = renderWithStore(
+            <WorkspacePanel {...panelProps({})} />
+        )
+        act(() => {
+            store.dispatch(viewAdded({ id: 'map-a', type: 'map', number: 1 }))
+            store.dispatch(viewAdded({ id: 'map-b', type: 'map', number: 2 }))
+        })
+
+        await userEvent.click(
+            screen.getByRole('button', { name: 'Even out view sizes' })
+        )
+
+        expect(evenOutSizes).not.toHaveBeenCalled()
+    })
+
     it('evens out the sizes from its name too, once there are two views', async () => {
         const { store } = renderWithStore(
             <WorkspacePanel {...panelProps({})} />,
@@ -56,39 +72,18 @@ describe('WorkspacePanel', () => {
         expect(evenOutSizes).toHaveBeenCalledWith(workspaceApi)
     })
 
-    it('does nothing before the workspace is ready', async () => {
+    it('shows view headers only on hover, and always again', async () => {
         const { store } = renderWithStore(
             <WorkspacePanel {...panelProps({})} />
         )
-        act(() => {
-            store.dispatch(viewAdded({ id: 'map-a', type: 'map', number: 1 }))
-            store.dispatch(viewAdded({ id: 'map-b', type: 'map', number: 2 }))
+        const onHover = screen.getByRole('checkbox', {
+            name: 'Show view headers only on hover',
         })
 
-        await userEvent.click(
-            screen.getByRole('button', { name: 'Even out view sizes' })
-        )
-
-        expect(evenOutSizes).not.toHaveBeenCalled()
-    })
-
-    it('switches view headers to show only on hover, and back', async () => {
-        const { store } = renderWithStore(
-            <WorkspacePanel {...panelProps({})} />
-        )
-
-        await userEvent.click(
-            screen.getByRole('switch', {
-                name: 'Show view headers only on hover',
-            })
-        )
+        await userEvent.click(onHover)
         expect(selectViewHeaders(store.getState())).toBe('hover')
 
-        await userEvent.click(
-            screen.getByRole('switch', {
-                name: 'Show view headers only on hover',
-            })
-        )
+        await userEvent.click(onHover)
         expect(selectViewHeaders(store.getState())).toBe('always')
     })
 })

@@ -214,6 +214,10 @@ After `08bccd7`, 4 independent reviews ran: correctness, tests, code quality, an
 - a view is selected only while its settings tab is shown; closing a view goes back to "Add views" with none selected (this replaces selecting the nearest view, from the first round of fixes). A double click on a view's header opens its settings.
 - a workspace setting shows view headers only on hover, floating over the view, with the selected view's blue top line kept over its body.
 - planned for persistence: a layout lock and a presentation mode ([workspace-grid.md §11](workspace-grid.md#11-later-lock-and-presentation)).
+- "Workspace" and "Add views" stay first in the tools strip; settings tabs still reorder, in the tab row only.
+- a settings tab dragged onto the grid moves its view; a divider follows "Add views"; a drop point between two tools tabs shows as one line.
+- palette tiles could not be dropped anywhere in a Windows Chrome that passed the drag on without its custom formats; the page now keeps the dragged tile itself. The Cypress drag no longer drops where no `dragover` was taken, and drags that lose their data are tested.
+- settings tabs and view headers carry their view type's icon; in a vertical tools strip, tab names were 2px off centre (dockview's right margin on them runs across the tab there), now fixed.
 - Left as known limits: Tab reaches a view's body only after every header (bodies live in overlays).
 
 Still to do from the review, smallest first:

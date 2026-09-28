@@ -225,3 +225,72 @@ describe('adding views', () => {
         viewTitles().should('have.length', 4)
     })
 })
+
+/* Some systems pass a drag on to the page without the custom formats its
+ * source set: the page itself knows which tile is dragged */
+describe('adding views from a drag that loses its data', () => {
+    const LOSES_DATA = { losesData: true }
+
+    it('fills the empty grid', SMOKE, () => {
+        mountWorkspace()
+
+        dragTo(
+            { tile: 'map' },
+            (doc) => {
+                const empty = doc
+                    .querySelector('[data-test="workspace-watermark"]')
+                    ?.getBoundingClientRect() as DOMRect
+                return [empty.left + empty.width / 2, empty.top + 20]
+            },
+            LOSES_DATA
+        )
+
+        expectLayout({ 'Map 1': { w: 100, h: 100 } })
+    })
+
+    it('halves the view whose edge the tile is dropped on', () => {
+        mountWorkspace()
+        clickTile('map')
+
+        dragTo(
+            { tile: 'visualization' },
+            (doc) => pointIn(doc, 'Map 1', [0.9, 0.5]),
+            LOSES_DATA
+        ).should('deep.equal', PREVIEW)
+
+        expectLayout({
+            'Map 1': { x: 0, w: 50 },
+            'Visualization 1': { x: 50, w: 50 },
+        })
+    })
+
+    it('inserts the tile on the line between two views', () => {
+        mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
+
+        dragTo(
+            { tile: 'period-selector' },
+            (doc) => pointIn(doc, 'Visualization 1', [0, 0.5]),
+            LOSES_DATA
+        ).should('deep.equal', INSERT_LINE)
+
+        viewTitles().should('have.length', 3)
+    })
+
+    it('adds a line at an outer edge', () => {
+        mountWorkspace()
+        clickTile('map')
+
+        dragTo(
+            { tile: 'visualization' },
+            (doc) => outerEdge(doc, 'bottom'),
+            LOSES_DATA
+        )
+
+        expectLayout({
+            'Map 1': { y: 0, h: 50 },
+            'Visualization 1': { y: 50, h: 50 },
+        })
+    })
+})

@@ -42,7 +42,14 @@
     padding-inline: var(--spacers-dp8);
 }
 
-.workspace :global(.dv-default-tab[data-selected='true']) {
+/* dockview's margin before the close button is a right margin: across the
+ * tab in a vertical strip, where it would push the name off centre */
+.workspace :global(.dv-tab .dv-default-tab .dv-default-tab-content) {
+    margin: 0;
+    margin-inline-end: var(--spacers-dp4);
+}
+
+.workspace :global(.dv-tab) [data-selected='true'] {
     box-shadow: inset 0 2px 0 var(--colors-blue600);
     font-weight: 500;
     color: var(--colors-grey900);
@@ -132,6 +139,86 @@
 .workspace
     :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
     max-inline-size: 4px;
+}
+
+/* "Workspace" and "Add views" stay first; a line sets them apart from the
+ * settings tabs, which reorder after them */
+.workspace :global(.dv-edge-group .dv-tab[data-tab-panel-id='add-views']) {
+    border-inline-end: 1px solid var(--colors-grey400);
+}
+
+/* A line jumps from one side of a tab to the other: sliding there, as
+ * dockview animates it, it would show in the middle of the tab */
+.workspace :global(.dv-edge-group .dv-drop-target-selection-line) {
+    transition-property: opacity;
+}
+
+/* The same drop point shows on either side of two tabs: inside the first
+ * one's end, or inside the next one's start (a 4px line each). Moving both
+ * lines 2px onto the boundary draws them in one place (with translate:
+ * dockview sets the lines' transform inline). */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-right
+    ) {
+    translate: 2px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-left
+    ) {
+    translate: -2px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab
+            .dv-drop-target-selection-line.dv-drop-target-bottom
+    ) {
+    translate: 0 2px;
+}
+
+.workspace
+    :global(
+        .dv-edge-group .dv-tab .dv-drop-target-selection-line.dv-drop-target-top
+    ) {
+    translate: 0 -2px;
+}
+
+/* At the end of the row, the tab row clips at the last tab's end: the
+ * line on that tab's second half stays inside it, and the line after it,
+ * on the empty part of the row, moves back onto it */
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-tab:last-child
+            .dv-drop-target-selection-line:is(
+                .dv-drop-target-right,
+                .dv-drop-target-bottom
+            )
+    ) {
+    translate: none;
+}
+
+.workspace
+    :global(.dv-edge-group .dv-void-container .dv-drop-target-selection) {
+    translate: -4px 0;
+}
+
+.workspace
+    :global(
+        .dv-edge-group
+            .dv-groupview-header-vertical
+            .dv-void-container
+            .dv-drop-target-selection
+    ) {
+    translate: 0 -4px;
 }
 
 /* A strip on the left or right edge stacks its tabs */

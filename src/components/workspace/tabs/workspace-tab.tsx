@@ -1,14 +1,20 @@
 import {
     getEdgePosition,
     getSettingsViewId,
+    getTabViewType,
     isViewPanel,
     isViewSettingsPanel,
 } from '@components/workspace/controller/panels'
 import { openSettings } from '@components/workspace/controller/settings'
 import { closeView } from '@components/workspace/controller/views'
-import { getTabIcon, IconTab } from '@components/workspace/tabs/icon-tab'
+import {
+    getTabIcon,
+    IconTab,
+    WithTabIcon,
+} from '@components/workspace/tabs/icon-tab'
 import { TabNameTooltip } from '@components/workspace/tabs/tab-name-tooltip'
 import { useDockviewValue } from '@components/workspace/use-dockview-value'
+import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import { useAppSelector } from '@hooks'
 import { selectActiveView } from '@store/workspace-slice'
 import {
@@ -21,7 +27,8 @@ import { useCallback, type FC } from 'react'
  * closes the view with it; "Add views" is always there.
  * The selected view is marked from the store, because dockview's own
  * active group moves to the tools strip whenever it is clicked. The mark is
- * a data attribute, since DockviewDefaultTab overrides className. */
+ * a data attribute on the tab's icon wrapper, so it spans the icon too.
+ * View and settings tabs show their view's type icon. */
 export const WorkspaceTab: FC<IDockviewPanelHeaderProps> = (props) => {
     const isView = isViewPanel(props)
     const isSettings = isViewSettingsPanel(props)
@@ -29,9 +36,8 @@ export const WorkspaceTab: FC<IDockviewPanelHeaderProps> = (props) => {
         useAppSelector(selectActiveView)?.id === props.api.id && isView
 
     const icon = getTabIcon(props.api.id)
-    const tab = icon ? (
-        <IconTab icon={icon} title={props.api.title} />
-    ) : (
+    const viewType = getTabViewType(props.containerApi, props)
+    const defaultTab = (
         <DockviewDefaultTab
             {...props}
             hideClose={!isView && !isSettings}
@@ -51,10 +57,24 @@ export const WorkspaceTab: FC<IDockviewPanelHeaderProps> = (props) => {
                     ? () => openSettings(props.containerApi, props.api.id)
                     : undefined
             }
-            data-selected={isSelected || undefined}
-            data-test={isSelected ? 'selected-view-tab' : undefined}
         />
     )
+    const getTab = () => {
+        if (icon) {
+            return <IconTab icon={icon} title={props.api.title} />
+        }
+        return viewType ? (
+            <WithTabIcon
+                icon={<ViewTypeIcon type={viewType} size={16} />}
+                isSelected={isSelected}
+            >
+                {defaultTab}
+            </WithTabIcon>
+        ) : (
+            defaultTab
+        )
+    }
+    const tab = getTab()
 
     /* Moving the tools strip moves its tabs to another group */
     const toolsEdge = useDockviewValue(

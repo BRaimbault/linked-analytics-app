@@ -140,21 +140,20 @@ describe('Workspace', () => {
         )
     })
 
-    it('marks the Workspace and Add views tabs with an icon, and no other', async () => {
+    it('marks every tab with an icon, a view and its settings with the same one', async () => {
         await renderWorkspace()
         await userEvent.click(screen.getByTestId('add-view-map'))
+        await toolsStrip().findByRole('tab', { name: 'Map 1' })
 
-        const hasIcon = (name: string) =>
-            within(toolsStrip().getByRole('tab', { name })).queryByTestId(
-                'tab-icon'
-            ) !== null
+        const iconOf = (tab: HTMLElement) =>
+            within(tab).getByTestId('tab-icon').innerHTML
+        const toolIcon = (name: string) =>
+            iconOf(toolsStrip().getByRole('tab', { name }))
+        const viewIcon = iconOf(viewsGrid().getByRole('tab', { name: 'Map 1' }))
 
-        expect(hasIcon('Workspace')).toBe(true)
-        expect(hasIcon('Add views')).toBe(true)
-        expect(
-            await toolsStrip().findByRole('tab', { name: 'Map 1' })
-        ).toBeInTheDocument()
-        expect(hasIcon('Map 1')).toBe(false)
+        expect(toolIcon('Map 1')).toBe(viewIcon)
+        expect(toolIcon('Workspace')).not.toBe(viewIcon)
+        expect(toolIcon('Add views')).not.toBe(viewIcon)
     })
 
     it('marks the view under the pointer, and follows the header setting', async () => {

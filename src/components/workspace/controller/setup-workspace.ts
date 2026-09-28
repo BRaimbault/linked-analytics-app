@@ -1,6 +1,7 @@
 import type { GridTree } from '@modules/workspace/grid-tree'
 import type { AppDispatch } from '@store/store'
 import type { DockviewApi } from 'dockview-react'
+import { keepFixedToolsInPlace } from './drags'
 import {
     acceptPaletteDrag,
     addTileDroppedOnGrid,
@@ -42,6 +43,7 @@ export const setupWorkspace = (
                 restoreProportions(api, layoutBefore)
             }
         }),
+        api.onWillDragPanel(keepFixedToolsInPlace),
         api.onUnhandledDragOver((event) => acceptPaletteDrag(api, event)),
         api.onWillShowOverlay((event) => refuseDisallowedDrop(api, event)),
         api.onWillDrop((event) => swapOrExpectMove(api, event)),

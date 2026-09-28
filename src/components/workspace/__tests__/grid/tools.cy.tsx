@@ -74,7 +74,7 @@ describe('tools strip and settings', () => {
         }
 
         let line: number | null = null
-        dragTo({ toolTab: 'Add views' }, pastTheLastTab, {
+        dragTo({ toolTab: 'Map 1' }, pastTheLastTab, {
             whileOver: (doc) => (line = toolDropLine(doc)),
         })
 
@@ -82,10 +82,31 @@ describe('tools strip and settings', () => {
 
         toolTabs().should('deep.equal', [
             'Workspace',
-            'Map 1',
-            'Visualization 1',
             'Add views',
+            'Visualization 1',
+            'Map 1',
         ])
+    })
+
+    it('keeps Workspace and Add views first', () => {
+        mountWorkspace()
+        clickTile('map')
+        const intoAddViews = (doc: Document): [number, number] => {
+            const rect = getToolTab(doc, 'Add views').getBoundingClientRect()
+            return [rect.left + rect.width * 0.2, rect.top + rect.height / 2]
+        }
+
+        let line: number | null = null
+        dragTo({ toolTab: 'Map 1' }, intoAddViews, {
+            whileOver: (doc) => (line = toolDropLine(doc)),
+        })
+        cy.then(() => expect(line).to.equal(null))
+        dragTo({ toolTab: 'Add views' }, (doc) => {
+            const rect = getToolTab(doc, 'Map 1').getBoundingClientRect()
+            return [rect.right - 10, rect.top + rect.height / 2]
+        })
+
+        toolTabs().should('deep.equal', ['Workspace', 'Add views', 'Map 1'])
     })
 
     it(
@@ -389,6 +410,41 @@ describe('tools strip and settings', () => {
             .should('equal', 160)
     })
 
+    /* Each icon is centred across its tab, level with its name, and 4px
+     * before it; along the tab, it starts at the same place on every tab of
+     * a strip. A tab of a vertical strip runs down. */
+    const expectIconsInLine = (icons: JQuery<HTMLElement>, count: number) => {
+        expect(icons).to.have.length(count)
+        const starts = new Map<Element, Set<number>>()
+        for (const icon of icons) {
+            const tab = icon.closest('.dv-tab') as HTMLElement
+            const label = tab.querySelector(
+                '.dv-default-tab-content'
+            ) as HTMLElement
+            const name = label.textContent ?? ''
+            const [iconBox, labelBox, tabBox] = [icon, label, tab].map(
+                (element) => element.getBoundingClientRect()
+            )
+            const strip = tab.closest('.dv-tabs-container') as HTMLElement
+            const [across, acrossSize, along, alongEnd] = strip.matches(
+                '.dv-tabs-container-vertical'
+            )
+                ? (['left', 'width', 'top', 'bottom'] as const)
+                : (['top', 'height', 'left', 'right'] as const)
+            const middle = (box: DOMRect) => box[across] + box[acrossSize] / 2
+            expect(middle(iconBox), name).to.be.closeTo(middle(tabBox), 0.5)
+            expect(iconBox[across], name).to.equal(labelBox[across])
+            expect(iconBox[acrossSize], name).to.equal(16)
+            expect(labelBox[acrossSize], name).to.equal(16)
+            expect(labelBox[along] - iconBox[alongEnd], name).to.equal(4)
+            const stripStarts = starts.get(strip) ?? new Set()
+            starts.set(strip, stripStarts.add(iconBox[along] - tabBox[along]))
+        }
+        for (const stripStarts of starts.values()) {
+            expect([...stripStarts]).to.have.length(1)
+        }
+    }
+
     it('keeps the icon of a tab level with its name, at any window size', () => {
         for (const [width, height] of [
             [1280, 800],
@@ -397,34 +453,175 @@ describe('tools strip and settings', () => {
         ]) {
             cy.viewport(width, height)
             mountWorkspace()
-            cy.get('[data-test="tab-icon"]').should((icons) => {
-                expect(icons).to.have.length(2)
-                for (const icon of icons) {
-                    const label = icon.nextElementSibling as HTMLElement
-                    const iconBox = icon.getBoundingClientRect()
-                    const labelBox = label.getBoundingClientRect()
-                    expect(iconBox.top, label.textContent ?? '').to.equal(
-                        labelBox.top
-                    )
-                    expect(iconBox.height).to.equal(labelBox.height)
-                }
-            })
+            clickTile('map')
+            clickTile('org-unit-selector')
+            /* Workspace, Add views, two settings tabs and two view tabs */
+            cy.get('[data-test="tab-icon"]').should((icons) =>
+                expectIconsInLine(icons, 6)
+            )
         }
     })
 
-    it('shows a hand over every Workspace setting and its name', () => {
+    it('keeps the icon of a tab level with its name in a vertical strip', () => {
+        mountWorkspace()
+        clickTile('visualization')
+        cy.get('[data-test="move-tools-button"]').click()
+        cy.get('[data-test="move-tools-left"] [role="menuitem"]').click({
+            force: true,
+        })
+
+        cy.get('.dv-tabs-container-vertical [data-test="tab-icon"]').should(
+            (icons) => expectIconsInLine(icons, 3)
+        )
+    })
+
+    it('lines up the Workspace settings: controls, names, and each name on its control', () => {
+        mountWorkspace()
+        clickTile('map')
+        toolTab('Workspace').click()
+
+        cy.get('[data-test="workspace-panel"]').should(([panel]) => {
+            const button = (
+                panel.querySelector(
+                    '[data-test="even-out-sizes"]'
+                ) as HTMLElement
+            ).getBoundingClientRect()
+            const checkbox = panel.querySelector(
+                '[data-test="view-headers-on-hover"]'
+            ) as HTMLElement
+            const box = (
+                checkbox.querySelector('.icon') as HTMLElement
+            ).getBoundingClientRect()
+            const name = (
+                panel.querySelector('[aria-hidden="true"]') as HTMLElement
+            ).getBoundingClientRect()
+            const label = checkbox.ownerDocument.createRange()
+            label.selectNodeContents(checkbox.lastChild as Node)
+
+            expect(button.left + button.width / 2).to.be.closeTo(
+                box.left + box.width / 2,
+                0.5
+            )
+            expect(name.left).to.be.closeTo(
+                label.getBoundingClientRect().left,
+                0.5
+            )
+            /* Each name centred on its control */
+            const middle = (rect: DOMRect) => rect.top + rect.height / 2
+            expect(middle(name)).to.be.closeTo(middle(button), 0.5)
+            expect(middle(label.getBoundingClientRect())).to.be.closeTo(
+                middle(box),
+                0.5
+            )
+        })
+    })
+
+    it('gives the Workspace checkbox a 2px focus ring', () => {
+        mountWorkspace()
+        toolTab('Workspace').click()
+
+        cy.get('[data-test="view-headers-on-hover"] input').focus()
+
+        cy.get('[data-test="view-headers-on-hover"] .icon')
+            .should('have.css', 'outline-width', '2px')
+            .and('have.css', 'outline-offset', '-3px')
+    })
+
+    it('shows one insertion line between two settings tabs, from either side, and never mid-tab', () => {
         mountWorkspace()
         clickTile('map')
         clickTile('visualization')
-        toolTab('Workspace').click()
+        clickTile('period-selector')
+        const lineLeft = (doc: Document) =>
+            [
+                ...doc.querySelectorAll<HTMLElement>(
+                    '.dv-edge-group .dv-drop-target-selection'
+                ),
+            ]
+                .map((element) => element.getBoundingClientRect())
+                .find((rect) => rect.width > 0)?.left
+        const at =
+            (title: string, fraction: number) =>
+            (doc: Document): [number, number] => {
+                const rect = getToolTab(doc, title).getBoundingClientRect()
+                return [
+                    rect.left + rect.width * fraction,
+                    rect.top + rect.height / 2,
+                ]
+            }
+        let fromBefore: number | undefined
+        let fromAfter: number | undefined
+        let slides: string | undefined
 
-        for (const selector of [
-            '[data-test="even-out-sizes"]',
-            '[data-test="workspace-panel"] [aria-hidden="true"]',
-            '[data-test="view-headers-on-hover"]',
-            '[data-test="view-headers-on-hover"] input',
-        ]) {
-            cy.get(selector).should('have.css', 'cursor', 'pointer')
+        dragTo({ toolTab: 'Period 1' }, at('Map 1', 0.8), {
+            drop: false,
+            whileOver: (doc) => {
+                fromBefore = lineLeft(doc)
+                const line = doc.querySelector(
+                    '.dv-edge-group .dv-drop-target-selection-line'
+                )
+                slides = line
+                    ? getComputedStyle(line).transitionProperty
+                    : undefined
+            },
+        })
+        dragTo({ toolTab: 'Period 1' }, at('Visualization 1', 0.2), {
+            drop: false,
+            whileOver: (doc) => (fromAfter = lineLeft(doc)),
+        })
+
+        cy.then(() => {
+            expect(fromBefore).to.be.a('number')
+            expect(fromAfter).to.equal(fromBefore)
+            /* It jumps between the sides of a tab, never across its middle */
+            expect(slides).to.equal('opacity')
+        })
+    })
+
+    it('shows one full insertion line at the end of the row, from the last tab or after it', () => {
+        mountWorkspace()
+        clickTile('map')
+        clickTile('visualization')
+        /* The line shown, and how much of it the tab row lets through */
+        const shownLine = (doc: Document) => {
+            const line = [
+                ...doc.querySelectorAll<HTMLElement>(
+                    '.dv-edge-group .dv-drop-target-selection'
+                ),
+            ].find((element) => element.getBoundingClientRect().width > 0)
+            if (!line) {
+                return null
+            }
+            const rect = line.getBoundingClientRect()
+            const clip = line
+                .closest('.dv-tabs-container')
+                ?.getBoundingClientRect()
+            const right = clip ? Math.min(rect.right, clip.right) : rect.right
+            return { left: rect.left, visible: right - rect.left }
         }
+        const lastTab = (doc: Document) =>
+            getToolTab(doc, 'Visualization 1').getBoundingClientRect()
+        let onLastTab: ReturnType<typeof shownLine> = null
+        let afterIt: ReturnType<typeof shownLine> = null
+
+        dragTo(
+            { toolTab: 'Map 1' },
+            (doc) => [
+                lastTab(doc).left + lastTab(doc).width * 0.8,
+                lastTab(doc).top + 10,
+            ],
+            { drop: false, whileOver: (doc) => (onLastTab = shownLine(doc)) }
+        )
+        dragTo(
+            { toolTab: 'Map 1' },
+            (doc) => [lastTab(doc).right + 100, lastTab(doc).top + 10],
+            { drop: false, whileOver: (doc) => (afterIt = shownLine(doc)) }
+        )
+
+        cy.then(() => {
+            expect(onLastTab?.visible).to.equal(4)
+            expect(afterIt?.visible).to.equal(4)
+            expect(afterIt?.left).to.equal(onLastTab?.left)
+        })
     })
 })

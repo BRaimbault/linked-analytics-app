@@ -120,6 +120,8 @@ export type DropContext = {
     gridIsEmpty: boolean
     /* Dropping the dragged view there would leave the layout as it is */
     isNoOpMove: boolean
+    /* The drop would move "Workspace" or "Add views", or land before them */
+    disturbsFixedTools: boolean
 }
 
 type MoveTarget =
@@ -173,12 +175,17 @@ export const isSwapDrop = ({
     position === 'center' &&
     kind === 'content'
 
-/* Views tile the grid one per cell, so a drop always splits or swaps; the
- * tool panels only live in edge groups, where they can be reordered as tabs. */
+/* Views tile the grid one per cell, so a drop always splits or swaps. The
+ * settings tabs reorder in the tools strip's tab row (not in its body),
+ * after "Workspace" and "Add views", which stay first. */
 export const isAllowedDrop = (context: DropContext): boolean => {
     const { kind, position, targetIsEdgeGroup, source, gridIsEmpty } = context
     if (source === 'tool') {
-        return targetIsEdgeGroup
+        return (
+            targetIsEdgeGroup &&
+            (kind === 'tab' || kind === 'header_space') &&
+            !context.disturbsFixedTools
+        )
     }
     if (targetIsEdgeGroup || context.isNoOpMove) {
         return false

@@ -1,3 +1,4 @@
+import { startTileDrag } from '@components/workspace/controller/tile-drag'
 import { useAddView } from '@components/workspace/use-add-view'
 import { useDockviewValue } from '@components/workspace/use-dockview-value'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
@@ -37,6 +38,7 @@ const ViewTile: FC<{ type: ViewType; disabledReason: string | null }> = ({
         event.dataTransfer.setData(VIEW_DRAG_MIME, encodeViewDrag(type))
         event.dataTransfer.setData(getViewTypeMime(type), '')
         event.dataTransfer.effectAllowed = 'copy'
+        startTileDrag(type)
     }
 
     const tile = (

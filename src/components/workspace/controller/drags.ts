@@ -22,7 +22,12 @@ import {
     isToolPanelId,
     isViewPanel,
     toWorkspaceView,
+    isFixedToolPanelId,
+    WORKSPACE_PANEL_ID,
+    getSettingsViewId,
+    isViewSettingsPanel,
 } from './panels'
+import { getDraggedTile } from './tile-drag'
 
 type DragData = { panelId: string | null; groupId: string } | undefined
 
@@ -56,7 +61,27 @@ type DropEvent = {
     kind: DropContext['kind']
     position: Position
     group?: DockviewGroupPanel
+    nativeEvent: DragEvent | PointerEvent
     getData: () => DragData
+}
+
+/* On a tab, a drop lands before it on its first half: its left, or its top
+ * in a strip on the left or right edge */
+const BEFORE_TAB: readonly Position[] = ['left', 'top']
+
+/* The tab under the pointer. dockview's event names the group's shown
+ * panel, not the tab dropped on; its position is the side of that tab. */
+const getTargetTabId = ({ clientX, clientY }: MouseEvent): string | null =>
+    document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('.dv-tab')
+        ?.dataset.tabPanelId ?? null
+
+/* Nothing goes before "Workspace", nor between it and "Add views" */
+const dropsBeforeFixedTools = (event: DropEvent): boolean => {
+    const target = event.kind === 'tab' && getTargetTabId(event.nativeEvent)
+    if (!target || !isFixedToolPanelId(target)) {
+        return false
+    }
+    return target === WORKSPACE_PANEL_ID || BEFORE_TAB.includes(event.position)
 }
 
 /* What the drop rules need to know about a drop, and the view being
@@ -65,11 +90,23 @@ export const getDropContext = (
     api: DockviewApi,
     event: DropEvent,
     tree: GridTree | null
-): { context: DropContext; draggedView: IDockviewPanel | undefined } => {
+): {
+    context: DropContext
+    draggedView: IDockviewPanel | undefined
+    /* A settings tab dropped on the grid, for its view */
+    standsInForView: boolean
+} => {
     const data = event.getData()
-    const panel = getDraggedPanel(api, data)
-    const source = getDragSource(data, panel)
+    const dragged = getDraggedPanel(api, data)
     const targetIsEdgeGroup = isEdgeGroup(event.group)
+    const standsInForView = Boolean(
+        dragged &&
+        !targetIsEdgeGroup &&
+        isViewSettingsPanel(dragged) &&
+        getPanelView(api, dragged)
+    )
+    const panel = standsInForView ? getPanelView(api, dragged) : dragged
+    const source = standsInForView ? 'view' : getDragSource(data, panel)
     const sourceGroupId = source === 'view' ? panel?.group.id : undefined
     const context: DropContext = {
         kind: event.kind,
@@ -95,10 +132,16 @@ export const getDropContext = (
                     : { type: 'edge', position: event.position }
             )
         ),
+        /* Also for drags that start anyway: touch drags, which dockview
+         * runs itself, and scripted ones */
+        disturbsFixedTools:
+            Boolean(dragged && isFixedToolPanelId(dragged.id)) ||
+            dropsBeforeFixedTools(event),
     }
     return {
         context,
         draggedView: source === 'view' ? panel : undefined,
+        standsInForView,
     }
 }
 
@@ -113,19 +156,31 @@ export const getAddableDraggedType = (
     api: DockviewApi,
     formats: readonly string[] | undefined
 ): ViewType | null => {
-    const type = getDraggedViewType(formats)
+    const type = getDraggedViewType(formats) ?? getDraggedTile()
     return type && canAddView(type, getViewPanels(api).map(toWorkspaceView))
         ? type
         : null
 }
 
-/* The view being dragged by its tab (or its group's header), if any */
-export const getDraggedView = (
-    api: DockviewApi
+/* A settings tab dragged onto the grid stands in for its view, as if the
+ * view's own tab were dragged */
+const getPanelView = (
+    api: DockviewApi,
+    panel: IDockviewPanel | undefined
 ): IDockviewPanel | undefined => {
-    const panel = getDraggedPanel(api, getPanelData())
-    return panel && isViewPanel(panel) ? panel : undefined
+    if (!panel) {
+        return undefined
+    }
+    if (isViewSettingsPanel(panel)) {
+        return api.getPanel(getSettingsViewId(panel))
+    }
+    return isViewPanel(panel) ? panel : undefined
 }
+
+/* The view being dragged by its tab (or its group's header, or its
+ * settings tab), if any */
+export const getDraggedView = (api: DockviewApi): IDockviewPanel | undefined =>
+    getPanelView(api, getDraggedPanel(api, getPanelData()))
 
 /* The sizes of what is dragged: a view by its tab (or its group's header),
  * or a palette tile while there is room for one more of its type. Null for
@@ -136,9 +191,21 @@ export const getDraggedSizes = (
     formats: readonly string[] | undefined
 ): ViewSizes | null => {
     if (tabDrag) {
-        const panel = getDraggedPanel(api, tabDrag)
-        return panel && isViewPanel(panel) ? getPanelSizes(panel) : null
+        const view = getPanelView(api, getDraggedPanel(api, tabDrag))
+        return view ? getPanelSizes(view) : null
     }
     const type = getAddableDraggedType(api, formats)
     return type ? getViewTypeSizes(type) : null
+}
+
+/* "Workspace" and "Add views" stay first (see isAllowedDrop): a mouse drag
+ * of one doesn't even start. A touch drag, which dockview runs itself,
+ * still starts but drops nowhere. */
+export const keepFixedToolsInPlace = (event: {
+    panel: IDockviewPanel
+    nativeEvent: Event
+}): void => {
+    if (isFixedToolPanelId(event.panel.id)) {
+        event.nativeEvent.preventDefault()
+    }
 }

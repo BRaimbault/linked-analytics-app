@@ -1,7 +1,7 @@
 import { evenOutSizes } from '@components/workspace/controller/grid-layout'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import i18n from '@dhis2/d2-i18n'
-import { Button, IconLayoutColumns16, Switch } from '@dhis2/ui'
+import { Button, Checkbox, IconLayoutColumns16 } from '@dhis2/ui'
 import { useAppDispatch, useAppSelector } from '@hooks'
 import {
     selectViewHeaders,
@@ -39,30 +39,31 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
                         {i18n.t('Layout')}
                     </h2>
                     <div className={classes.settingControl}>
-                        {/* Icon only, its name beside it, like the switch
-                         * below; the name is read once, on the button */}
-                        <span className={classes.settingControlBox}>
-                            <Button
-                                small
-                                secondary
-                                icon={<IconLayoutColumns16 />}
-                                aria-label={evenOutLabel}
-                                dataTest="even-out-sizes"
-                                disabled={!canEvenOut}
-                                onClick={evenOut}
-                            />
-                        </span>
-                        <span
+                        {/* Icon only, its name beside it, like the checkbox
+                         * below; the name is read once, on the button. It
+                         * is the button's label: pressing it presses the
+                         * button, which shows it, like a checkbox's label. */}
+                        <Button
+                            small
+                            secondary
+                            icon={<IconLayoutColumns16 />}
+                            id="workspace-even-out"
+                            aria-label={evenOutLabel}
+                            dataTest="even-out-sizes"
+                            disabled={!canEvenOut}
+                            onClick={evenOut}
+                        />
+                        <label
+                            htmlFor="workspace-even-out"
                             className={classes.settingLabel}
                             aria-hidden="true"
                             data-disabled={!canEvenOut || undefined}
-                            onClick={canEvenOut ? evenOut : undefined}
                         >
                             {evenOutLabel}
-                        </span>
+                        </label>
                     </div>
                     <div className={classes.settingControl}>
-                        <Switch
+                        <Checkbox
                             dataTest="view-headers-on-hover"
                             label={i18n.t('Show view headers only on hover')}
                             checked={viewHeaders === 'hover'}

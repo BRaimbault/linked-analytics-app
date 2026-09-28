@@ -8,10 +8,10 @@ How the workspace grid behaves and why, for anyone changing it. The grid is buil
 ## 1. Layout
 
 - **One view per cell**: the grid has no tabs of its own; each view has one tab header, 35px high (`VIEW_HEADER_HEIGHT`).
-- **The tools strip**: a dockview edge group, at the top by default. Its ⋯ menu moves it to any edge, and it can be collapsed. It holds "Workspace" (settings of the whole workspace), "Add views" (the palette, the tab shown by default), then one settings tab per view, in the order the views were added. "Workspace" and "Add views" can't be closed, and an icon sets them apart from the settings tabs (`IconTab`).
+- **The tools strip**: a dockview edge group, at the top by default. Its ⋯ menu moves it to any edge, and it can be collapsed. It holds "Workspace" (settings of the whole workspace), "Add views" (the palette, the tab shown by default), then one settings tab per view, in the order the views were added. "Workspace" and "Add views" can't be closed (`IconTab`). Every tab carries a 16px icon: those two their own, and a settings tab and its view's header both the view type's icon (`WithTabIcon` around dockview's default tab, which has no slot for one). The icon is centred on the name's line and starts at the same place on every tab of a strip, vertical strips included; dockview's physical `margin-right` on the tab name is made logical for that, as in a vertical strip it runs across the tab (Cypress checks this, `tools.cy.tsx`).
 - **The Workspace tab** holds what applies to the whole workspace. Today that's **Even out view sizes** (`evenOutSizes`): maps and visualizations get the same size, and lines of selectors their preferred length (`computeEvenSizes`, which sizes every line as if it were new). Every setting that applies to the whole workspace belongs there: link defaults such as filter or highlight on click ([interactions.md §5.1](interactions.md#51-zero-configuration-by-default)), and later saving the workspace. A setting of one view or selector stays in its own settings tab.
 - **Tools tabs are all 160px long**, in either direction. A settings tab takes its view's title ("Map 1", "Period 1"): the strip is where settings live. Every default name fits; a longer one is cut short with an ellipsis, and hovering the tab shows it in full in a DHIS2 `Tooltip` (`TabNameTooltip`), opening towards the grid (below the tab when the strip is at the top, to its left when at the right, and so on). Screen readers get the full name from the tab's `aria-label`.
-- **View headers can show only on hover** (a switch in the Workspace tab, `viewHeaders` in the `workspaceSettings` slice). The header then floats over the top of its view instead of taking room, so no view (and no plugin's iframe) resizes as the pointer moves. It shows while the view is hovered, holds the focus or is being dragged, and always on touch screens. Details:
+- **View headers can show only on hover** (a checkbox in the Workspace tab, `viewHeaders` in the `workspaceSettings` slice). The header then floats over the top of its view instead of taking room, so no view (and no plugin's iframe) resizes as the pointer moves. It shows while the view is hovered, holds the focus or is being dragged, and always on touch screens. Details:
     - A view's body is drawn in an overlay outside its cell, so CSS `:hover` can't tell: `markHoveredView` marks the hovered cell (`data-hovered`) from pointer events on the workspace.
     - dockview places bodies from their cell's content box only when it lays out, so switching the setting asks for a layout.
     - The selected view keeps its tab's blue top line, drawn over its body (`ViewPanel`): dockview's cell sits under the body, and forces `outline: none` on it.
@@ -72,14 +72,16 @@ How this is applied:
 
 ## 5. Drops
 
+- **A palette tile's drag** carries its type as custom formats (`drag-payload.ts`), but the page also keeps the dragged tile (`controller/tile-drag.ts`) and reads that when the formats are missing. Some systems pass a drag on to the page without its custom formats (seen in a Windows Chrome: no ghost image, no types on `dragover`, an empty `getData` on drop), and every drop target then refused the tile. dockview keeps its own tab drags in page memory the same way. Cypress checks tile drops that lose their data (`losesData` in `dragTo`), and `dragTo` drops only where the last `dragover` was taken, as a browser does.
 - **Cells**: dockview's drop zones, widened with `dropOverlayModel` to a third of the cell per side. A drop on a cell's edge halves the cell and shows dockview's shaded half.
 - **Swap**: dropping a view onto the middle third of another view swaps them. The view's ⋯ menu does the same from the keyboard. dockview has no swap: `swapViews` moves the two panels through temporary spacer tabs, since dockview removes a group as soon as it's empty, and moves are what keep iframes alive.
 - **A drop on a view's tab does nothing**: dockview's tab targets only reorder tabs.
+- **A settings tab dragged onto the grid moves its view**, as if the view's own tab were dragged: it swaps, splits, and goes to insert strips and outer edges the same way. dockview would move the settings tab itself, so the drop handler cancels that and moves the view.
 - **New lines show as a line** (`InsertZones`): while dragging, strips lie over the dividers between lines (dockview has no such target) and along the grid's outer edges. The hovered strip shows a blue insertion line.
     - A divider drop adds the view next to a reference view on one side of it; an outer-edge drop adds it at the root.
     - A horizontal divider's strip also covers the headers just below it, and the top edge's strip covers the top row's headers. So a view dragged by its tab onto another view's header lands on the line above that header.
 - **No pointless previews**: `isNoOpMove` hides drops that would leave a view where it is: its own cell, the facing edge of its neighbor, or the outer edge it already runs along.
-- **Tools tabs** can be reordered by dragging within the tools strip. The drop shows a blue line between two tabs, or after the last tab over the empty part of the row (`dndTabIndicator: 'line'`, plus CSS for the empty part, which dockview otherwise shades whole).
+- **Settings tabs** can be reordered by dragging in the tools strip's tab row. The drop shows a blue line between two tabs, or after the last tab over the empty part of the row (`dndTabIndicator: 'line'`, plus CSS for the empty part, which dockview otherwise shades whole). "Workspace" and "Add views" stay first, with a divider after them: they can't be dragged (a mouse drag of one doesn't start, and any other drag drops nowhere), and nothing drops before them. On either side of a boundary between two tabs, dockview draws the drop line inside a different tab; both lines are moved onto the boundary, so a drop point shows as one line. At the end of the row the tab row clips at the last tab's end, so there both lines (on the last tab's second half, and on the empty part after it) are drawn inside the last tab instead. The line jumps between the sides of a tab rather than sliding, which would show it in the tab's middle. dockview's drop event names the group's shown tab rather than the tab under the pointer, so the drop rules read that one from the pointer. A tab dropped in the strip's body goes nowhere.
 
 ## 6. Touch
 
@@ -118,7 +120,7 @@ Checked with Chrome's touch emulation:
     - `panels.ts` (ids and lookups), `grid-layout.ts` (reading the tree and fixing sizes after a change);
     - `add-view.ts`, `swap-views.ts`, `views.ts` (closing a view, focusing its tab), `settings.ts` (tools panels and settings tabs), `tools-strip.ts`;
     - `view-events.ts` (views added, removed and selected: the store, settings tabs, and bringing settings forward);
-    - `drags.ts` and `room.ts` (what is dragged, and whether it fits), `drops.ts` (the drop handlers, insert strips and empty grid), `drop-models.ts` (the size of dockview's drop targets);
+    - `drags.ts`, `tile-drag.ts` and `room.ts` (what is dragged, the palette tile in page memory, and whether it fits), `drops.ts` (the drop handlers, insert strips and empty grid), `drop-models.ts` (the size of dockview's drop targets);
     - `minimum-size.ts` (the room the views need, for scrolling), `announcements.ts`, and `setup-workspace.ts`, which only wires dockview's events to named handlers.
 - **Components** in `src/components/workspace/`:
     - `workspace.tsx`, `workspace-api-context.tsx`, `view-type-icon.tsx`;
@@ -137,7 +139,7 @@ Checked with Chrome's touch emulation:
 
 Planned with persistence (plan step 6): until a workspace can be saved and opened by someone else, nobody else is there to protect it from.
 
-- **Layout lock**: a switch in the Workspace tab, like the header setting. Someone exploring a shared workspace keeps every view working, but can't break its layout by accident.
+- **Layout lock**: a Workspace setting, next to the header one. Someone exploring a shared workspace keeps every view working, but can't break its layout by accident.
     - Locked: no dragging views (dockview's drag and drop off), no resizing (the dividers ignore the pointer), no adding (the palette's tiles disabled with the reason, as while a view is maximized), no closing (no close buttons, no close from the settings tabs).
     - Still working: maximize and restore, the selectors, the links, and each view's settings.
     - Every path that changes the layout checks it: `addView`, the drop handlers, `swapViews`, `closeView`, "Even out view sizes".

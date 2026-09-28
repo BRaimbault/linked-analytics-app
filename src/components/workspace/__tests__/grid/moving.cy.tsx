@@ -14,6 +14,7 @@ import {
     setUpSeventyThirty,
     setUpStack,
     SMOKE,
+    viewTitles,
 } from './grid-helpers'
 
 describe('moving views', () => {
@@ -198,5 +199,25 @@ describe('moving views', () => {
             }).should('deep.equal', NO_PREVIEW)
         }
         expectLayout({ 'Map 1': { w: 100, h: 100 } })
+    })
+
+    it('moves a view dragged by its settings tab, like by its own tab', () => {
+        setUpSeventyThirty()
+
+        /* Onto the middle of the other view: a swap */
+        dragTo({ toolTab: 'Map 1' }, (doc) =>
+            pointIn(doc, 'Visualization 1', [0.5, 0.5])
+        )
+        viewTitles().should('deep.equal', ['Visualization 1', 'Map 1'])
+
+        /* Onto the bottom edge of the other view: a split */
+        dragTo({ toolTab: 'Map 1' }, (doc) =>
+            pointIn(doc, 'Visualization 1', [0.5, 0.95])
+        )
+        expectLayout({
+            'Visualization 1': { x: 0, w: 100, h: 50 },
+            'Map 1': { x: 0, y: 50, w: 100, h: 50 },
+        })
+        cy.get('.dv-edge-group .dv-tab').should('have.length', 4)
     })
 })

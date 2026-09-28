@@ -189,36 +189,47 @@ export const dragTo = (
     point: (doc: Document) => Point,
     {
         drop = true,
+        losesData = false,
         whileOver,
     }: {
         drop?: boolean
+        /* The drag reaches the page with none of the data the source set,
+         * as when the operating system drops custom formats on the way */
+        losesData?: boolean
         /* Reads the page while the drag is over the point */
         whileOver?: (doc: Document) => void
     } = {}
 ) =>
     cy.document().then(async (doc): Promise<DragResult> => {
-        const fire = (type: string, target: Element, [x, y]: Point) =>
-            target.dispatchEvent(
-                new DragEvent(type, {
-                    bubbles: true,
-                    cancelable: true,
-                    clientX: x,
-                    clientY: y,
-                    dataTransfer,
-                })
-            )
-        const dataTransfer = new DataTransfer()
+        const sourceData = new DataTransfer()
+        const targetData = losesData ? new DataTransfer() : sourceData
+        const firing =
+            (dataTransfer: DataTransfer) =>
+            (type: string, target: Element, [x, y]: Point) =>
+                target.dispatchEvent(
+                    new DragEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: x,
+                        clientY: y,
+                        dataTransfer,
+                    })
+                )
+        const fire = firing(targetData)
+        const fireAtSource = firing(sourceData)
         const from = getSource(doc, source)
         /* Clicking a palette tile can scroll the tools strip's tab row away */
         from.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-        fire('dragstart', from, [0, 0])
+        fireAtSource('dragstart', from, [0, 0])
         await sleep(50)
         const at = point(doc)
         const target = doc.elementFromPoint(...at) as Element
         fire('dragenter', target, at)
         fire('dragover', target, at)
         await sleep(30)
-        fire('dragover', target, at)
+        /* A browser drops only where the last dragover was taken (its
+         * default prevented); anywhere else, the drag is cancelled */
+        const isTaken = !fire('dragover', target, at)
         await sleep(30)
         whileOver?.(doc)
         const result = {
@@ -229,8 +240,8 @@ export const dragTo = (
                 doc.querySelector('[data-test="insert-zone"][data-active]')
             ),
         }
-        fire(drop ? 'drop' : 'dragleave', target, at)
-        fire('dragend', from, at)
+        fire(drop && isTaken ? 'drop' : 'dragleave', target, at)
+        fireAtSource('dragend', from, at)
         await sleep(50)
         return result
     })

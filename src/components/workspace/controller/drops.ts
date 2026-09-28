@@ -28,6 +28,7 @@ import { expectLayoutChange, getGridOrigin, readGridTree } from './grid-layout'
 import { getGroupPanel, isEdgeGroup } from './panels'
 import { hasRoomForDrop } from './room'
 import { swapViews } from './swap-views'
+import { getDraggedTile } from './tile-drag'
 
 /* A palette tile dropped anywhere: adds its view, placed as given */
 const addDroppedTile = (
@@ -35,7 +36,9 @@ const addDroppedTile = (
     dataTransfer: DataTransfer | null | undefined,
     options?: Parameters<typeof addView>[2]
 ): void => {
-    const type = decodeViewDrag(dataTransfer?.getData(VIEW_DRAG_MIME))
+    const type =
+        decodeViewDrag(dataTransfer?.getData(VIEW_DRAG_MIME)) ??
+        getDraggedTile()
     if (type) {
         addView(api, type, options)
     }
@@ -182,7 +185,7 @@ export const swapOrExpectMove = (
     api: DockviewApi,
     event: DockviewWillDropEvent
 ): void => {
-    const { context, draggedView } = getDropContext(
+    const { context, draggedView, standsInForView } = getDropContext(
         api,
         event,
         readGridTree(api)
@@ -195,19 +198,27 @@ export const swapOrExpectMove = (
         }
         return
     }
-    if (draggedView) {
-        expectLayoutChange(
-            api,
-            /* A view is never dropped on the tools strip: that drop is
-             * refused before it happens (isAllowedDrop) */
-            event.group
-                ? {
-                      kind: 'split',
-                      viewId: draggedView.id,
-                      targetGroupId: event.group.id,
-                  }
-                : { kind: 'insert', viewId: draggedView.id }
-        )
+    if (!draggedView) {
+        return
+    }
+    expectLayoutChange(
+        api,
+        /* A view is never dropped on the tools strip: that drop is refused
+         * before it happens (isAllowedDrop) */
+        event.group
+            ? {
+                  kind: 'split',
+                  viewId: draggedView.id,
+                  targetGroupId: event.group.id,
+              }
+            : { kind: 'insert', viewId: draggedView.id }
+    )
+    /* dockview would move the settings tab itself: the view moves instead.
+     * Without a target, a group moves into a new cell at the edge. */
+    if (standsInForView) {
+        event.preventDefault()
+        const mover = event.group ? draggedView.api : draggedView.group.api
+        mover.moveTo({ group: event.group, position: event.position })
     }
 }
 

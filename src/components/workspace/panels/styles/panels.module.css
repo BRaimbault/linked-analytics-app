@@ -188,47 +188,49 @@
     align-items: flex-start;
 }
 
-/* A setting's control and its name, in rows as tall as the switch (24px).
- * A button sits in a box as wide as the switch's track (41px), with its
- * name as far after it, so the names line up. */
+/* A setting's control and its name. The controls take the checkbox's
+ * 24px box, and the names start 8px after it, so both line up. */
 .settingControl {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
     min-block-size: 24px;
 }
 
-.settingControlBox {
-    display: flex;
-    justify-content: center;
-    inline-size: 41px;
+/* A 22px square, 3px around its icon, centred in the 24px box. Doubled
+ * classes outweigh the button's own styles. */
+.settingControl :global(button.small.small) {
+    inline-size: 22px;
+    min-inline-size: 0;
+    block-size: 22px;
+    margin-inline: 1px;
+    padding: 0;
 }
 
-/* Less room above and below the icon than a small button's; doubled
- * classes outweigh the button's own styles */
-.settingControlBox :global(button.small.small) {
-    block-size: 24px;
-    padding-block: 0;
+/* The checkbox spaces its own label: 8px, like the button's name */
+.settingControl :global(label .icon.icon) {
+    margin-inline-end: 8px;
+}
+
+/* An even line height centres the names on their 24px controls exactly
+ * (the checkbox's own is 19px; the attribute outweighs its rule) */
+.settingControl :global(label[data-test]),
+.settingLabel {
+    line-height: 20px;
+}
+
+/* A 2px focus ring rather than the checkbox's 3px, still against the
+ * square drawn 3px inside the box; the extra class outweighs the
+ * checkbox's own rule, injected after ours */
+.settingControl :global(input:focus + .icon.icon.icon) {
+    outline-width: 2px;
+    outline-offset: -3px;
 }
 
 .settingLabel {
     font-size: 14px;
     color: var(--colors-grey900);
     cursor: pointer;
-}
-
-/* The switch and its name take a click like the button and its name */
-.settingControl :global(label:has(> input[role='switch'])) {
-    cursor: pointer;
-}
-
-.settingControl :global(label:has(> input[role='switch']:disabled)) {
-    cursor: default;
-}
-
-/* The switch's input lies over its track */
-.settingControl :global(input[role='switch']) {
-    cursor: inherit;
 }
 
 .settingLabel[data-disabled] {

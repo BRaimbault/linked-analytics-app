@@ -76,6 +76,7 @@ type EventName =
     | 'onDidActivePanelChange'
     | 'onDidMovePanel'
     | 'onUnhandledDragOver'
+    | 'onWillDragPanel'
     | 'onWillShowOverlay'
     | 'onWillDrop'
     | 'onDidDrop'
@@ -356,6 +357,7 @@ export const createFakeDockview = () => {
         onDidActivePanelChange: on('onDidActivePanelChange'),
         onDidMovePanel: on('onDidMovePanel'),
         onUnhandledDragOver: on('onUnhandledDragOver'),
+        onWillDragPanel: on('onWillDragPanel'),
         onWillShowOverlay: on('onWillShowOverlay'),
         onWillDrop: on('onWillDrop'),
         onDidDrop: on('onDidDrop'),

@@ -61,3 +61,24 @@
 .tabIconLabel {
     line-height: 16px;
 }
+
+/* The wrapper takes the tab's start padding, before its icon (doubled
+ * class: the workspace pads every default tab, with the same specificity) */
+.withTabIcon {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    block-size: 100%;
+    inline-size: 100%;
+    padding-inline-start: var(--spacers-dp8);
+}
+
+.withTabIcon.withTabIcon > :global(.dv-default-tab) {
+    flex: 1;
+    min-inline-size: 0;
+    padding-inline-start: 0;
+}
+
+.withTabIcon :global(.dv-default-tab-content) {
+    line-height: 16px;
+}

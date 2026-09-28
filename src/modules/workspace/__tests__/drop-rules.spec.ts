@@ -20,6 +20,7 @@ describe('isAllowedDrop', () => {
         source: 'external',
         gridIsEmpty: false,
         isNoOpMove: false,
+        disturbsFixedTools: false,
     }
 
     it('lets a new view split an existing one', () => {
@@ -94,17 +95,25 @@ describe('isAllowedDrop', () => {
         }
     })
 
-    it('keeps tools out of the grid but lets them move within edge groups', () => {
+    it('lets tools tabs move in the strip\u2019s tab row, and nowhere else', () => {
+        const inStrip = {
+            ...base,
+            source: 'tool' as const,
+            targetIsEdgeGroup: true,
+        }
+
         expect(isAllowedDrop({ ...base, source: 'tool' })).toBe(false)
+        expect(isAllowedDrop({ ...inStrip, kind: 'tab' })).toBe(true)
+        expect(isAllowedDrop({ ...inStrip, kind: 'header_space' })).toBe(true)
+        /* The strip's body */
+        expect(isAllowedDrop({ ...inStrip, kind: 'content' })).toBe(false)
         expect(
             isAllowedDrop({
-                ...base,
-                source: 'tool',
+                ...inStrip,
                 kind: 'tab',
-                position: 'center',
-                targetIsEdgeGroup: true,
+                disturbsFixedTools: true,
             })
-        ).toBe(true)
+        ).toBe(false)
     })
 })
 
