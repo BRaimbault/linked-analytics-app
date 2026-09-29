@@ -137,6 +137,76 @@ describe('FakeMap', () => {
         expect(screen.getAllByTestId('fake-feature')).toHaveLength(14)
     })
 
+    describe('legend lock', () => {
+        /* The malaria map rewritten to North's chiefdoms, far lower values */
+        const northChiefdoms: MapObject = {
+            ...malariaMap,
+            mapViews: [
+                {
+                    ...malariaMap.mapViews[0],
+                    rows: [
+                        {
+                            dimension: 'ou',
+                            items: [{ id: 'DemoNorth01' }, { id: 'LEVEL-3' }],
+                        },
+                    ],
+                },
+            ],
+        }
+        const labels = () =>
+            screen.getByTestId('fake-map-legend').querySelectorAll('li')[0]
+                .textContent
+        const redraw = (rerender: (ui: JSX.Element) => void, map: MapObject) =>
+            rerender(<FakeMap visualization={map} width={500} height={400} />)
+
+        it('keeps the classes through a rewrite while locked, and refits them on demand', async () => {
+            const { rerender } = draw(malariaMap)
+            const saved = labels()
+            expect(screen.getByTestId('fake-map-lock')).toHaveAttribute(
+                'aria-pressed',
+                'true'
+            )
+
+            redraw(rerender, northChiefdoms)
+            expect(labels()).toBe(saved)
+
+            await userEvent.click(screen.getByTestId('fake-map-refit'))
+            const refitted = labels()
+            expect(refitted).not.toBe(saved)
+
+            /* Refitted, the classes stay locked on the new ones */
+            redraw(rerender, malariaMap)
+            expect(labels()).toBe(refitted)
+        })
+
+        it('follows the data once unlocked, and locks the classes shown again', async () => {
+            const { rerender } = draw(malariaMap)
+            const saved = labels()
+
+            await userEvent.click(screen.getByTestId('fake-map-lock'))
+            expect(screen.queryByTestId('fake-map-refit')).toBeNull()
+            redraw(rerender, northChiefdoms)
+            const fitted = labels()
+            expect(fitted).not.toBe(saved)
+
+            await userEvent.click(screen.getByTestId('fake-map-lock'))
+            redraw(rerender, malariaMap)
+            expect(labels()).toBe(fitted)
+        })
+
+        it('starts another saved map on its own classes, and has no lock for a legend set', () => {
+            const { rerender } = draw(malariaMap)
+            redraw(rerender, { ...northChiefdoms, id: 'another' })
+            const own = labels()
+            redraw(rerender, { ...malariaMap, id: 'another' })
+
+            expect(labels()).toBe(own)
+
+            redraw(rerender, pentaMap)
+            expect(screen.queryByTestId('fake-map-lock')).toBeNull()
+        })
+    })
+
     it('dims what the highlight leaves out, and says when it has drawn', () => {
         const onLoadingComplete = vi.fn()
         draw(malariaMap, {

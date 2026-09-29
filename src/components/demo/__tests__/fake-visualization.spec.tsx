@@ -148,6 +148,54 @@ describe('FakeVisualization', () => {
         )
     })
 
+    it('sends a clicked label with its own dimension alone: an axis category, a row or a column header', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(malariaColumns, { onDataClick })
+
+        fireEvent.click(screen.getByText('West'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            {
+                ou: {
+                    id: 'DemoWest001',
+                    name: 'West',
+                    path: '/DemoLand001/DemoWest001',
+                    level: 'DemoLevel02',
+                },
+            },
+            { additive: false }
+        )
+        fireEvent.contextMenu(screen.getByText('West'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({ ou: expect.anything() }),
+            expect.objectContaining({ trigger: 'context' })
+        )
+        unmount()
+
+        draw(pentaTable, { onDataClick })
+        fireEvent.click(screen.getByText('Birch Valley'), { ctrlKey: true })
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            {
+                ou: expect.objectContaining({ id: 'DemoChN0102' }),
+            },
+            { additive: true }
+        )
+        fireEvent.click(
+            screen.getByRole('columnheader', { name: 'July - September 2025' })
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { pe: { id: '2025Q3', name: 'July - September 2025' } },
+            { additive: false }
+        )
+        fireEvent.contextMenu(screen.getByText('Birch Valley'))
+        fireEvent.contextMenu(
+            screen.getByRole('columnheader', { name: 'July - September 2025' })
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { pe: expect.objectContaining({ id: '2025Q3' }) },
+            expect.objectContaining({ trigger: 'context' })
+        )
+    })
+
     it('dims what the highlight leaves out, in charts and tables', () => {
         const dimmedPoints = () =>
             screen

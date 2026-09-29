@@ -116,6 +116,46 @@ describe('a click on a point with two dimensions', () => {
     })
 })
 
+describe('a click on a label: an axis category, a row or column header', () => {
+    const header = (click: object, additive = false) =>
+        dataClicked({ viewId: 'vis-1', click, additive })
+
+    it('changes its own dimension only, and keeps the rows while a column is picked', () => {
+        const store = setUp()
+        store.dispatch(header({ ou: north }))
+        store.dispatch(header({ ou: west }, true))
+        store.dispatch(header({ pe: { id: '2025Q4' } }))
+        expect(store.values()).toEqual([
+            ['DemoNorth01', 'DemoWest001'],
+            ['2025Q4'],
+        ])
+
+        /* Another row joins the ones kept */
+        store.dispatch(header({ ou: east }, true))
+        expect(store.values()).toEqual([
+            ['DemoNorth01', 'DemoWest001', 'DemoEast001'],
+            ['2025Q4'],
+        ])
+
+        /* The same column again: only the period goes */
+        store.dispatch(header({ pe: { id: '2025Q4' } }))
+        expect(store.values()).toEqual([
+            ['DemoNorth01', 'DemoWest001', 'DemoEast001'],
+            [],
+        ])
+    })
+
+    it('is replaced, with everything else, by a click on a cell', () => {
+        const store = setUp()
+        store.dispatch(header({ ou: north }))
+        store.dispatch(header({ pe: { id: '2025Q4' } }))
+
+        store.dispatch(cell(west, '2025Q3'))
+
+        expect(store.values()).toEqual([['DemoWest001'], ['2025Q3']])
+    })
+})
+
 describe('a view that sets a value', () => {
     const incomingOrgUnits = (
         store: ReturnType<typeof setUp>,

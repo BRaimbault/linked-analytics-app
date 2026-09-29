@@ -23,6 +23,9 @@ export type MapFeature = {
 
 export type LegendEntry = { color: string; label: string }
 
+/* The values an automatic legend's classes span */
+export type ClassRange = { min: number; max: number }
+
 export type DemoMapLayer = {
     dataItem: { id: string; name: string } | null
     periodNames: string[]
@@ -30,6 +33,9 @@ export type DemoMapLayer = {
     /* The outlines of the units the features lie in, drawn over them */
     outlines: Ring[]
     legend: LegendEntry[]
+    /* The range of the values shown, which automatic classes fit; none
+     * with a legend set, whose classes are fixed */
+    dataRange: ClassRange | null
 }
 
 const DEFAULT_COLOR_SCALE = '#ffffcc,#c2e699,#78c679,#31a354,#006837'
@@ -38,15 +44,18 @@ const NO_DATA_COLOR = '#e0e0e0'
 const format = (value: number) =>
     value.toLocaleString('en', { maximumFractionDigits: 1 })
 
+/* Values outside the range take the first or last class, as Maps clamps
+ * them */
 const equalIntervals = (
-    values: number[],
+    { min, max }: ClassRange,
     colors: string[]
 ): { entries: LegendEntry[]; colorOf: (value: number) => string } => {
-    const min = Math.min(...values)
-    const max = Math.max(...values)
     const step = (max - min) / colors.length || 1
     const classOf = (value: number) =>
-        Math.min(colors.length - 1, Math.floor((value - min) / step))
+        Math.max(
+            0,
+            Math.min(colors.length - 1, Math.floor((value - min) / step))
+        )
     return {
         entries: colors.map((color, index) => ({
             color,
@@ -58,7 +67,12 @@ const equalIntervals = (
     }
 }
 
-export const buildDemoMapLayer = (view: MapView): DemoMapLayer => {
+/* `classRange` fixes automatic classes (a locked legend); without it,
+ * they fit the values shown */
+export const buildDemoMapLayer = (
+    view: MapView,
+    classRange?: ClassRange
+): DemoMapLayer => {
     const dataItem = getDataItem(getDimensionItemIds(view, 'dx')[0] ?? '')
     const periodItems = getDimensionItemIds(view, 'pe')
     const periodIds = resolvePeriods(periodItems).map(({ id }) => id)
@@ -72,7 +86,10 @@ export const buildDemoMapLayer = (view: MapView): DemoMapLayer => {
     const colors = (view.colorScale ?? DEFAULT_COLOR_SCALE)
         .split(',')
         .slice(0, view.classes ?? 5)
-    const intervals = equalIntervals(known.length ? known : [0], colors)
+    const dataRange = known.length
+        ? { min: Math.min(...known), max: Math.max(...known) }
+        : { min: 0, max: 0 }
+    const intervals = equalIntervals(classRange ?? dataRange, colors)
     const colorOf = (value: number | null) => {
         if (value === null) {
             return NO_DATA_COLOR
@@ -111,5 +128,6 @@ export const buildDemoMapLayer = (view: MapView): DemoMapLayer => {
                   label: name,
               }))
             : intervals.entries,
+        dataRange: legendSet ? null : dataRange,
     }
 }

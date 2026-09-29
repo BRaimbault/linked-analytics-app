@@ -42,6 +42,11 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
                 toDataClick(item, category),
                 toClickOptions(event, rootRef.current as HTMLElement)
             ),
+        onLabelClick: (item, event) =>
+            onDataClick?.(
+                toDataClick(item),
+                toClickOptions(event, rootRef.current as HTMLElement)
+            ),
         isDimmed: (item, category) =>
             !isHighlighted(shownHighlight, toDataClick(item, category)),
     }

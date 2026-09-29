@@ -52,26 +52,37 @@ const currentPoints = (
     targets: Target[]
 ) => {
     const points = state.selectedPoints[viewId] ?? []
-    const isCurrent = targets.every(
-        ({ dimension, channel }) =>
-            channel.setBy === viewId &&
-            sameIds(channel.value, itemsOf(points, dimension))
-    )
+    /* Where its points hold nothing, the channel may hold anyone's value */
+    const isCurrent = targets.every(({ dimension, channel }) => {
+        const selected = itemsOf(points, dimension)
+        return selected.length
+            ? channel.setBy === viewId && sameIds(channel.value, selected)
+            : true
+    })
     return isCurrent ? points : []
 }
 
+/* Ctrl or Cmd adds the point, or takes it out. A plain click replaces the
+ * points that share a dimension with it, and keeps the others: a cell
+ * replaces everything, a column header the periods only, so the rows
+ * picked stay. Clicking the one point it would replace takes it out. */
 const nextPoints = (
     points: SelectedPoint[],
     point: SelectedPoint,
     additive: boolean
 ) => {
-    const isSelected = points.some(({ key }) => key === point.key)
     if (additive) {
-        return isSelected
+        return points.some(({ key }) => key === point.key)
             ? points.filter(({ key }) => key !== point.key)
             : [...points, point]
     }
-    return isSelected && points.length === 1 ? [] : [point]
+    const dimensions = Object.keys(point.items) as LinkDimension[]
+    const sharesDimension = ({ items }: SelectedPoint) =>
+        dimensions.some((dimension) => items[dimension])
+    const replaced = points.filter(sharesDimension)
+    const kept = points.filter((selected) => !sharesDimension(selected))
+    const isRepeat = replaced.length === 1 && replaced[0].key === point.key
+    return isRepeat ? kept : [...kept, point]
 }
 
 export const applyClick = (

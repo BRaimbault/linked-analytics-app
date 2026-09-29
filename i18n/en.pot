@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T11:26:10.397Z\n"
-"PO-Revision-Date: 2026-09-29T11:26:10.398Z\n"
+"POT-Creation-Date: 2026-09-29T14:42:17.745Z\n"
+"PO-Revision-Date: 2026-09-29T14:42:17.745Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -19,6 +19,24 @@ msgstr "Demo"
 
 msgid "Reset the demo"
 msgstr "Reset the demo"
+
+msgid "The classes stay as they are. Click to let them follow the data"
+msgstr "The classes stay as they are. Click to let them follow the data"
+
+msgid "The classes follow the data. Click to keep them as they are"
+msgstr "The classes follow the data. Click to keep them as they are"
+
+msgid "Fit the classes to the data shown"
+msgstr "Fit the classes to the data shown"
+
+msgid "Fixed"
+msgstr "Fixed"
+
+msgid "Follows data"
+msgstr "Follows data"
+
+msgid "Refit"
+msgstr "Refit"
 
 msgid "No layer to show"
 msgstr "No layer to show"

@@ -72,6 +72,12 @@
 .category {
     fill: var(--colors-grey800);
     font-size: 10px;
+    cursor: pointer;
+}
+
+.category:hover {
+    fill: var(--colors-grey900);
+    text-decoration: underline;
 }
 
 .line {
@@ -121,6 +127,15 @@
 
 .table td:hover {
     background: var(--colors-grey100);
+}
+
+/* Row and column headers pick their row or column */
+.table .label {
+    cursor: pointer;
+}
+
+.table .label:hover {
+    background: var(--colors-grey200);
 }
 
 .empty {

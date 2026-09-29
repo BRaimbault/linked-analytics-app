@@ -48,6 +48,32 @@ describe('demo map layer', () => {
         expect(layer.legend[0].label).toMatch(/^[\d,.]+ – [\d,.]+$/)
     })
 
+    it('keeps given classes, values outside them taking the first or last', () => {
+        const colors = (malariaMap.colorScale as string).split(',')
+        const fitted = buildDemoMapLayer(malariaMap)
+        const { min, max } = fitted.dataRange as { min: number; max: number }
+
+        const wide = buildDemoMapLayer(malariaMap, { min: 0, max: max * 10 })
+        const narrow = buildDemoMapLayer(malariaMap, {
+            min: min + 1,
+            max: min + 2,
+        })
+
+        expect(wide.legend[0].label).toBe(
+            `0 – ${(max * 2).toLocaleString('en')}`
+        )
+        /* Every district in the first of five classes */
+        expect(new Set(wide.features.map(({ color }) => color))).toEqual(
+            new Set([colors[0]])
+        )
+        expect(narrow.features.map(({ color }) => color)).toContain(colors[0])
+        expect(narrow.features.map(({ color }) => color)).toContain(
+            colors.at(-1)
+        )
+        expect(wide.dataRange).toEqual(fitted.dataRange)
+        expect(buildDemoMapLayer(pentaMap).dataRange).toBeNull()
+    })
+
     it('colors by the legend set when the layer has one', () => {
         const layer = buildDemoMapLayer(pentaMap)
 

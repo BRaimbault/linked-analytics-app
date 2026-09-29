@@ -31,13 +31,16 @@ export const niceMax = (value: number): number => {
     return (step as number) * power
 }
 
-/* onPointClick takes right-clicks too; the event tells them apart */
+/* The click handlers take right-clicks too; the event tells them apart. A
+ * label (a category on the axis, a table's row or column header) is a
+ * point with its own dimension alone. */
 export type PointHandlers = {
     onPointClick: (
         series: AxisItem,
         category: AxisItem,
         event: MouseEvent
     ) => void
+    onLabelClick: (item: AxisItem, event: MouseEvent) => void
     isDimmed: (series: AxisItem, category: AxisItem) => boolean
 }
 
@@ -50,7 +53,7 @@ export const FakeChart: FC<
         width: number
         height: number
     }
-> = ({ table, kind, width, height, onPointClick, isDimmed }) => {
+> = ({ table, kind, width, height, onPointClick, onLabelClick, isDimmed }) => {
     const { series, categories, valueOf } = table
     const turned = categories.length > UPRIGHT_LABELS
     const bottom = turned ? BOTTOM.turned : BOTTOM.upright
@@ -104,6 +107,9 @@ export const FakeChart: FC<
                         MARGIN.top + plotHeight + 14
                     })${turned ? ' rotate(-35)' : ''}`}
                     textAnchor={turned ? 'end' : 'middle'}
+                    data-test="fake-label"
+                    onClick={(event) => onLabelClick(category, event)}
+                    onContextMenu={(event) => onLabelClick(category, event)}
                 >
                     {category.name}
                 </text>

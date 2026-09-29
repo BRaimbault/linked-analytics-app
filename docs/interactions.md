@@ -382,11 +382,32 @@ highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }
 onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 ```
 
-- The payload holds only the clicked point's coordinates (the dimensions on its axes), as ids. `additive` is true for Ctrl/Cmd-click.
-- A right-click sends `trigger: 'context'` and where it happened, from the plugin's own top-left corner (the iframe's viewport), and stops the browser's menu: the plugin opens no menu of its own, and the app opens its drill menu at that point ([§5.6](#56-drilling-the-view-you-click)). The app turns the position into page coordinates, as it knows where the iframe is.
-- How the app reads a click: a plain click selects its point alone, and sets every linked dimension it carries; clicking the only selected point again (every dimension alike, the data item included: two series at one place are two points) brings back what the channels held before. Ctrl/Cmd-click adds the point to the view's selection, or takes it out; each channel holds the items of the selected points, so two cells of a column are two org units in one period, two of a row one org unit in two periods. Two cells across give the four combinations to the other views (channels hold lists per dimension, not points). A drilled view with nothing left selected passes the org unit it's drilled into, so the others show what it shows. The view that set a value isn't rewritten with it, and keeps showing what it followed before its click. No Shift-click ranges ([§8](#8-decisions-and-open-questions)).
-- `highlight` restyles matching items without refetching ([Filter vs highlight](#filter-vs-highlight)).
-- When `onDataClick` is passed, a click calls it directly and skips the plugin's own drill menu.
+**What a plugin sends: `onDataClick`.**
+
+- **Where**: what users can already click to drill, plus the labels.
+    - DV charts: a bar, a point, a series; and the category labels on the axis. Maps: a feature.
+    - Pivot tables: a cell, and the row and column headers. Column headers sort today, so a click can't mean both: how to keep sorting (an icon in the header, sorting only when `onDataClick` isn't passed…) is the maintainers' call.
+- **What**: the dimensions of what was clicked, as ids. A point carries the dimensions on its axes; a label or header carries its own dimension alone (a category label `{ ou }`, a column header of periods `{ pe }`; with nested headers, the header's dimensions down to the one clicked). An org unit comes with its `path`, from which the app finds its parents.
+- **How**: `additive` is true for Ctrl/Cmd-click. A right-click sends `trigger: 'context'` and where it happened, from the plugin's own top-left corner (the iframe's viewport), and stops the browser's menu; the app turns it into page coordinates and opens its drill menu there ([§5.6](#56-drilling-the-view-you-click)).
+- **The plugin's own drill menu**: when `onDataClick` is passed, the app handles clicks and right-clicks, so the plugin opens no menu of its own. How each plugin gets out of the way, and what it offers from the keyboard, is the maintainers' call.
+
+**What the app sends: `highlight`.**
+
+- **Why**: a view isn't rewritten by its own clicks, so without a highlight it shows no trace of what was selected; with it, the clicked district stays marked on the map and the clicked bar in the chart. It is also the base for a "highlight instead of filter" mode for receivers later ([Filter vs highlight](#filter-vs-highlight)).
+- **What**: the ids to emphasize, per dimension. A plugin restyles what matches, without refetching (so the prop stays out of what triggers a refetch).
+- **How it looks** is the maintainers' call. The demo shows one way: the rest dimmed, a map's selected features outlined on top, and a unit the view doesn't draw shown through the ones it does (a chiefdom through its district, a district through its chiefdoms).
+
+**What a plugin reports: `onLoadingComplete`.**
+
+- A plugin calls it once it has drawn its data, after each change of `visualization`.
+- **Why**: the period selector's play mode steps through periods and waits until every view has drawn before the next step ([§5.5](#55-selectors-live-in-grid-cells)); without it, a fixed delay has to guess, and a slow view falls behind. It also lets the app show that a view is loading, and tests wait for a view instead of a delay.
+- DV's wrapper must forward it; Maps adds it.
+
+**How the app reads clicks** (the app's side; nothing for the plugins to do): a plain click selects its point, replacing the points that share a dimension with it (a cell replaces everything, a column header the periods only, so the rows picked stay); clicking the one point it would replace takes it out. Ctrl/Cmd-click adds the point, or takes it out. Each channel holds the items of the selected points: two cells of a column are two org units in one period, two of a row one org unit in two periods; two cells across give the four combinations to the other views (channels hold lists per dimension, not points). With nothing left selected, the channels get back what they held before, or, for a drilled view, the org unit it's drilled into. The view that set a value isn't rewritten with it, and keeps showing what it followed before its click. No Shift-click ranges ([§8](#8-decisions-and-open-questions)).
+
+**Also:**
+
+- All props are optional: without them, a plugin behaves as today, so the dashboard is unaffected.
 - Agree on the names with the maintainers (Community of Practice or the PR descriptions), so both plugins ship the same shape.
 - Where the payload and `filters` overlap, reuse the dashboard's `dashboardItemFilters` shape (`{ ou: [{ id, name, path }], pe: [...] }`, dashboard-app#3264).
 - The fake plugins in [demo-mode.md](demo-mode.md) implement this contract (`proposed` profile), so it can be tried before the PRs.
@@ -408,7 +429,12 @@ onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 5. **EE period from dates**: when an EE layer's `period` has `startDate`/`endDate` but no `id`, resolve the image with `getPeriods`, using the [Earth Engine conversion rule](#earth-engine-periods). Report "not available" when there is no match. `earthEngineLoader.js` builds its filter from `period.id` only.
 6. `highlight` prop: style matching features without reloading layers.
 7. `onLoadingComplete` prop: called when `mapIsLoaded` becomes true in `Map.jsx`.
-8. Unit tests for the payload builder, `didViewsChange` and the EE period resolution.
+8. **A lock for automatic legends.** A saved thematic layer keeps how to classify (`method`, `classes`, `colorScale`), not the class breaks: `getAutomaticLegendItems` (`thematicLoader.js`) recomputes them on every load. Linked, a map reloads at every step (a district, a period, a drill, play mode), so its colors change meaning from one step to the next, and can't be compared across them. A timeline map avoids this by classifying all its periods together; links cut the steps into separate loads. Only a legend set gives fixed classes, and it's metadata an administrator creates, not something a user can do while exploring.
+    - **Proposed**: automatic classes locked by default on those of the map as saved, kept in the plugin's state (as the zoom) through rewrites; a button to fit them to the data shown, which stays locked on the new ones (e.g. after a drill from districts to chiefdoms); and a toggle to unlock, after which they follow the data, as today. Separate controls rather than a double-click, so they have tooltips and work from the keyboard and on touch. Nothing to lock with a legend set.
+    - The first classes should come from the map as saved: a map that joins a workspace whose channels hold a value loads linked, and would need one more request for its own scope.
+    - Other tools: most offer fitted-to-the-view or author-fixed ranges (Power BI, Tableau, Datawrapper); ArcGIS and Kibana compute them over the whole dataset rather than the view; QGIS classifies only on demand, and Tableau (2025.2) lets ranges follow selections. The design above is the MSF Dashboard's colorlock (one click refits, a double-click toggles).
+    - How it looks, and whether it's a plugin option or a prop the app can set (e.g. locked while play mode runs), is the maintainers' call. The demo's fake map shows it: the padlock and "fit" buttons over its legend.
+9. Unit tests for the payload builder, `didViewsChange` and the EE period resolution.
 
 ### DV PR (@dhis2/analytics + data-visualizer-app)
 

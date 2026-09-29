@@ -1,7 +1,7 @@
 import i18n from '@dhis2/d2-i18n'
 import { IconAdd16, IconHome16, IconSubtract16 } from '@dhis2/ui'
 import { withRelatedOrgUnits } from '@modules/demo/highlight'
-import { buildDemoMapLayer, type MapFeature } from '@modules/demo/map-layer'
+import type { MapFeature } from '@modules/demo/map-layer'
 import type { Ring } from '@modules/demo/org-units'
 import {
     isHighlighted,
@@ -18,7 +18,9 @@ import {
     type MouseEvent,
 } from 'react'
 import { toClickOptions } from './click-options'
+import { FakeMapLegend } from './fake-map-legend'
 import classes from './styles/fake-map.module.css'
+import { useLegendLock } from './use-legend-lock'
 import { useMapView } from './use-map-view'
 
 /* The demo's shapes lie in a 0-100 plane; the map shows it all at first */
@@ -60,10 +62,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
     const thematic = visualization.mapViews.find(
         ({ layer }) => layer === 'thematic'
     )
-    const layer = useMemo(
-        () => (thematic ? buildDemoMapLayer(thematic) : null),
-        [thematic]
-    )
+    const { layer, ...legendLock } = useLegendLock(thematic, visualization.id)
     const [hoveredId, setHoveredId] = useState<string | null>(null)
     const shownHighlight = useMemo(
         () => withRelatedOrgUnits(highlight),
@@ -193,17 +192,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                     )}
                 </g>
             </svg>
-            <ul className={classes.legend} data-test="fake-map-legend">
-                {layer.legend.map(({ color, label }) => (
-                    <li key={label}>
-                        <span
-                            className={classes.swatch}
-                            style={{ background: color }}
-                        />
-                        {label}
-                    </li>
-                ))}
-            </ul>
+            <FakeMapLegend entries={layer.legend} {...legendLock} />
             <div className={classes.zoom}>
                 {[
                     {
