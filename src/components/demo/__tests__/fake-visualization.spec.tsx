@@ -5,7 +5,7 @@ import type { VisualizationObject } from '@modules/visualization/analytical-obje
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const [ancLine, malariaColumns, pentaTable, ancByDistrict] = DEMO_VISUALIZATIONS
+const [ancLine, malariaColumns, ancByDistrict, pentaTable] = DEMO_VISUALIZATIONS
 
 const draw = (
     visualization: VisualizationObject,
@@ -30,7 +30,7 @@ describe('FakeVisualization', () => {
         ).toBeInTheDocument()
         expect(screen.getByText('Last 12 months')).toBeInTheDocument()
         expect(
-            screen.getByText('Malaria cases confirmed', { selector: 'li' })
+            screen.getByRole('button', { name: 'Malaria cases confirmed' })
         ).toBeInTheDocument()
     })
 
@@ -50,7 +50,7 @@ describe('FakeVisualization', () => {
 
         expect(screen.getAllByTestId('fake-series')).toHaveLength(4)
         expect(screen.getAllByTestId('fake-point')).toHaveLength(48)
-        expect(screen.getByText('West', { selector: 'li' })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'West' })).toBeInTheDocument()
 
         /* West's line (the second), its first month */
         fireEvent.click(screen.getAllByTestId('fake-point')[12])
@@ -193,6 +193,34 @@ describe('FakeVisualization', () => {
         expect(onDataClick).toHaveBeenLastCalledWith(
             { pe: expect.objectContaining({ id: '2025Q3' }) },
             expect.objectContaining({ trigger: 'context' })
+        )
+    })
+
+    it('sends a series clicked in the legend, as its own dimension alone', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(ancByDistrict, { onDataClick })
+        const series = (name: string) =>
+            screen
+                .getAllByTestId('fake-legend-series')
+                .find((button) => button.textContent === name) as HTMLElement
+
+        fireEvent.click(series('East'), { ctrlKey: true })
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { ou: expect.objectContaining({ id: 'DemoEast001' }) },
+            { additive: true }
+        )
+        fireEvent.contextMenu(series('East'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { ou: expect.objectContaining({ id: 'DemoEast001' }) },
+            expect.objectContaining({ trigger: 'context' })
+        )
+        unmount()
+
+        draw(ancLine, { onDataClick })
+        fireEvent.click(screen.getAllByTestId('fake-legend-series')[0])
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { dx: expect.objectContaining({ id: expect.any(String) }) },
+            { additive: false }
         )
     })
 

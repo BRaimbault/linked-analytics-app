@@ -27,8 +27,8 @@ describe('demo saved items', () => {
         expect(DEMO_VISUALIZATIONS.map(({ type }) => type)).toEqual([
             'LINE',
             'COLUMN',
-            'PIVOT_TABLE',
             'LINE',
+            'PIVOT_TABLE',
         ])
     })
 

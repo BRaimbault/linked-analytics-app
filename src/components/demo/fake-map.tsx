@@ -2,7 +2,7 @@ import i18n from '@dhis2/d2-i18n'
 import { IconAdd16, IconHome16, IconSubtract16 } from '@dhis2/ui'
 import { withRelatedOrgUnits } from '@modules/demo/highlight'
 import type { MapFeature } from '@modules/demo/map-layer'
-import type { Ring } from '@modules/demo/org-units'
+import type { Shape } from '@modules/demo/shapes'
 import {
     isHighlighted,
     type DataClick,
@@ -29,8 +29,10 @@ const HEADER_HEIGHT = 44
 /* Room around the whole map, which zooming out also ends at */
 const MARGIN = 16
 
-const toPath = (ring: Ring) =>
-    `M${ring.map(([x, y]) => `${x},${y}`).join('L')}Z`
+const toPath = (shape: Shape) =>
+    shape
+        .map((ring) => `M${ring.map(([x, y]) => `${x},${y}`).join('L')}Z`)
+        .join('')
 
 const toDataClick = (
     { orgUnit }: MapFeature,
@@ -167,10 +169,10 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             </title>
                         </path>
                     ))}
-                    {layer.outlines.map((ring, index) => (
+                    {layer.outlines.map((shape, index) => (
                         <path
                             key={index}
-                            d={toPath(ring)}
+                            d={toPath(shape)}
                             className={classes.outline}
                         />
                     ))}

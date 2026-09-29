@@ -41,10 +41,27 @@
     color: var(--colors-grey800);
 }
 
-.legend li {
+/* A series picks its item, as an axis label picks its category */
+.series {
     display: flex;
     align-items: center;
     gap: var(--spacers-dp4);
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.series:hover {
+    color: var(--colors-grey900);
+    text-decoration: underline;
+}
+
+.series:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 1px;
 }
 
 .swatch {

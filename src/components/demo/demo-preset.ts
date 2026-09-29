@@ -7,7 +7,7 @@ import type { PluginObject } from '@modules/plugins/contract'
 import type { ViewType } from '@modules/workspace/view-types'
 import type { DockviewApi } from 'dockview-react'
 
-const [ancVisits, , pentaByChiefdom] = DEMO_VISUALIZATIONS
+const [ancVisits, , , pentaByChiefdom] = DEMO_VISUALIZATIONS
 const [, malariaByDistrict] = DEMO_MAPS
 
 /* Added as clicks would add them: a chart, then a map beside it, then a

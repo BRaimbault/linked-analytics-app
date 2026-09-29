@@ -41,14 +41,6 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         rows: [orgUnits('USER_ORGUNIT_CHILDREN')],
         filters: [periods('LAST_12_MONTHS')],
     },
-    {
-        id: 'DemoVisPen1',
-        name: 'Penta 3 coverage by chiefdom, last 4 quarters',
-        type: 'PIVOT_TABLE',
-        columns: [periods('LAST_4_QUARTERS')],
-        rows: [orgUnits('USER_ORGUNIT', 'LEVEL-3')],
-        filters: [data(DATA_ITEM_IDS.penta3)],
-    },
     /* A line per district: clicks on it carry an org unit and a period */
     {
         id: 'DemoVisAnc2',
@@ -57,6 +49,14 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         columns: [orgUnits('USER_ORGUNIT_CHILDREN')],
         rows: [periods('LAST_12_MONTHS')],
         filters: [data(DATA_ITEM_IDS.anc1)],
+    },
+    {
+        id: 'DemoVisPen1',
+        name: 'Penta 3 coverage by chiefdom, last 4 quarters',
+        type: 'PIVOT_TABLE',
+        columns: [periods('LAST_4_QUARTERS')],
+        rows: [orgUnits('USER_ORGUNIT', 'LEVEL-3')],
+        filters: [data(DATA_ITEM_IDS.penta3)],
     },
 ]
 

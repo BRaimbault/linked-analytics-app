@@ -7,30 +7,24 @@ import {
     ORG_UNITS,
     resolveOrgUnits,
     ROOT_ORG_UNIT_ID,
-    type Ring,
 } from '@modules/demo/org-units'
+import type { Shape } from '@modules/demo/shapes'
 import { describe, expect, it } from 'vitest'
+import { areaOf } from './ring-area'
 
 const ids = (items: string[]) => resolveOrgUnits(items).map(({ id }) => id)
 
-/* A ring's area (shoelace formula) and its bounding box */
-const areaOf = (ring: Ring) =>
-    Math.abs(
-        ring
-            .slice(0, -1)
-            .reduce(
-                (sum, [x, y], index) =>
-                    sum + x * ring[index + 1][1] - ring[index + 1][0] * y,
-                0
-            ) / 2
-    )
+const boundsOf = (shape: Shape) => {
+    const points = shape.flat()
+    return {
+        left: Math.min(...points.map(([x]) => x)),
+        right: Math.max(...points.map(([x]) => x)),
+        top: Math.min(...points.map(([, y]) => y)),
+        bottom: Math.max(...points.map(([, y]) => y)),
+    }
+}
 
-const boundsOf = (ring: Ring) => ({
-    left: Math.min(...ring.map(([x]) => x)),
-    right: Math.max(...ring.map(([x]) => x)),
-    top: Math.min(...ring.map(([, y]) => y)),
-    bottom: Math.max(...ring.map(([, y]) => y)),
-})
+const shapeOf = (id: string) => getOrgUnit(id)?.shape as Shape
 
 describe('demo org units', () => {
     it('makes a country of 4 districts and 14 chiefdoms, on 3 levels', () => {
@@ -75,6 +69,45 @@ describe('demo org units', () => {
                 expect(inner.bottom).toBeLessThanOrEqual(outer.bottom)
             }
         }
+    })
+
+    it('draws each part of a unit as an unbroken outline inside the plane', () => {
+        for (const { shape } of ORG_UNITS) {
+            const bounds = boundsOf(shape)
+            for (const ring of shape) {
+                const steps = ring
+                    .slice(1)
+                    .map(([x, y], index) =>
+                        Math.hypot(x - ring[index][0], y - ring[index][1])
+                    )
+
+                expect(ring[0]).toEqual(ring[ring.length - 1])
+                expect(Math.max(...steps)).toBeLessThan(3)
+            }
+            expect(Math.min(bounds.left, bounds.top)).toBeGreaterThan(0)
+            expect(Math.max(bounds.right, bounds.bottom)).toBeLessThan(100)
+        }
+    })
+
+    it('makes Juniper an island, off the mainland', () => {
+        const parts = (id: string) => shapeOf(id).length
+
+        expect(parts('DemoChS0103')).toBe(1)
+        expect([parts('DemoSouth01'), parts(ROOT_ORG_UNIT_ID)]).toEqual([2, 2])
+        for (const { id } of ORG_UNITS.filter(
+            ({ id }) => !['DemoChS0103', 'DemoSouth01'].includes(id)
+        ).filter(({ level }) => level > 1)) {
+            expect(parts(id)).toBe(1)
+        }
+    })
+
+    it('gives the country a bay, so its outline is concave', () => {
+        const country = shapeOf(ROOT_ORG_UNIT_ID)
+        const { left, right, top, bottom } = boundsOf(country)
+
+        expect(areaOf(country)).toBeLessThan(
+            0.75 * (right - left) * (bottom - top)
+        )
     })
 
     it('finds the chiefdoms under a unit, or the chiefdom itself', () => {

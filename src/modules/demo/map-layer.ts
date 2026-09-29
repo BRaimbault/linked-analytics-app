@@ -1,13 +1,9 @@
 import type { MapView } from '@modules/visualization/analytical-object'
 import { getDimensionItemIds } from '@modules/visualization/analytical-object'
 import { getDataItem, getLegendSet } from './data-items'
-import {
-    getOrgUnit,
-    resolveOrgUnits,
-    type DemoOrgUnit,
-    type Ring,
-} from './org-units'
+import { getOrgUnit, resolveOrgUnits, type DemoOrgUnit } from './org-units'
 import { getPeriodItemName, resolvePeriods } from './periods'
+import type { Shape } from './shapes'
 import { getTotal } from './values'
 
 /* What a fake map draws for a thematic layer, worked out from its map
@@ -31,7 +27,7 @@ export type DemoMapLayer = {
     periodNames: string[]
     features: MapFeature[]
     /* The outlines of the units the features lie in, drawn over them */
-    outlines: Ring[]
+    outlines: Shape[]
     legend: LegendEntry[]
     /* The range of the values shown, which automatic classes fit; none
      * with a legend set, whose classes are fixed */

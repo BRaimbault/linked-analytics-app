@@ -26,6 +26,47 @@ export const mapFeature = (name: string) =>
         .get('[data-test="fake-feature"]')
         .filter((_, feature) => !!feature.textContent?.startsWith(`${name}:`))
 
+/* A point on a feature that a pointer would reach, from its box's top left
+ * corner: shapes aren't convex, so the box's centre can fall on a
+ * neighbour */
+const pointOn = (feature: SVGPathElement): [number, number] => {
+    const box = feature.getBoundingClientRect()
+    const toShape = (feature.getScreenCTM() as DOMMatrix).inverse()
+    const steps = 12
+    for (let row = 1; row < steps; row++) {
+        for (let column = 1; column < steps; column++) {
+            const [x, y] = [
+                box.left + (box.width * column) / steps,
+                box.top + (box.height * row) / steps,
+            ]
+            if (
+                feature.isPointInFill(
+                    new DOMPoint(x, y).matrixTransform(toShape)
+                ) &&
+                document.elementFromPoint(x, y) === feature
+            ) {
+                return [x - box.left, y - box.top]
+            }
+        }
+    }
+    throw new Error('No point on the feature is in reach')
+}
+
+/* Clicks a feature where a pointer would reach it, and yields that point
+ * in the page */
+export const clickFeature = (
+    name: string,
+    action: 'click' | 'rightclick' = 'click'
+) =>
+    mapFeature(name).then((feature) => {
+        const [x, y] = pointOn(feature[0] as unknown as SVGPathElement)
+        const { left, top } = feature[0].getBoundingClientRect()
+        /* Where it is: scrolling it into view would scroll the 800px
+         * mount */
+        cy.wrap(feature)[action](x, y, { scrollBehavior: false })
+        return cy.wrap({ x: left + x, y: top + y })
+    })
+
 /* The chart's category labels, without the value axis's numbers */
 export const expectChartCategories = (names: string[]) =>
     cy

@@ -69,16 +69,28 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
                     <ul className={classes.legend}>
                         {table.series.map((item, index) => (
                             <li key={item.id}>
-                                <span
-                                    className={classes.swatch}
-                                    style={{
-                                        background:
-                                            SERIES_COLORS[
-                                                index % SERIES_COLORS.length
-                                            ],
-                                    }}
-                                />
-                                {item.name}
+                                <button
+                                    type="button"
+                                    className={classes.series}
+                                    data-test="fake-legend-series"
+                                    onClick={(event) =>
+                                        handlers.onLabelClick(item, event)
+                                    }
+                                    onContextMenu={(event) =>
+                                        handlers.onLabelClick(item, event)
+                                    }
+                                >
+                                    <span
+                                        className={classes.swatch}
+                                        style={{
+                                            background:
+                                                SERIES_COLORS[
+                                                    index % SERIES_COLORS.length
+                                                ],
+                                        }}
+                                    />
+                                    {item.name}
+                                </button>
                             </li>
                         ))}
                     </ul>

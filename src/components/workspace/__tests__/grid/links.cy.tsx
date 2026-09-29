@@ -1,4 +1,5 @@
 import {
+    clickFeature,
     expectChartCategories,
     mapFeature,
     openSavedItem,
@@ -21,10 +22,6 @@ const setUpLinkedViews = ({ selector = false } = {}) => {
     )
     expectChartCategories(['North', 'West', 'East', 'South'])
 }
-
-/* Where it is: scrolling it into view would scroll the 800px mount */
-const clickFeature = (name: string) =>
-    mapFeature(name).click({ scrollBehavior: false })
 
 /* An option of a DHIS2 select in the tools strip, found by its field's
  * test id. The strip at the top is short: it scrolls to the field, as a
@@ -170,15 +167,12 @@ describe('linked views', () => {
     it('opens the drill menu at the pointer on a right-click, and drills both ways', () => {
         setUpLinkedViews()
 
-        mapFeature('East').rightclick(20, 30, { scrollBehavior: false })
-
         /* At the pointer, not at the plugin's corner */
-        mapFeature('East').then((feature) => {
-            const { left, top } = feature[0].getBoundingClientRect()
+        clickFeature('East', 'rightclick').then(({ x, y }) => {
             cy.get('[data-test="drill-menu"]').should((menu) => {
                 const box = menu[0].getBoundingClientRect()
-                expect(box.left).to.be.closeTo(left + 20, 4)
-                expect(box.top).to.be.closeTo(top + 30, 4)
+                expect(box.left).to.be.closeTo(x, 4)
+                expect(box.top).to.be.closeTo(y, 4)
             })
         })
         cy.get('[data-test="drill-menu"] [role="menuitem"]')
@@ -196,7 +190,7 @@ describe('linked views', () => {
         ])
 
         /* Up to East's level: the districts, East still the value */
-        mapFeature('Elm Ridge').rightclick({ scrollBehavior: false })
+        clickFeature('Elm Ridge', 'rightclick')
         cy.get('[data-test="drill-menu"] [role="menuitem"]')
             .contains('Drill up to East')
             .click()
@@ -209,7 +203,7 @@ describe('linked views', () => {
             'Granite Bay',
         ])
 
-        mapFeature('North').rightclick({ scrollBehavior: false })
+        clickFeature('North', 'rightclick')
         cy.get('[data-test="drill-menu"] [role="menuitem"]')
             .contains('Back to the saved item')
             .click()

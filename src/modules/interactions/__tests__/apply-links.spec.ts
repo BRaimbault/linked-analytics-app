@@ -8,7 +8,7 @@ import { getDimensionItemIds } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
 
 const OPTIONS = { orgUnitLevelCount: 3, orgUnitDepth: 1 } as const
-const [ancLine, malariaByDistrict, pentaTable] = DEMO_VISUALIZATIONS
+const [ancLine, malariaByDistrict, , pentaTable] = DEMO_VISUALIZATIONS
 const [pentaMap] = DEMO_MAPS
 
 const north = {

@@ -385,9 +385,9 @@ onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 **What a plugin sends: `onDataClick`.**
 
 - **Where**: what users can already click to drill, plus the labels.
-    - DV charts: a bar, a point, a series; and the category labels on the axis. Maps: a feature.
+    - DV charts: a bar, a point, a series; the category labels on the axis, and the series in the legend (a series of districts sends `{ ou }`). A legend click hides its series today, the same clash as sorting below. Maps: a feature.
     - Pivot tables: a cell, and the row and column headers. Column headers sort today, so a click can't mean both: how to keep sorting (an icon in the header, sorting only when `onDataClick` isn't passed…) is the maintainers' call.
-- **What**: the dimensions of what was clicked, as ids. A point carries the dimensions on its axes; a label or header carries its own dimension alone (a category label `{ ou }`, a column header of periods `{ pe }`; with nested headers, the header's dimensions down to the one clicked). An org unit comes with its `path`, from which the app finds its parents.
+- **What**: the dimensions of what was clicked, as ids. A point carries the dimensions on its axes; a label, legend series or header carries its own dimension alone (a category label `{ ou }`, a column header of periods `{ pe }`; with nested headers, the header's dimensions down to the one clicked). An org unit comes with its `path`, from which the app finds its parents.
 - **How**: `additive` is true for Ctrl/Cmd-click. A right-click sends `trigger: 'context'` and where it happened, from the plugin's own top-left corner (the iframe's viewport), and stops the browser's menu; the app turns it into page coordinates and opens its drill menu there ([§5.6](#56-drilling-the-view-you-click)).
 - **The plugin's own drill menu**: when `onDataClick` is passed, the app handles clicks and right-clicks, so the plugin opens no menu of its own. How each plugin gets out of the way, and what it offers from the keyboard, is the maintainers' call.
 

@@ -68,7 +68,7 @@ Each fake plugin reads its profile and behaves accordingly. Each `released` cell
 
 - Layers: a thematic layer (choropleth), and org unit boundaries drawn from the same shapes. Other layer types draw as an empty layer with a "not in demo mode" note. How many layers a map may have follows [map-layers.md](map-layers.md).
 - Reads each map view like the real plugin: `dx` in `columns`, `ou` in `rows`, `pe` in `filters`, and `colorScale`, `classes`, `method` for the style.
-- Draws made-up district and chiefdom shapes (simple polygons, not real boundaries) as SVG, with a legend, and keeps its own zoom and pan so the `released` rebuild visibly loses them.
+- Draws made-up district and chiefdom shapes (not real boundaries: a concave mainland with a bay, a peninsula and two straight land borders, plus one chiefdom that is an island. On a grid of cells, each cell goes to the nearest chiefdom seed in a bent plane, and a few pairs of chiefdoms meet along a straight line; borders are traced along the cells and smoothed. A shape has a ring per part, as a GeoJSON MultiPolygon; `modules/demo/land-grid.ts` and `shapes.ts`) as SVG, with a legend, and keeps its own zoom and pan so the `released` rebuild visibly loses them.
 - Clicks: none under `released`. Under `proposed`, a feature click calls `onDataClick` with `ou` (`id`, `name`, `path`, `level`) and the layer's `dx`.
 
 Both take a **`loadDelay`** (e.g. 300–1200 ms) before drawing and calling `onLoadingComplete`. That way the period selector's play mode, loading states and "wait for every receiver" can be tried as they would behave on a real server.

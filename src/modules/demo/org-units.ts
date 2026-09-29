@@ -4,9 +4,8 @@
  * look like DHIS2 UIDs (11 characters), so objects built on them look real
  * to the pickers. */
 
-export type Point = [number, number]
-/* A polygon's outer ring, in the demo's own 0-100 plane (y down) */
-export type Ring = Point[]
+import { createLandGrid, type Point } from './land-grid'
+import { createShapes, type Shape } from './shapes'
 
 export type DemoOrgUnitLevel = { id: string; level: number; name: string }
 
@@ -19,7 +18,7 @@ export type DemoOrgUnit = {
     /* Ancestors and itself, as DHIS2 writes it: /root/.../id */
     path: string
     parentId: string | null
-    shape: Ring
+    shape: Shape
 }
 
 export type DemoOrgUnitGroup = { id: string; name: string; memberIds: string[] }
@@ -30,118 +29,126 @@ export const ORG_UNIT_LEVELS: DemoOrgUnitLevel[] = [
     { id: 'DemoLevel03', level: 3, name: 'Chiefdom' },
 ]
 
-type Box = { left: number; top: number; width: number; height: number }
-
-const toRing = ({ left, top, width, height }: Box): Ring => [
-    [left, top],
-    [left + width, top],
-    [left + width, top + height],
-    [left, top + height],
-    [left, top],
-]
-
-/* Chiefdoms tile their district: side by side, as every district is wider
- * than it is tall */
-const slice = (box: Box, count: number): Box[] =>
-    Array.from({ length: count }, (_, index) => ({
-        ...box,
-        left: box.left + (box.width / count) * index,
-        width: box.width / count,
-    }))
-
 const COUNTRY = { id: 'DemoLand001', name: 'Demoland' }
-const COUNTRY_BOX: Box = { left: 0, top: 0, width: 100, height: 100 }
 
-/* Districts tile the country: a strip across the top and the bottom, and
- * two halves between them */
+/* Each chiefdom has its id, name and seed: the land nearest to the seed is
+ * the chiefdom's (see land-grid.ts). The mainland runs from a peninsula in
+ * the south-west to the north-east, with a bay in the south-east; Juniper
+ * is the island off the south coast. */
 const DISTRICTS: {
     id: string
     name: string
-    box: Box
-    chiefdoms: [string, string][]
+    chiefdoms: [string, string, Point][]
 }[] = [
     {
         id: 'DemoNorth01',
         name: 'North',
-        box: { left: 0, top: 0, width: 100, height: 30 },
         chiefdoms: [
-            ['DemoChN0101', 'Amber Hills'],
-            ['DemoChN0102', 'Birch Valley'],
-            ['DemoChN0103', 'Cedar Coast'],
+            ['DemoChN0101', 'Amber Hills', [30, 38]],
+            ['DemoChN0102', 'Birch Valley', [47, 29]],
+            ['DemoChN0103', 'Cedar Coast', [63, 24]],
         ],
     },
     {
         id: 'DemoWest001',
         name: 'West',
-        box: { left: 0, top: 30, width: 50, height: 40 },
         chiefdoms: [
-            ['DemoChW0101', 'Kestrel'],
-            ['DemoChW0102', 'Lark Meadow'],
-            ['DemoChW0103', 'Maple Point'],
-            ['DemoChW0104', 'Nettle Hill'],
+            ['DemoChW0101', 'Kestrel', [15, 55]],
+            ['DemoChW0102', 'Lark Meadow', [30, 49]],
+            ['DemoChW0103', 'Maple Point', [24, 64]],
+            ['DemoChW0104', 'Nettle Hill', [43, 48]],
         ],
     },
     {
         id: 'DemoEast001',
         name: 'East',
-        box: { left: 50, top: 30, width: 50, height: 40 },
         chiefdoms: [
-            ['DemoChE0101', 'Dawn Plains'],
-            ['DemoChE0102', 'Elm Ridge'],
-            ['DemoChE0103', 'Fern Lake'],
-            ['DemoChE0104', 'Granite Bay'],
+            ['DemoChE0101', 'Dawn Plains', [60, 40]],
+            ['DemoChE0102', 'Elm Ridge', [78, 30]],
+            ['DemoChE0103', 'Fern Lake', [72, 50]],
+            ['DemoChE0104', 'Granite Bay', [81, 42]],
         ],
     },
     {
         id: 'DemoSouth01',
         name: 'South',
-        box: { left: 0, top: 70, width: 100, height: 30 },
         chiefdoms: [
-            ['DemoChS0101', 'Harbor'],
-            ['DemoChS0102', 'Iris Fields'],
-            ['DemoChS0103', 'Juniper'],
+            ['DemoChS0101', 'Harbor', [20, 76]],
+            ['DemoChS0102', 'Iris Fields', [38, 68]],
+            ['DemoChS0103', 'Juniper', [52, 83]],
         ],
     },
 ]
 
-const unit = ({
-    id,
-    name,
-    parent,
-    box,
-}: {
+/* Borders drawn with a ruler, as some are */
+const STRAIGHT_BORDERS: [string, string][] = [
+    ['DemoChN0102', 'DemoChN0103'],
+    ['DemoChW0101', 'DemoChW0102'],
+    ['DemoChW0104', 'DemoChE0101'],
+]
+
+const CHIEFDOMS = DISTRICTS.flatMap(({ chiefdoms }) => chiefdoms)
+const indicesOf = (ids: string[]) =>
+    ids.map((id) => CHIEFDOMS.findIndex(([chiefdomId]) => chiefdomId === id))
+const shapeOf = createShapes(
+    createLandGrid(
+        CHIEFDOMS.map(([, , seed]) => seed),
+        STRAIGHT_BORDERS.map((pair) => indicesOf(pair) as [number, number])
+    )
+)
+const shapeOfChiefdoms = (ids: string[]) => shapeOf(indicesOf(ids))
+
+type Placed = {
     id: string
     name: string
-    parent: DemoOrgUnit | null
-    box: Box
-}): DemoOrgUnit => {
-    const level = parent ? parent.level + 1 : 1
-    return {
-        id,
-        name,
-        level,
-        levelId: ORG_UNIT_LEVELS[level - 1].id,
-        path: `${parent?.path ?? ''}/${id}`,
-        parentId: parent?.id ?? null,
-        shape: toRing(box),
-    }
+    parentId: string | null
+    chiefdomIds: string[]
 }
 
-const COUNTRY_UNIT = unit({ ...COUNTRY, parent: null, box: COUNTRY_BOX })
-
-export const ORG_UNITS: DemoOrgUnit[] = [
-    COUNTRY_UNIT,
-    ...DISTRICTS.flatMap((district) => {
-        const districtUnit = unit({ ...district, parent: COUNTRY_UNIT })
-        const boxes = slice(district.box, district.chiefdoms.length)
-        return [
-            districtUnit,
-            ...district.chiefdoms.map(([id, name], index) =>
-                unit({ id, name, parent: districtUnit, box: boxes[index] })
-            ),
-        ]
-    }),
+/* Parents before their children */
+const PLACED: Placed[] = [
+    {
+        ...COUNTRY,
+        parentId: null,
+        chiefdomIds: CHIEFDOMS.map(([id]) => id),
+    },
+    ...DISTRICTS.flatMap(({ id, name, chiefdoms }) => [
+        {
+            id,
+            name,
+            parentId: COUNTRY.id,
+            chiefdomIds: chiefdoms.map(([chiefdomId]) => chiefdomId),
+        },
+        ...chiefdoms.map(([chiefdomId, chiefdomName]) => ({
+            id: chiefdomId,
+            name: chiefdomName,
+            parentId: id,
+            chiefdomIds: [chiefdomId],
+        })),
+    ]),
 ]
+
+export const ORG_UNITS: DemoOrgUnit[] = PLACED.reduce<DemoOrgUnit[]>(
+    (units, { id, name, parentId, chiefdomIds }) => {
+        const parent = units.find((orgUnit) => orgUnit.id === parentId)
+        const level = parent ? parent.level + 1 : 1
+        return [
+            ...units,
+            {
+                id,
+                name,
+                level,
+                levelId: ORG_UNIT_LEVELS[level - 1].id,
+                path: `${parent?.path ?? ''}/${id}`,
+                parentId,
+                shape: shapeOfChiefdoms(chiefdomIds),
+            },
+        ]
+    },
+    []
+)
+
+const COUNTRY_UNIT = ORG_UNITS[0]
 
 export const ROOT_ORG_UNIT_ID = COUNTRY_UNIT.id
 
