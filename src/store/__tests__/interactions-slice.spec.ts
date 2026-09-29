@@ -74,7 +74,10 @@ describe('links slice', () => {
         expect([a.label, b.label, c.label]).toEqual(['A', 'B', 'C'])
         expect(a.members).toEqual({ 'map-1': both })
         expect(b.members).toEqual({})
-        expect(c.members).toEqual({ 'map-1': both })
+        /* A map click carries no period: the map only follows it */
+        expect(c.members).toEqual({
+            'map-1': { send: false, receive: true },
+        })
     })
 
     it('keeps a view in one channel per dimension', () => {

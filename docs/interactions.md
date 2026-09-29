@@ -306,6 +306,7 @@ Three layers. Most users never go past the first.
     - Picking a channel moves the view into it; "none" takes it out.
     - A dimension the view can't handle says why.
 - A selector's card only has the channel choice.
+- The settings tab's Links section is built already, with the same content and words: per dimension, a channel select, labelled with the dimension and prefixed "Channel" ("A · North", "New channel", "None"), "Set the value by clicking" (→) and "Follow the value" (←). Unticking both takes the view out. Link mode will show the same card on the grid.
 
 ### 5.4 Where the wiring is set (no separate tab)
 
@@ -419,7 +420,7 @@ In the browser, with the plugins served locally:
 
 1. **Grid prerequisites** (done in the grid milestone): view kinds (plugin, selector or text), view limits per kind, and a minimum and preferred size per view type ([workspace-grid.md](workspace-grid.md#2-view-kinds-and-limits)).
 2. **On the fake plugins of [demo-mode.md](demo-mode.md)** (`proposed` profile, plan step 3), for the first demos: channels, `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, click senders through `onDataClick` and sender highlight, header badges, and the defaults of [§5.1](#51-zero-configuration-by-default) (views send, new views join). No link mode yet: the defaults wire the preset workspace. **Done** ([history.md §5](history.md#5-in-progress-demo-mode-plan-step-3), item 4). As built, and to revisit with link mode:
-    - members join both ways, and the defaults are fixed: the workspace settings of §5.1 and the `settings` part of the state come with link mode;
+    - the defaults are fixed: the workspace settings of §5.1 and the `settings` part of the state come with link mode. The Links section of §5.4 came first, though ([history.md §5](history.md#5-in-progress-demo-mode-plan-step-3), item 6): a view's channel per dimension, "Set the value by clicking" and "Follow the value"; a selector's channel. A view taken out of a dimension is remembered (`detached`), so the defaults leave it out;
     - a channel's color comes from its letter (a fixed palette), so the state holds no color;
     - the state keeps who set the value (`setBy`): that view isn't rewritten, and highlights the value;
     - the badge menu that clears a value, the outline of a channel's members on hover, and the pulse and announcement on a change are not built yet.

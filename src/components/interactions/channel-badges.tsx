@@ -8,11 +8,18 @@ import { channelColorStyle } from './channel-colors'
 import { getChannelName, getChannelValueText } from './channel-names'
 import classes from './styles/channel-badges.module.css'
 
-/* Views join channels both ways until link mode can change that */
-const getRoleText = (channel: Channel, viewId: string): string =>
-    channel.selectorViewId === viewId
-        ? i18n.t('Sets the value')
-        : i18n.t('Sends clicks and follows the value')
+const getRoleText = (channel: Channel, viewId: string): string => {
+    if (channel.selectorViewId === viewId) {
+        return i18n.t('Sets the value')
+    }
+    const { send, receive } = channel.members[viewId]
+    if (send && receive) {
+        return i18n.t('Sets the value by clicking, and follows it')
+    }
+    return send
+        ? i18n.t('Sets the value by clicking')
+        : i18n.t('Follows the value')
+}
 
 /* A channel's letter on its color (never the color alone), with → when
  * the view sends to it and ← when it follows it */

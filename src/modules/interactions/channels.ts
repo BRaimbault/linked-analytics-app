@@ -1,6 +1,6 @@
 import type { IncomingLinks, LinkItem } from '@modules/interactions/apply-links'
 import type { DataClick, Highlight } from '@modules/plugins/contract'
-import type { ViewType } from '@modules/workspace/view-types'
+import { isPluginViewType, type ViewType } from '@modules/workspace/view-types'
 
 /* A channel is one dimension with one shared value, and the views that
  * belong to it (docs/interactions.md §4): senders set the value with their
@@ -30,10 +30,14 @@ export const SELECTOR_DIMENSIONS: Partial<Record<ViewType, LinkDimension>> = {
     'period-selector': 'pe',
 }
 
+/* Maps and visualizations, and the selectors that drive a channel */
+export const canLink = (type: ViewType): boolean =>
+    isPluginViewType(type) || SELECTOR_DIMENSIONS[type] !== undefined
+
 const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 /* The first letter no channel has; a workspace never holds 26 channels
- * (a channel per selector, and one per dimension without one) */
+ * (at most one per selector, and one per plugin view and dimension) */
 export const getNextChannelLabel = (channels: Channel[]): string =>
     [...LABELS].find((label) =>
         channels.every((channel) => channel.label !== label)

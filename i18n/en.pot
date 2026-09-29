@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T07:50:39.085Z\n"
-"PO-Revision-Date: 2026-09-29T07:50:39.085Z\n"
+"POT-Creation-Date: 2026-09-29T08:39:20.851Z\n"
+"PO-Revision-Date: 2026-09-29T08:39:20.851Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -41,8 +41,14 @@ msgstr "No data to show"
 msgid "Sets the value"
 msgstr "Sets the value"
 
-msgid "Sends clicks and follows the value"
-msgstr "Sends clicks and follows the value"
+msgid "Sets the value by clicking, and follows it"
+msgstr "Sets the value by clicking, and follows it"
+
+msgid "Sets the value by clicking"
+msgstr "Sets the value by clicking"
+
+msgid "Follows the value"
+msgstr "Follows the value"
 
 msgid "Org unit"
 msgstr "Org unit"
@@ -55,6 +61,39 @@ msgstr "{{dimension}} {{label}}"
 
 msgid "Nothing selected"
 msgstr "Nothing selected"
+
+msgid "{{label}} · {{value}}"
+msgstr "{{label}} · {{value}}"
+
+msgid "A click on a map carries no period."
+msgstr "A click on a map carries no period."
+
+msgid "Channel"
+msgstr "Channel"
+
+msgid "New channel"
+msgstr "New channel"
+
+msgid "None"
+msgstr "None"
+
+msgid "Set the value by clicking"
+msgstr "Set the value by clicking"
+
+msgid "Follow the value"
+msgstr "Follow the value"
+
+msgid "A selector always sets the value of its channel."
+msgstr "A selector always sets the value of its channel."
+
+msgid "Set the value by picking"
+msgstr "Set the value by picking"
+
+msgid "A selector always shows the value of its channel."
+msgstr "A selector always shows the value of its channel."
+
+msgid "Links"
+msgstr "Links"
 
 msgid "{{title}} added"
 msgstr "{{title}} added"

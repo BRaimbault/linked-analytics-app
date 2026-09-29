@@ -92,18 +92,26 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
                             {preset.name()}
                         </h2>
                         <div className={classes.settingControl}>
+                            {/* Named like "Even out view sizes" */}
                             <Button
                                 small
                                 secondary
                                 icon={<IconSync16 />}
+                                id="workspace-reset-to-preset"
+                                aria-label={preset.resetLabel()}
                                 dataTest="reset-to-preset"
                                 onClick={() =>
                                     workspaceApi &&
                                     resetToPreset(workspaceApi, preset.load)
                                 }
+                            />
+                            <label
+                                htmlFor="workspace-reset-to-preset"
+                                className={classes.settingLabel}
+                                aria-hidden="true"
                             >
                                 {preset.resetLabel()}
-                            </Button>
+                            </label>
                         </div>
                     </section>
                 )}

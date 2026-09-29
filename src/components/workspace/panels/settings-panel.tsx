@@ -1,8 +1,10 @@
+import { LinksSection } from '@components/interactions/links-section'
 import { usePluginSources } from '@components/plugins/plugin-sources'
 import type { ViewSettingsPanelParams } from '@components/workspace/controller/panels'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import i18n from '@dhis2/d2-i18n'
 import { useAppSelector } from '@hooks'
+import { canLink } from '@modules/interactions/channels'
 import {
     getViewTitle,
     isPluginViewType,
@@ -72,9 +74,13 @@ export const SettingsPanel: FC<
             ) : (
                 <p className={classes.toolHint}>{hint()}</p>
             )}
-            <p className={classes.toolHint}>
-                {i18n.t('Links to other views will be set here.')}
-            </p>
+            {canLink(view.type) ? (
+                <LinksSection viewId={view.id} type={view.type} />
+            ) : (
+                <p className={classes.toolHint}>
+                    {i18n.t('Links to other views will be set here.')}
+                </p>
+            )}
         </ToolPanel>
     )
 }

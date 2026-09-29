@@ -90,8 +90,8 @@ describe('linked views', () => {
         expect(feature('West').getAttribute('class')).toMatch(/dimmed/)
         expect(feature('North').getAttribute('class')).not.toMatch(/dimmed/)
         expect(badges()).toEqual([
-            'Org unit A. North. Sends clicks and follows the value',
-            'Org unit A. North. Sends clicks and follows the value',
+            'Org unit A. North. Sets the value by clicking, and follows it',
+            'Org unit A. North. Sets the value by clicking, and follows it',
         ])
     })
 
