@@ -24,6 +24,7 @@ const viewTitles = () =>
         .sort()
 
 const PRESET_TITLES = [
+    'Data 1',
     'Map 1',
     'Org unit 1',
     'Period 1',
@@ -41,7 +42,7 @@ describe('DemoWorkspace', () => {
         await waitFor(() => expect(viewTitles()).toEqual(PRESET_TITLES))
         expect(screen.getAllByTestId('fake-visualization')).toHaveLength(2)
         expect(screen.getByTestId('fake-map')).toBeInTheDocument()
-        expect(screen.getAllByTestId('selector-view')).toHaveLength(2)
+        expect(screen.getAllByTestId('selector-view')).toHaveLength(3)
     })
 
     it('brings the preset back from the Workspace tab', async () => {

@@ -1,4 +1,5 @@
 import { FakeMap } from '@components/demo/fake-map'
+import { DATA_ITEM_IDS } from '@modules/demo/data-items'
 import { DEMO_MAPS } from '@modules/demo/saved-items'
 import type { MapObject } from '@modules/visualization/analytical-object'
 import { act, fireEvent, render, screen } from '@testing-library/react'
@@ -204,6 +205,32 @@ describe('FakeMap', () => {
 
             redraw(rerender, pentaMap)
             expect(screen.queryByTestId('fake-map-lock')).toBeNull()
+        })
+
+        it('starts another data item on its own classes, as the old ones mean nothing for it', () => {
+            const ancMap: MapObject = {
+                ...malariaMap,
+                mapViews: [
+                    {
+                        ...malariaMap.mapViews[0],
+                        columns: [
+                            {
+                                dimension: 'dx',
+                                items: [{ id: DATA_ITEM_IDS.anc1 }],
+                            },
+                        ],
+                    },
+                ],
+            }
+            const { rerender } = draw(ancMap)
+            const own = labels()
+            redraw(rerender, malariaMap)
+            const malaria = labels()
+
+            expect(malaria).not.toBe(own)
+            /* Back to ANC: its classes fitted afresh, as when first drawn */
+            redraw(rerender, ancMap)
+            expect(labels()).toBe(own)
         })
     })
 

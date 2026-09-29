@@ -43,7 +43,7 @@ describe('SettingsPanel', () => {
         )
     })
 
-    it('tells a data selector that its links will come later', () => {
+    it('gives a data selector its channel in the Links section', () => {
         const { store } = renderWithStore(
             <SettingsPanel {...panelProps({ viewId: 'dx-a' })} />
         )
@@ -54,9 +54,7 @@ describe('SettingsPanel', () => {
             )
         })
 
-        expect(
-            screen.getByText('Links to other views will be set here.')
-        ).toBeInTheDocument()
+        expect(screen.getByTestId('links-selector')).toHaveTextContent('Data')
     })
 
     it.each([

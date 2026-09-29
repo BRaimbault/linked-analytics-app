@@ -1,10 +1,13 @@
 import { buildDemoMapLayer, type ClassRange } from '@modules/demo/map-layer'
-import type { MapView } from '@modules/visualization/analytical-object'
+import {
+    getDimensionItemIds,
+    type MapView,
+} from '@modules/visualization/analytical-object'
 import { useMemo, useState } from 'react'
 
 type LegendLock = {
-    /* The saved map whose classes are kept */
-    mapId: string | undefined
+    /* The saved map and data item whose classes are kept */
+    key: string
     range: ClassRange | null
     isLocked: boolean
 }
@@ -23,14 +26,19 @@ export const useLegendLock = (
         [thematic]
     )
     const fittedRange = fitted?.dataRange ?? null
-    const [lock, setLock] = useState<LegendLock>({
+    const key = JSON.stringify([
         mapId,
+        thematic && getDimensionItemIds(thematic, 'dx')[0],
+    ])
+    const [lock, setLock] = useState<LegendLock>({
+        key,
         range: fittedRange,
         isLocked: true,
     })
-    /* Another saved map starts locked on its own classes */
-    if (lock.mapId !== mapId) {
-        setLock({ mapId, range: fittedRange, isLocked: true })
+    /* Another saved map, or another data item, starts locked on its own
+     * classes: the old ones mean nothing for it */
+    if (lock.key !== key) {
+        setLock({ key, range: fittedRange, isLocked: true })
     }
 
     const lockedRange = lock.isLocked ? lock.range : null

@@ -139,6 +139,50 @@ describe('linked views', () => {
         )
     })
 
+    it('shows the data item picked in a data selector, where a view can', () => {
+        mountWorkspace({ demo: true })
+        clickTile('map')
+        clickTile('visualization')
+        clickTile('data-selector')
+        openSavedItem('Map 1', 'Malaria cases by district')
+        openSavedItem('Visualization 1', 'ANC visits, last 12 months')
+        const chartSeries = () =>
+            cy
+                .get('[data-test="fake-legend-series"]')
+                .then((series) =>
+                    [...series].map(({ textContent }) => textContent)
+                )
+        const bothAnc = ['ANC 1st visit', 'ANC 4th or more visits']
+
+        /* The map takes the item, with automatic classes as before, fitted
+         * to the new item's values; the chart, which compares two others,
+         * stays as it is */
+        cy.get('[data-test="fake-map-legend"] li')
+            .first()
+            .invoke('text')
+            .then((malariaClasses) => {
+                pickSelectorValue(0, 'Penta 3 coverage <1y')
+                cy.get('[data-test="fake-map"]').should(
+                    'contain.text',
+                    'Penta 3 coverage <1y'
+                )
+                cy.get('[data-test="fake-map-legend"] li')
+                    .first()
+                    .should('not.have.text', malariaClasses)
+            })
+        cy.get('[data-test="fake-map-lock"]').should('exist')
+        chartSeries().should('deep.equal', bothAnc)
+
+        /* One of the chart's two: it narrows to it */
+        pickSelectorValue(0, 'ANC 1st visit')
+        chartSeries().should('deep.equal', ['ANC 1st visit'])
+        cy.get('[data-test="fake-map"]').should('contain.text', 'ANC 1st visit')
+
+        /* An item it doesn't have: it shows its own two again */
+        pickSelectorValue(0, 'Malaria cases confirmed')
+        chartSeries().should('deep.equal', bothAnc)
+    })
+
     it('lets the selector set the value for both views', () => {
         setUpLinkedViews({ selector: true })
         cy.get('[data-test="selector-view"]')

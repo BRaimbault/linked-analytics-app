@@ -1,3 +1,4 @@
+import { DATA_ITEMS } from '@modules/demo/data-items'
 import {
     getChildren,
     getOrgUnit,
@@ -9,7 +10,8 @@ import type { LinkDimension } from '@modules/interactions/channels'
 
 /* The short fixed lists the demo's selectors offer: the country and its
  * districts; the years and quarters from 2025, latest first (the data
- * starts in September 2024, so 2024's periods would be partial) */
+ * starts in September 2024, so 2024's periods would be partial); every
+ * data item */
 const orgUnitItem = (id: string): LinkItem => {
     const { name, path } = getOrgUnit(id) as { name: string; path: string }
     return { id, name, path }
@@ -29,4 +31,5 @@ export const DEMO_SELECTOR_ITEMS: Record<LinkDimension, LinkItem[]> = {
         ...getChildren(ROOT_ORG_UNIT_ID).map(({ id }) => orgUnitItem(id)),
     ],
     pe: periodItems,
+    dx: DATA_ITEMS.map(({ id, name }) => ({ id, name })),
 }

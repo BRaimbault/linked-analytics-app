@@ -1,4 +1,5 @@
 import type { PluginSources } from '@components/plugins/plugin-sources'
+import { getDataItem } from '@modules/demo/data-items'
 import { getOrgUnit, ORG_UNIT_LEVELS } from '@modules/demo/org-units'
 import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
 import { DEMO_SELECTOR_ITEMS } from '@modules/demo/selector-items'
@@ -21,4 +22,5 @@ export const DEMO_PLUGIN_SOURCES: PluginSources = {
     selectorItems: DEMO_SELECTOR_ITEMS,
     orgUnitLevelCount: ORG_UNIT_LEVELS.length,
     getOrgUnitName: (id) => getOrgUnit(id)?.name,
+    getLegendSetId: (id) => getDataItem(id)?.legendSetId,
 }

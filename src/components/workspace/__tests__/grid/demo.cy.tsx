@@ -13,8 +13,9 @@ describe('demo plugins', () => {
         mountWorkspace({ demo: true, preset: true })
 
         expectLayout({
-            'Period 1': { x: 0, y: 0, w: 50 },
-            'Org unit 1': { x: 50, y: 0, w: 50 },
+            'Period 1': { x: 0, y: 0, w: 33.3 },
+            'Org unit 1': { x: 33.3, y: 0, w: 33.3 },
+            'Data 1': { x: 66.7, y: 0, w: 33.3 },
             'Visualization 1': { x: 0, w: 50 },
             'Visualization 2': { x: 0, w: 50 },
             'Map 1': { x: 50, w: 50 },

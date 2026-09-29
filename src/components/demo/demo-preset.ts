@@ -15,13 +15,15 @@ const [, malariaByDistrict] = DEMO_MAPS
  * and the selectors in a bar across the top. Every view joins the
  * selectors' channels. A district clicked on the map filters the chart
  * and the table; a month clicked on the chart sets the map's period, and
- * the table's quarter. */
+ * the table's quarter. A data item picked shows on the map and the table,
+ * and narrows the chart when it's one of the chart's two. */
 const DEMO_VIEWS: { type: ViewType; object?: PluginObject }[] = [
     { type: 'visualization', object: ancVisits },
     { type: 'map', object: malariaByDistrict },
     { type: 'visualization', object: pentaByChiefdom },
     { type: 'period-selector' },
     { type: 'org-unit-selector' },
+    { type: 'data-selector' },
 ]
 
 const loadDemoViews = (api: DockviewApi): void => {

@@ -21,12 +21,17 @@ export const PluginPanel: FC<{
     type: PluginViewType
     object: PluginObject
 }> = ({ viewId, type, object }) => {
-    const { orgUnitLevelCount } = usePluginSources()
+    const { orgUnitLevelCount, getLegendSetId } = usePluginSources()
     const { incoming, orgUnitDepth, highlight, onDataClick } =
         useViewLinks(viewId)
     const linkedObject = useMemo(
-        () => applyLinks(object, incoming, { orgUnitLevelCount, orgUnitDepth }),
-        [object, incoming, orgUnitLevelCount, orgUnitDepth]
+        () =>
+            applyLinks(object, incoming, {
+                orgUnitLevelCount,
+                orgUnitDepth,
+                getLegendSetId,
+            }),
+        [object, incoming, orgUnitLevelCount, orgUnitDepth, getLegendSetId]
     )
 
     const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null)

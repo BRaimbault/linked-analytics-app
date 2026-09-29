@@ -316,3 +316,11 @@ All five items of the first demo are done. Left for plan step 3: share the demo 
     - The fake charts' legend series are clickable, as the axis labels: a line per district sends the district. The pivot table comes last among the saved visualizations.
     - Decided after the pass ([interactions.md §8](interactions.md#8-decisions-and-open-questions)): a map keeps its zoom when a link or a drill rewrites it (a drilled district's chiefdoms may sit in a corner), and no Shift-click ranges for now.
     - Tests: `drills.spec.ts`, `interactions-drills.spec.ts`, `drilling.spec.tsx`, `use-drill-actions.spec.tsx`, the fakes' right-clicks, and a Cypress scenario for the menu at the pointer.
+
+- [x] 8. **Data channels and the data selector** (pulled forward from [interactions.md §7](interactions.md#7-order-of-work), item 7, on the fakes).
+    - `dx` is a channel dimension beside `ou` and `pe`, and the data selector drives one, with the demo's four data items as its list. The preset gets one in its bar.
+    - Views follow a data channel by default and don't send to it ([interactions.md, Data](interactions.md#data-dx)): a click never starts a data channel, and a view's Links turn sending on. The click's point holds only what the view sends, so a series' data item is no part of a selection that doesn't set data.
+    - `applyLinks` replaces a view's one data item (a map layer takes the first picked), narrows a view comparing several to those of its own picked, and leaves it otherwise. A map layer with a legend set takes the new item's, or automatic classes; its legend lock starts again for the new item. The plugin sources give the legend sets (`getLegendSetId`).
+    - Every view with a settings tab now has a Links section, so its "will be set here" fallback went.
+    - Not in the demo: the compatibility check (the demo's items are all aggregate numbers) and the reset of DV's per-item options (the demo's objects have none).
+    - Tests: the `dx` cases of `apply-links.spec.ts`, the data channel in `interactions-slice.spec.ts`, the lock's reset in `fake-map.spec.tsx`, and a Cypress scenario for the selector on a map and a chart.

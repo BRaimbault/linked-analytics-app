@@ -73,19 +73,21 @@ Only the Maps plugin can look up EE image ids, through its EE worker. So the hos
 
 A `dx` link means "show this data item instead". Unlike `ou` and `pe`, the data item is usually what a view is _about_, so the defaults are cautious.
 
-- **Sending is off by default**, even when "Views send clicks" is on. Otherwise a click on a district would also push the map's indicator to every receiver. It can be turned on per view in link mode.
+- **Sending is off by default**, even when "Views send clicks" is on. Otherwise a click on a district would also push the map's indicator to every receiver. It can be turned on per view in link mode (in the demo, the view's Links section).
     - A DV series or pivot cell carries its `dx`.
     - A map carries its thematic layer's `dx`.
-- **Receiving, by view:**
-    - One data item (a thematic layer, a single-indicator chart): it is **replaced**.
-    - Several data items (a chart comparing ANC 1 and ANC 4): not by default. If turned on, the view **keeps only the clicked item** when it is one of its own, and stays as it is otherwise.
+    - So a click never starts a data channel on its own: one starts with a data selector, or with "New channel" in a view's Links.
+- **Receiving is on by default, and the rewrite is cautious** (`applyLinks`):
+    - One data item (a thematic layer, a single-indicator chart): it is **replaced**. A thematic layer takes the first item picked.
+    - Several data items (a chart comparing ANC 1 and ANC 4): the view **keeps only the picked items that are its own**, and stays as it is otherwise. Following by default is safe, as it only narrows the view; a view can still stop following in its Links.
+    - A view without a data item gets none.
     - A map with several thematic layers: not in the first version ([map-layers.md](map-layers.md)).
 - **Compatibility is checked before applying.** When the check fails, the view stays as it is and shows "Can't show {item} here".
     - Disaggregation: a `co` dimension, or a category dimension (e.g. Sex), on the receiver only works with data elements whose category combo has it. An indicator or program indicator breaks it.
     - Value type: text and boolean items can't be shown on a thematic map or aggregated in a chart.
     - This needs the new item's metadata (`dimensionItemType`, `valueType`, `categoryCombo`, `legendSet`). Look up the exact endpoints with the `dhis2-api-lookup` skill when implementing.
 - **Settings tied to the old item must be reset:**
-    - Map thematic layer: `legendSet`. Use the new item's legend set when the layer used "legend from data item", otherwise automatic classes.
+    - Map thematic layer: `legendSet`. Use the new item's legend set when the layer used "legend from data item", otherwise automatic classes. The demo takes a layer with a legend set as using its item's, and looks the new item's up through the plugin sources (`getLegendSetId`); the real app gets it with the item's metadata, which the compatibility check needs anyway. The legend lock starts again for the new item, on its own classes.
     - DV: per-series options (the `series` option keyed by `dx` id: axis, chart type), `targetLineValue`, `baseLineValue`, fixed axis ranges, and the visualization's legend set.
     - Titles: see [Titles after a rewrite](#titles-after-a-rewrite-all-dimensions).
 - **The data selector is a short list, not the full picker.** In the selector's settings tab, the author chooses candidate items with `DataDimension` (e.g. ANC 1, ANC 4, Penta 3). The selector then shows them as a simple select: a "parameter" in Tableau's sense.
@@ -432,6 +434,7 @@ onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 8. **A lock for automatic legends.** A saved thematic layer keeps how to classify (`method`, `classes`, `colorScale`), not the class breaks: `getAutomaticLegendItems` (`thematicLoader.js`) recomputes them on every load. Linked, a map reloads at every step (a district, a period, a drill, play mode), so its colors change meaning from one step to the next, and can't be compared across them. A timeline map avoids this by classifying all its periods together; links cut the steps into separate loads. Only a legend set gives fixed classes, and it's metadata an administrator creates, not something a user can do while exploring.
     - **Proposed**: automatic classes locked by default on those of the map as saved, kept in the plugin's state (as the zoom) through rewrites; a button to fit them to the data shown, which stays locked on the new ones (e.g. after a drill from districts to chiefdoms); and a toggle to unlock, after which they follow the data, as today. Separate controls rather than a double-click, so they have tooltips and work from the keyboard and on touch. Nothing to lock with a legend set.
     - The first classes should come from the map as saved: a map that joins a workspace whose channels hold a value loads linked, and would need one more request for its own scope.
+    - Another data item (from a data channel) starts locked again, on its own classes: the old ones mean nothing for it.
     - Other tools: most offer fitted-to-the-view or author-fixed ranges (Power BI, Tableau, Datawrapper); ArcGIS and Kibana compute them over the whole dataset rather than the view; QGIS classifies only on demand, and Tableau (2025.2) lets ranges follow selections. The design above is the MSF Dashboard's colorlock (one click refits, a double-click toggles).
     - How it looks, and whether it's a plugin option or a prop the app can set (e.g. locked while play mode runs), is the maintainers' call. The demo's fake map shows it: the padlock and "fit" buttons over its legend.
 9. Unit tests for the payload builder, `didViewsChange` and the EE period resolution.
@@ -471,7 +474,7 @@ In the browser, with the plugins served locally:
 4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.
 5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
 6. Period selector play mode (on a fixed delay with the real plugins until the PRs add `onLoadingComplete`).
-7. `dx` channels and the data selector; the full `@dhis2/analytics` pickers in the selectors.
+7. `dx` channels and the data selector; the full `@dhis2/analytics` pickers in the selectors. On the fake plugins, `dx` channels and the data selector (a short fixed list) are **done** ([history.md §5](history.md#5-in-progress-demo-mode-plan-step-3), item 8); the compatibility check, the reset of DV's per-item options, and the real plugins remain.
 8. LL receivers by remounting, and EV `relativePeriodDate` receivers.
 9. Highlight mode for receivers, hover sync, multi-select, drag to connect, templates.
 

@@ -5,7 +5,7 @@ import {
     type OrgUnitDepth,
 } from '@modules/interactions/apply-links'
 import type { DataClick, Highlight } from '@modules/plugins/contract'
-import { isPluginViewType, type ViewType } from '@modules/workspace/view-types'
+import type { ViewType } from '@modules/workspace/view-types'
 
 /* A channel is one dimension with one shared value, and the views that
  * belong to it (docs/interactions.md §4): senders set the value with their
@@ -13,9 +13,9 @@ import { isPluginViewType, type ViewType } from '@modules/workspace/view-types'
  * and sets it. Channels are named by a letter, which the view headers show
  * with the channel's color. */
 
-export type LinkDimension = 'ou' | 'pe'
+export type LinkDimension = 'ou' | 'pe' | 'dx'
 
-export const LINK_DIMENSIONS: readonly LinkDimension[] = ['ou', 'pe']
+export const LINK_DIMENSIONS: readonly LinkDimension[] = ['ou', 'pe', 'dx']
 
 export type ChannelMember = {
     send: boolean
@@ -66,11 +66,8 @@ export const setValue = (channel: Channel, value: LinkItem[]) => {
 export const SELECTOR_DIMENSIONS: Partial<Record<ViewType, LinkDimension>> = {
     'org-unit-selector': 'ou',
     'period-selector': 'pe',
+    'data-selector': 'dx',
 }
-
-/* Maps and visualizations, and the selectors that drive a channel */
-export const canLink = (type: ViewType): boolean =>
-    isPluginViewType(type) || SELECTOR_DIMENSIONS[type] !== undefined
 
 const LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -152,11 +149,15 @@ export const getClickedItems = (
         const { id, name } = click.pe
         items.pe = { id, name }
     }
+    if (click.dx) {
+        const { id, name } = click.dx
+        items.dx = { id, name }
+    }
     return items
 }
 
 /* Which point was clicked: two points are the same when every dimension
  * they carry is, the data item included (two series at the same place are
- * two points, although only their org unit and period link) */
+ * two points, although most views link only their org unit and period) */
 export const getClickKey = ({ ou, pe, dx }: DataClick): string =>
     JSON.stringify([ou?.id, pe?.id, dx?.id])

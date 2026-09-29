@@ -23,6 +23,8 @@ export type PluginSources = {
     /* An org unit's name from its id, for one a click only names in its
      * path (a parent to drill up to) */
     getOrgUnitName: (id: string) => string | undefined
+    /* A data item's own legend set, which a map layer takes with it */
+    getLegendSetId: (dataItemId: string) => string | undefined
 }
 
 export const NO_PLUGIN_SOURCES: PluginSources = {
@@ -31,6 +33,7 @@ export const NO_PLUGIN_SOURCES: PluginSources = {
     selectorItems: {},
     orgUnitLevelCount: 0,
     getOrgUnitName: () => undefined,
+    getLegendSetId: () => undefined,
 }
 
 const PluginSourcesContext = createContext<PluginSources>(NO_PLUGIN_SOURCES)

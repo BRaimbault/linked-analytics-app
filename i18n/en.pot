@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T14:42:17.745Z\n"
-"PO-Revision-Date: 2026-09-29T14:42:17.745Z\n"
+"POT-Creation-Date: 2026-09-29T16:03:21.584Z\n"
+"PO-Revision-Date: 2026-09-29T16:03:21.585Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -73,6 +73,9 @@ msgstr "Org unit"
 
 msgid "Period"
 msgstr "Period"
+
+msgid "Data"
+msgstr "Data"
 
 msgid "{{dimension}} {{label}}"
 msgstr "{{dimension}} {{label}}"
@@ -194,9 +197,6 @@ msgstr "Choosing the org units this selector offers will happen here."
 
 msgid "Choosing the data items this selector offers will happen here."
 msgstr "Choosing the data items this selector offers will happen here."
-
-msgid "Links to other views will be set here."
-msgstr "Links to other views will be set here."
 
 msgid "Write a title or a note"
 msgstr "Write a title or a note"
@@ -345,9 +345,6 @@ msgstr ""
 
 msgid "A workspace holds up to {{max}} org unit selectors"
 msgstr "A workspace holds up to {{max}} org unit selectors"
-
-msgid "Data"
-msgstr "Data"
 
 msgid "Data {{number}}"
 msgstr "Data {{number}}"

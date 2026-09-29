@@ -1,11 +1,12 @@
 import { getPeriodType, toPeriodType } from '@modules/interactions/periods'
 import type { PluginObject } from '@modules/plugins/contract'
-import type {
-    Dimension,
-    DimensionItem,
-    MapObject,
-    MapView,
-    VisualizationObject,
+import {
+    findDimension,
+    type Dimension,
+    type DimensionItem,
+    type MapObject,
+    type MapView,
+    type VisualizationObject,
 } from '@modules/visualization/analytical-object'
 
 /* Rewrites a view's object with the values it receives, as the dashboard
@@ -16,12 +17,15 @@ import type {
  *   sub-x2-units; in a filter, the selection itself (its sub-units would
  *   add up to the same);
  * - pe in a filter is the selection; on an axis, the periods of the
- *   axis's own type within the selection, or the one containing it.
- * A dimension the object lacks is added to its filters. */
+ *   axis's own type within the selection, or the one containing it;
+ * - dx replaces a view's one data item (a map layer takes the first); a
+ *   view comparing several keeps those of its own that were picked, and
+ *   stays as it is when none were.
+ * An org unit or period the object lacks is added to its filters. */
 
 export type LinkItem = DimensionItem & { path?: string }
 
-export type IncomingLinks = Partial<Record<'ou' | 'pe', LinkItem[]>>
+export type IncomingLinks = Partial<Record<'ou' | 'pe' | 'dx', LinkItem[]>>
 
 /* How many levels below the selection a view shows, as the org unit
  * picker's "sub-units" and "sub-x2-units" */
@@ -33,6 +37,8 @@ export type ApplyLinksOptions = {
     /* The deepest org unit level: nothing is shown below it */
     orgUnitLevelCount: number
     orgUnitDepth: OrgUnitDepth
+    /* A data item's own legend set, which a map layer takes with it */
+    getLegendSetId: (dataItemId: string) => string | undefined
 }
 
 type LaidOut = Pick<VisualizationObject, 'columns' | 'rows' | 'filters'>
@@ -81,6 +87,24 @@ const periodsFor = (
     return [...new Set(ids)].map((id) => ({ id }))
 }
 
+/* The data items a view shows for the ones picked, or null to keep its
+ * own: a view without data items is left as it is too */
+const dataItemsFor = (
+    items: LinkItem[],
+    current: Dimension | undefined
+): DimensionItem[] | null => {
+    if (!current) {
+        return null
+    }
+    if (current.items.length <= 1) {
+        return items.map(({ id, name }) => ({ id, name }))
+    }
+    const kept = current.items.filter(({ id }) =>
+        items.some((item) => item.id === id)
+    )
+    return kept.length ? kept : null
+}
+
 const replaceItems = <T extends LaidOut>(
     object: T,
     dimension: string,
@@ -126,7 +150,43 @@ const rewrite = <T extends LaidOut>(
             : undefined
         result = replaceItems(result, 'pe', periodsFor(incoming.pe, current))
     }
+    if (incoming.dx?.length) {
+        const dataItems = dataItemsFor(incoming.dx, findDimension(object, 'dx'))
+        if (dataItems) {
+            result = replaceItems(result, 'dx', dataItems)
+        }
+    }
     return result
+}
+
+/* A layer's legend set belongs to its data item: with another item, the
+ * layer takes that item's legend set, or automatic classes without one */
+const withLegendOf = (
+    view: MapView,
+    dataItemId: string,
+    { getLegendSetId }: ApplyLinksOptions
+): MapView => {
+    const { legendSet, ...rest } = view
+    const legendSetId = legendSet && getLegendSetId(dataItemId)
+    return legendSetId ? { ...rest, legendSet: { id: legendSetId } } : rest
+}
+
+/* A thematic layer shows one data item */
+const rewriteThematicLayer = (
+    view: MapView,
+    incoming: IncomingLinks,
+    options: ApplyLinksOptions
+): MapView => {
+    const [dataItem] = incoming.dx ?? []
+    const currentId = findDimension(view, 'dx')?.items[0]?.id
+    const rewritten = rewrite(
+        view,
+        { ...incoming, dx: dataItem && [dataItem] },
+        options
+    )
+    return dataItem && currentId && dataItem.id !== currentId
+        ? withLegendOf(rewritten, dataItem.id, options)
+        : rewritten
 }
 
 const isMap = (object: PluginObject): object is MapObject =>
@@ -137,7 +197,7 @@ export const applyLinks = <T extends PluginObject>(
     incoming: IncomingLinks,
     options: ApplyLinksOptions
 ): T => {
-    if (!incoming.ou?.length && !incoming.pe?.length) {
+    if (!incoming.ou?.length && !incoming.pe?.length && !incoming.dx?.length) {
         return object
     }
     if (isMap(object)) {
@@ -145,7 +205,7 @@ export const applyLinks = <T extends PluginObject>(
             ...object,
             mapViews: object.mapViews.map((view: MapView) =>
                 view.layer === 'thematic'
-                    ? rewrite(view, incoming, options)
+                    ? rewriteThematicLayer(view, incoming, options)
                     : view
             ),
         }

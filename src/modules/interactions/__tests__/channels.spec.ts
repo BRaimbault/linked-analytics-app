@@ -82,13 +82,16 @@ describe('channels', () => {
         expect(getHighlight(channels, 'vis-1')).toBeUndefined()
     })
 
-    it('takes the org unit and period of a click, not its data', () => {
+    it('takes the org unit, period and data item of a click', () => {
         expect(
             getClickedItems({
                 ou: { id: 'DemoNorth01', path: '/x', level: 'DemoLevel02' },
                 dx: { id: 'DemoMalar01' },
             })
-        ).toEqual({ ou: { id: 'DemoNorth01', path: '/x' } })
+        ).toEqual({
+            ou: { id: 'DemoNorth01', path: '/x' },
+            dx: { id: 'DemoMalar01' },
+        })
         expect(getClickedItems({ pe: { id: '202601', name: 'Jan' } })).toEqual({
             pe: { id: '202601', name: 'Jan' },
         })

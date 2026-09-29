@@ -36,8 +36,8 @@ export type ViewLink = { viewId: string; dimension: LinkDimension }
 
 /* What a view's clicks can carry: a map click has no period */
 const SENT_DIMENSIONS: Record<PluginViewType, readonly LinkDimension[]> = {
-    visualization: ['ou', 'pe'],
-    map: ['ou'],
+    visualization: ['ou', 'pe', 'dx'],
+    map: ['ou', 'dx'],
 }
 
 export const canSend = (
@@ -45,10 +45,18 @@ export const canSend = (
     dimension: LinkDimension
 ): boolean => SENT_DIMENSIONS[type].includes(dimension)
 
+/* A view is usually about its data item, so its clicks don't set one
+ * unless asked: a district clicked on a map would push its indicator to
+ * every view (docs/interactions.md, Data) */
+export const sendsByDefault = (
+    type: PluginViewType,
+    dimension: LinkDimension
+): boolean => canSend(type, dimension) && dimension !== 'dx'
+
 const defaultMember = (
     { type }: LinkableView,
     dimension: LinkDimension
-): ChannelMember => ({ send: canSend(type, dimension), receive: true })
+): ChannelMember => ({ send: sendsByDefault(type, dimension), receive: true })
 
 const isDetached = (
     state: InteractionsState,

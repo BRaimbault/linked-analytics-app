@@ -4,6 +4,7 @@ import type { Channel, LinkDimension } from '@modules/interactions/channels'
 const DIMENSION_NAMES: Record<LinkDimension, () => string> = {
     ou: () => i18n.t('Org unit'),
     pe: () => i18n.t('Period'),
+    dx: () => i18n.t('Data'),
 }
 
 export const getDimensionName = (dimension: LinkDimension): string =>

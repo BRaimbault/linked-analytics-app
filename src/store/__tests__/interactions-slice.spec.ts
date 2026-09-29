@@ -4,6 +4,7 @@ import {
     interactionsSlice,
     selectChannels,
     selectorValueChanged,
+    viewRolesChanged,
 } from '@store/interactions-slice'
 import { viewAdded, viewRemoved } from '@store/workspace-slice'
 import { describe, expect, it } from 'vitest'
@@ -90,12 +91,62 @@ describe('links slice', () => {
         expect(store.channels()[1].members).toEqual({})
     })
 
-    it('gives the views, text and data selectors no channel', () => {
+    it('gives text views no channel', () => {
         const store = createTestStore()
         store.dispatch(viewAdded(text1))
-        store.dispatch(viewAdded(data1))
 
         expect(store.channels()).toEqual([])
+    })
+
+    it('creates a data channel for a data selector, which views follow without sending to it', () => {
+        const store = createTestStore()
+        store.dispatch(viewAdded(map1))
+        store.dispatch(viewAdded(vis1))
+        store.dispatch(viewAdded(data1))
+
+        expect(store.channels()).toEqual([
+            expect.objectContaining({
+                dimension: 'dx',
+                selectorViewId: 'dx-1',
+                members: {
+                    'map-1': { send: false, receive: true },
+                    'vis-1': { send: false, receive: true },
+                },
+            }),
+        ])
+    })
+
+    it('starts no data channel from a click, and sets data only for a view that sends it', () => {
+        const malaria = { id: 'DemoMalar01', name: 'Malaria cases confirmed' }
+        const clickMalaria = dataClicked({
+            viewId: 'map-1',
+            click: { ou: north, dx: malaria },
+            additive: false,
+        })
+        const store = createTestStore()
+        store.dispatch(viewAdded(map1))
+        store.dispatch(viewAdded(vis1))
+        store.dispatch(clickMalaria)
+
+        expect(store.channels().map(({ dimension }) => dimension)).toEqual([
+            'ou',
+        ])
+
+        store.dispatch(viewAdded(data1))
+        store.dispatch(clickMalaria)
+        expect(store.channels()[1].value).toEqual([])
+
+        store.dispatch(
+            viewRolesChanged({
+                viewId: 'map-1',
+                dimension: 'dx',
+                roles: { send: true, receive: true },
+            })
+        )
+        store.dispatch(clickMalaria)
+        expect(store.channels()[1]).toEqual(
+            expect.objectContaining({ value: [malaria], setBy: 'map-1' })
+        )
     })
 
     describe('clicks', () => {

@@ -1,3 +1,4 @@
+import { DATA_ITEM_IDS, getDataItem } from '@modules/demo/data-items'
 import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
 import { applyLinks } from '@modules/interactions/apply-links'
 import type {
@@ -7,7 +8,11 @@ import type {
 import { getDimensionItemIds } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
 
-const OPTIONS = { orgUnitLevelCount: 3, orgUnitDepth: 1 } as const
+const OPTIONS = {
+    orgUnitLevelCount: 3,
+    orgUnitDepth: 1,
+    getLegendSetId: (id: string) => getDataItem(id)?.legendSetId,
+} as const
 const [ancLine, malariaByDistrict, , pentaTable] = DEMO_VISUALIZATIONS
 const [pentaMap] = DEMO_MAPS
 
@@ -208,5 +213,79 @@ describe('applyLinks', () => {
         ])
         expect(getDimensionItemIds(thematic, 'pe')).toEqual(['2025'])
         expect(boundaries).toBe(map.mapViews[1])
+    })
+
+    describe('data items', () => {
+        const anc1 = { id: DATA_ITEM_IDS.anc1, name: 'ANC 1st visit' }
+        const penta3 = { id: DATA_ITEM_IDS.penta3, name: 'Penta 3' }
+        const malaria = { id: DATA_ITEM_IDS.malaria, name: 'Malaria' }
+
+        it('replaces the one data item of a view, on an axis or in a filter', () => {
+            const columns = applyLinks(
+                malariaByDistrict,
+                { dx: [penta3] },
+                OPTIONS
+            )
+            const table = applyLinks(pentaTable, { dx: [malaria] }, OPTIONS)
+
+            expect(columns.columns).toEqual([
+                { dimension: 'dx', items: [penta3] },
+            ])
+            expect(ids(table, 'dx')).toEqual([DATA_ITEM_IDS.malaria])
+        })
+
+        it('narrows a view comparing data items to those of its own picked, or leaves it', () => {
+            /* ANC visits compares ANC 1 and ANC 4 */
+            const narrowed = applyLinks(
+                ancLine,
+                { dx: [malaria, anc1] },
+                OPTIONS
+            )
+            const untouched = applyLinks(ancLine, { dx: [malaria] }, OPTIONS)
+
+            expect(ids(narrowed, 'dx')).toEqual([DATA_ITEM_IDS.anc1])
+            expect(ids(untouched, 'dx')).toEqual(ids(ancLine, 'dx'))
+        })
+
+        it('adds no data item to a view without one', () => {
+            const noData = { ...malariaByDistrict, columns: [] }
+
+            const linked = applyLinks(noData, { dx: [malaria] }, OPTIONS)
+
+            expect(ids(linked, 'dx')).toEqual([])
+        })
+
+        it('shows one data item on a map layer, with its own legend set or automatic classes', () => {
+            const [, malariaMap] = DEMO_MAPS
+            const layerOf = (map: MapObject) => map.mapViews[0]
+            const withLegend: MapObject = {
+                ...malariaMap,
+                mapViews: [
+                    { ...layerOf(malariaMap), legendSet: { id: 'Other' } },
+                ],
+            }
+
+            /* Penta 3 coverage has a legend set; malaria cases have none */
+            const toMalaria = layerOf(
+                applyLinks(pentaMap, { dx: [malaria, anc1] }, OPTIONS)
+            )
+            const toPenta = layerOf(
+                applyLinks(withLegend, { dx: [penta3] }, OPTIONS)
+            )
+            const automatic = layerOf(
+                applyLinks(malariaMap, { dx: [penta3] }, OPTIONS)
+            )
+            const same = layerOf(
+                applyLinks(pentaMap, { dx: [penta3] }, OPTIONS)
+            )
+
+            expect(getDimensionItemIds(toMalaria, 'dx')).toEqual([
+                DATA_ITEM_IDS.malaria,
+            ])
+            expect(toMalaria).not.toHaveProperty('legendSet')
+            expect(toPenta.legendSet).toEqual({ id: 'DemoLegCov1' })
+            expect(automatic).not.toHaveProperty('legendSet')
+            expect(same.legendSet).toEqual(layerOf(pentaMap).legendSet)
+        })
     })
 })

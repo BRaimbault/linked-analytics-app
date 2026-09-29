@@ -11,6 +11,7 @@ import {
 import { resetFollowersDrills } from '@modules/interactions/drills'
 import {
     createChannel,
+    sendsByDefault,
     type InteractionsState,
 } from '@modules/interactions/membership'
 import type { DataClick } from '@modules/plugins/contract'
@@ -90,24 +91,32 @@ export const applyClick = (
     viewId: string,
     { click, additive }: { click: DataClick; additive: boolean }
 ) => {
-    if (!state.linkableViews.some(({ id }) => id === viewId)) {
+    const view = state.linkableViews.find(({ id }) => id === viewId)
+    if (!view) {
         return
     }
-    const items = getClickedItems(click)
+    const clicked = getClickedItems(click)
     const targets = LINK_DIMENSIONS.flatMap((dimension): Target[] => {
-        if (!items[dimension]) {
+        if (!clicked[dimension]) {
             return []
         }
+        /* The first click starts a channel of what views send by default:
+         * a data channel starts with a data selector, or in a view's Links */
         const hasChannel = state.channels.some(
             (channel) => channel.dimension === dimension
         )
-        if (!hasChannel) {
+        if (!hasChannel && sendsByDefault(view.type, dimension)) {
             createChannel(state, dimension)
         }
         const channel = findViewChannel(state.channels, viewId, dimension)
         return channel?.members[viewId].send ? [{ dimension, channel }] : []
     })
 
+    /* The point holds what the view sends: a series' data item is no part
+     * of a selection that doesn't set data */
+    const items = Object.fromEntries(
+        targets.map(({ dimension }) => [dimension, clicked[dimension]])
+    )
     const point = { key: getClickKey(click), items }
     const points = nextPoints(
         currentPoints(state, viewId, targets),
