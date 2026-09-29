@@ -3,11 +3,35 @@ import {
     cellSize,
     clickTile,
     dragDivider,
+    expectLayout,
     getCell,
     mountWorkspace,
 } from './grid-helpers'
 
 describe('demo plugins', () => {
+    it('starts from the preset: selectors in a bar, a chart over a table beside a map', () => {
+        mountWorkspace({ demo: true, preset: true })
+
+        expectLayout({
+            'Period 1': { x: 0, y: 0, w: 50 },
+            'Org unit 1': { x: 50, y: 0, w: 50 },
+            'Visualization 1': { x: 0, w: 50 },
+            'Visualization 2': { x: 0, w: 50 },
+            'Map 1': { x: 50, w: 50 },
+        })
+        /* The bar keeps its preferred height; the rest is shared evenly */
+        cellSize('Period 1').its('height').should('be.closeTo', 120, 1)
+        cellSize('Visualization 1')
+            .its('height')
+            .then((chartHeight) =>
+                cellSize('Visualization 2')
+                    .its('height')
+                    .should('be.closeTo', chartHeight, 1)
+            )
+        cy.get('[data-test="fake-visualization"]').should('have.length', 2)
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+    })
+
     it('draws a saved visualization in its view, filling the view’s body', () => {
         mountWorkspace({ demo: true })
         clickTile('visualization')

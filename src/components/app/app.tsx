@@ -3,9 +3,23 @@ import { Workspace } from '@components/workspace/workspace'
 import i18n from '@dhis2/d2-i18n'
 import { Center, CircularLoader, CssVariables, NoticeBox } from '@dhis2/ui'
 import { useRtkQuery } from '@hooks'
+import { isDemoMode } from '@modules/demo/demo-flag'
 import type { MeDto } from '@types'
-import type { FC } from 'react'
+import { lazy, Suspense, type FC } from 'react'
 import classes from './styles/app.module.css'
+
+/* Loaded only with ?demo, so the app itself never downloads the demo */
+const DemoWorkspace = lazy(() =>
+    import('@components/demo/demo-workspace').then((module) => ({
+        default: module.DemoWorkspace,
+    }))
+)
+
+const Loader: FC = () => (
+    <Center>
+        <CircularLoader />
+    </Center>
+)
 
 const LinkedAnalytics: FC = () => {
     const { error, isLoading } = useRtkQuery<Pick<MeDto, 'id'>>({
@@ -14,11 +28,7 @@ const LinkedAnalytics: FC = () => {
     })
 
     if (isLoading) {
-        return (
-            <Center>
-                <CircularLoader />
-            </Center>
-        )
+        return <Loader />
     }
 
     if (error) {
@@ -31,7 +41,13 @@ const LinkedAnalytics: FC = () => {
 
     return (
         <div className={classes.app} data-test="app-container">
-            <Workspace />
+            {isDemoMode(window.location.search) ? (
+                <Suspense fallback={<Loader />}>
+                    <DemoWorkspace />
+                </Suspense>
+            ) : (
+                <Workspace />
+            )}
         </div>
     )
 }

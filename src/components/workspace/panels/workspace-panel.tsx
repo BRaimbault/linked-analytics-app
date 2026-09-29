@@ -1,7 +1,9 @@
 import { evenOutSizes } from '@components/workspace/controller/grid-layout'
+import { resetToPreset } from '@components/workspace/controller/preset'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
+import { useWorkspacePreset } from '@components/workspace/workspace-preset'
 import i18n from '@dhis2/d2-i18n'
-import { Button, Checkbox, IconLayoutColumns16 } from '@dhis2/ui'
+import { Button, Checkbox, IconLayoutColumns16, IconSync16 } from '@dhis2/ui'
 import { useAppDispatch, useAppSelector } from '@hooks'
 import {
     selectViewHeaders,
@@ -22,6 +24,7 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
     const canEvenOut = views.length >= 2
     const evenOutLabel = i18n.t('Even out view sizes')
     const evenOut = () => workspaceApi && evenOutSizes(workspaceApi)
+    const preset = useWorkspacePreset()
 
     return (
         <ToolPanel api={api} dataTest="workspace-panel">
@@ -77,6 +80,33 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
                         />
                     </div>
                 </section>
+                {preset && (
+                    <section
+                        className={`${classes.tileGroup} ${classes.settingGroup}`}
+                        aria-labelledby="workspace-preset-heading"
+                    >
+                        <h2
+                            id="workspace-preset-heading"
+                            className={classes.tileGroupHeading}
+                        >
+                            {preset.name()}
+                        </h2>
+                        <div className={classes.settingControl}>
+                            <Button
+                                small
+                                secondary
+                                icon={<IconSync16 />}
+                                dataTest="reset-to-preset"
+                                onClick={() =>
+                                    workspaceApi &&
+                                    resetToPreset(workspaceApi, preset.load)
+                                }
+                            >
+                                {preset.resetLabel()}
+                            </Button>
+                        </div>
+                    </section>
+                )}
             </div>
         </ToolPanel>
     )

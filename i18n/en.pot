@@ -5,11 +5,20 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T07:23:23.942Z\n"
-"PO-Revision-Date: 2026-09-29T07:23:23.943Z\n"
+"POT-Creation-Date: 2026-09-29T07:50:39.085Z\n"
+"PO-Revision-Date: 2026-09-29T07:50:39.085Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
+
+msgid "Demo data. Nothing here comes from the server."
+msgstr "Demo data. Nothing here comes from the server."
+
+msgid "Demo"
+msgstr "Demo"
+
+msgid "Reset the demo"
+msgstr "Reset the demo"
 
 msgid "No layer to show"
 msgstr "No layer to show"

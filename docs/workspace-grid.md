@@ -123,9 +123,9 @@ Checked with Chrome's touch emulation:
     - `add-view.ts`, `swap-views.ts`, `views.ts` (closing a view, focusing its tab), `settings.ts` (tools panels and settings tabs), `tools-strip.ts`;
     - `view-events.ts` (views added, removed and selected: the store, settings tabs, and bringing settings forward);
     - `drags.ts`, `tile-drag.ts` and `room.ts` (what is dragged, the palette tile in page memory, and whether it fits), `drops.ts` (the drop handlers, insert strips and empty grid), `drop-models.ts` (the size of dockview's drop targets);
-    - `minimum-size.ts` (the room the views need, for scrolling), `announcements.ts`, and `setup-workspace.ts`, which only wires dockview's events to named handlers.
+    - `minimum-size.ts` (the room the views need, for scrolling), `announcements.ts`, `preset.ts` (loading a preset into an empty grid, and resetting to it), and `setup-workspace.ts`, which only wires dockview's events to named handlers.
 - **Components** in `src/components/workspace/`:
-    - `workspace.tsx`, `workspace-api-context.tsx`, `view-type-icon.tsx`;
+    - `workspace.tsx`, `workspace-api-context.tsx`, `workspace-preset.tsx` (the views a workspace can start with, and their context for the Workspace tab), `view-type-icon.tsx`;
     - `tabs/` (the tab, the icon tab, its name tooltip and its header actions), `insert-zones/`;
     - `panels/`: the Workspace tab, the palette, settings (with `saved-item-picker`), `view-panel` (a view's body by kind), `plugin-panel` (a plugin view's body, through the plugin adapter in `components/plugins/`, rewritten with its channels' values), `selector-panel` (a selector's short list), the text view, placeholders, `ToolPanel`, the swap spacer and the empty-grid watermark;
     - shared hooks: `use-current-drag`, `use-drop-target`, `use-add-view`, `use-dockview-value`, `use-workspace-minimum-size`.
