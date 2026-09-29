@@ -17,6 +17,19 @@ export type DataClick = {
     dx?: DataClickItem
 }
 
+/* How a point was clicked. A right-click (`trigger: 'context'`) asks what
+ * can be done with the point rather than selecting it: the plugin sends
+ * where it happened, from its own top-left corner (an iframe's viewport),
+ * so the app can open its menu there. The plugin opens no menu of its own
+ * and stops the browser's. */
+export type DataClickOptions = {
+    additive: boolean
+    trigger?: 'context'
+    position?: { x: number; y: number }
+}
+
+export type OnDataClick = (click: DataClick, options: DataClickOptions) => void
+
 /* Items to restyle, without refetching */
 export type Highlight = { ou?: string[]; pe?: string[]; dx?: string[] }
 
@@ -27,7 +40,7 @@ export type PluginProps<T extends PluginObject = PluginObject> = {
     /* The size of the view's body; a plugin fills it */
     width: number
     height: number
-    onDataClick?: (click: DataClick, options: { additive: boolean }) => void
+    onDataClick?: OnDataClick
     highlight?: Highlight
     onLoadingComplete?: () => void
 }

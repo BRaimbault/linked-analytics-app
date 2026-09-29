@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T08:39:20.851Z\n"
-"PO-Revision-Date: 2026-09-29T08:39:20.851Z\n"
+"POT-Creation-Date: 2026-09-29T11:26:10.397Z\n"
+"PO-Revision-Date: 2026-09-29T11:26:10.398Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -65,6 +65,15 @@ msgstr "Nothing selected"
 msgid "{{label}} · {{value}}"
 msgstr "{{label}} · {{value}}"
 
+msgid "Selected org unit"
+msgstr "Selected org unit"
+
+msgid "Sub-units"
+msgstr "Sub-units"
+
+msgid "Sub-x2-units"
+msgstr "Sub-x2-units"
+
 msgid "A click on a map carries no period."
 msgstr "A click on a map carries no period."
 
@@ -76,6 +85,12 @@ msgstr "New channel"
 
 msgid "None"
 msgstr "None"
+
+msgid "Org units on an axis"
+msgstr "Org units on an axis"
+
+msgid "Show"
+msgstr "Show"
 
 msgid "Set the value by clicking"
 msgstr "Set the value by clicking"
@@ -94,6 +109,18 @@ msgstr "A selector always shows the value of its channel."
 
 msgid "Links"
 msgstr "Links"
+
+msgid "Drill down into {{name}}"
+msgstr "Drill down into {{name}}"
+
+msgid "Drill up to {{name}}"
+msgstr "Drill up to {{name}}"
+
+msgid "Drill up a level"
+msgstr "Drill up a level"
+
+msgid "Back to the saved item"
+msgstr "Back to the saved item"
 
 msgid "{{title}} added"
 msgstr "{{title}} added"

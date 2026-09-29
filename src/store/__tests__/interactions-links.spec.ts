@@ -1,7 +1,9 @@
+import { getOrgUnitDepth } from '@modules/interactions/channels'
 import { configureStore } from '@reduxjs/toolkit'
 import {
     dataClicked,
     interactionsSlice,
+    orgUnitDepthChanged,
     selectChannels,
     selectorChannelChanged,
     viewChannelChanged,
@@ -228,6 +230,36 @@ describe('a view’s roles', () => {
         )
 
         expect(store.memberships()).toEqual({ A: ['map-2'], B: [] })
+    })
+})
+
+describe('a view’s org unit depth', () => {
+    it('is sub-units until set, and stays with the view as it moves', () => {
+        const store = setUpTwoChannels()
+        const depthOf = (viewId: string) =>
+            getOrgUnitDepth(store.channels(), viewId)
+        expect(depthOf('map-1')).toBe(1)
+
+        store.dispatch(orgUnitDepthChanged({ viewId: 'map-1', depth: 2 }))
+        store.dispatch(move('map-1', { label: 'B' }))
+        store.dispatch(
+            viewRolesChanged({
+                viewId: 'map-1',
+                dimension: 'ou',
+                roles: { send: false, receive: true },
+            })
+        )
+
+        expect(depthOf('map-1')).toBe(2)
+    })
+
+    it('can’t be set for a view in no org unit channel', () => {
+        const store = setUpTwoChannels()
+        store.dispatch(move('map-1', 'none'))
+
+        store.dispatch(orgUnitDepthChanged({ viewId: 'map-1', depth: 0 }))
+
+        expect(getOrgUnitDepth(store.channels(), 'map-1')).toBe(1)
     })
 })
 

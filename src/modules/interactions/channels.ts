@@ -1,4 +1,9 @@
-import type { IncomingLinks, LinkItem } from '@modules/interactions/apply-links'
+import {
+    DEFAULT_ORG_UNIT_DEPTH,
+    type IncomingLinks,
+    type LinkItem,
+    type OrgUnitDepth,
+} from '@modules/interactions/apply-links'
 import type { DataClick, Highlight } from '@modules/plugins/contract'
 import { isPluginViewType, type ViewType } from '@modules/workspace/view-types'
 
@@ -12,17 +17,50 @@ export type LinkDimension = 'ou' | 'pe'
 
 export const LINK_DIMENSIONS: readonly LinkDimension[] = ['ou', 'pe']
 
-export type ChannelMember = { send: boolean; receive: boolean }
+export type ChannelMember = {
+    send: boolean
+    receive: boolean
+    /* Org unit channels only: what the view shows for the selection */
+    depth?: OrgUnitDepth
+}
 
 export type Channel = {
     label: string
     dimension: LinkDimension
     value: LinkItem[]
     /* The view that set the value: it isn't rewritten with it, but
-     * highlights it */
+     * highlights it, and keeps showing the value from before (`before`),
+     * so its own click doesn't take it back to its saved item */
     setBy: string | null
+    before: LinkItem[]
     selectorViewId: string | null
     members: Record<string, ChannelMember>
+}
+
+/* A view sets the value by a click or a drill. What the channel held
+ * before is kept for that view, unless the view had set it itself. An
+ * empty value brings the one from before back. */
+export const setValueFromView = (
+    channel: Channel,
+    viewId: string,
+    value: LinkItem[]
+) => {
+    if (!value.length) {
+        setValue(channel, channel.before)
+        return
+    }
+    if (channel.setBy !== viewId) {
+        channel.before = channel.value
+    }
+    channel.value = value
+    channel.setBy = viewId
+}
+
+/* A value set by no view: a selector's, or one a sender left behind */
+export const setValue = (channel: Channel, value: LinkItem[]) => {
+    channel.value = value
+    channel.setBy = null
+    channel.before = []
 }
 
 export const SELECTOR_DIMENSIONS: Partial<Record<ViewType, LinkDimension>> = {
@@ -61,6 +99,14 @@ export const findSelectorChannel = (
 ): Channel | undefined =>
     channels.find((channel) => channel.selectorViewId === selectorViewId)
 
+/* What a view shows for a selected org unit: its sub-units unless set */
+export const getOrgUnitDepth = (
+    channels: Channel[],
+    viewId: string
+): OrgUnitDepth =>
+    findViewChannel(channels, viewId, 'ou')?.members[viewId].depth ??
+    DEFAULT_ORG_UNIT_DEPTH
+
 /* The values a view is rewritten with: those of the channels it receives,
  * except the values it set itself */
 export const getIncomingLinks = (
@@ -69,13 +115,12 @@ export const getIncomingLinks = (
 ): IncomingLinks =>
     Object.fromEntries(
         channels
-            .filter(
-                (channel) =>
-                    channel.members[viewId]?.receive &&
-                    channel.setBy !== viewId &&
-                    channel.value.length > 0
-            )
-            .map((channel) => [channel.dimension, channel.value])
+            .filter((channel) => channel.members[viewId]?.receive)
+            .map((channel) => [
+                channel.dimension,
+                channel.setBy === viewId ? channel.before : channel.value,
+            ])
+            .filter(([, value]) => value.length > 0)
     )
 
 /* What a view emphasizes: the values it set with its own clicks */
@@ -110,18 +155,8 @@ export const getClickedItems = (
     return items
 }
 
-/* A click selects its item; clicking the selection again clears it.
- * An additive click (Ctrl or Cmd) adds the item, or takes it out. */
-export const toggleValue = (
-    value: LinkItem[],
-    item: LinkItem,
-    additive: boolean
-): LinkItem[] => {
-    const isSelected = value.some(({ id }) => id === item.id)
-    if (additive) {
-        return isSelected
-            ? value.filter(({ id }) => id !== item.id)
-            : [...value, item]
-    }
-    return isSelected && value.length === 1 ? [] : [item]
-}
+/* Which point was clicked: two points are the same when every dimension
+ * they carry is, the data item included (two series at the same place are
+ * two points, although only their org unit and period link) */
+export const getClickKey = ({ ou, pe, dx }: DataClick): string =>
+    JSON.stringify([ou?.id, pe?.id, dx?.id])

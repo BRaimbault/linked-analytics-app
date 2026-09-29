@@ -116,6 +116,21 @@ describe('LinksSection', () => {
         expect(screen.queryByTestId('links-ou-send')).toBeNull()
     })
 
+    it('sets what a view shows for a selected org unit, while it follows it', async () => {
+        const { channels } = renderLinks('vis-1', 'visualization')
+        expect(screen.getByTestId('links-ou-depth')).toHaveTextContent(
+            'ShowSub-units'
+        )
+
+        await pick('links-ou-depth', 'Selected org unit')
+        expect(channels()[0].members['vis-1'].depth).toBe(0)
+
+        await userEvent.click(checkbox('links-ou-receive'))
+        expect(screen.queryByTestId('links-ou-depth')).toBeNull()
+        /* Periods have no depth */
+        expect(within(row('pe')).queryByText('Selected org unit')).toBeNull()
+    })
+
     it('moves a view to a new channel, or to none', async () => {
         const { channels } = renderLinks('vis-1', 'visualization')
 

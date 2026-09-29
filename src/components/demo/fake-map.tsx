@@ -1,5 +1,6 @@
 import i18n from '@dhis2/d2-i18n'
 import { IconAdd16, IconHome16, IconSubtract16 } from '@dhis2/ui'
+import { withRelatedOrgUnits } from '@modules/demo/highlight'
 import { buildDemoMapLayer, type MapFeature } from '@modules/demo/map-layer'
 import type { Ring } from '@modules/demo/org-units'
 import {
@@ -15,26 +16,19 @@ import {
     useState,
     type FC,
     type MouseEvent,
-    type PointerEvent,
 } from 'react'
+import { toClickOptions } from './click-options'
 import classes from './styles/fake-map.module.css'
+import { useMapView } from './use-map-view'
 
 /* The demo's shapes lie in a 0-100 plane; the map shows it all at first */
 const PLANE = 100
 const HEADER_HEIGHT = 44
-const ZOOM_STEP = 1.25
-const MIN_ZOOM = 1
-const MAX_ZOOM = 8
-/* A pointer that moves less than this between down and up clicks */
-const CLICK_SLOP = 4
-
-type View = { zoom: number; x: number; y: number }
-const WHOLE_MAP: View = { zoom: 1, x: 0, y: 0 }
+/* Room around the whole map, which zooming out also ends at */
+const MARGIN = 16
 
 const toPath = (ring: Ring) =>
     `M${ring.map(([x, y]) => `${x},${y}`).join('L')}Z`
-
-const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
 
 const toDataClick = (
     { orgUnit }: MapFeature,
@@ -70,8 +64,11 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
         () => (thematic ? buildDemoMapLayer(thematic) : null),
         [thematic]
     )
-    const [view, setView] = useState<View>(WHOLE_MAP)
-    const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+    const [hoveredId, setHoveredId] = useState<string | null>(null)
+    const shownHighlight = useMemo(
+        () => withRelatedOrgUnits(highlight),
+        [highlight]
+    )
 
     useEffect(() => {
         onLoadingComplete?.()
@@ -79,77 +76,39 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
 
     const mapHeight = Math.max(0, height - HEADER_HEIGHT)
     /* Screen pixels per plane unit at zoom 1 */
-    const fit = Math.min(width, mapHeight) / PLANE
-    const zoomBy = (factor: number) =>
-        setView((current) => ({
-            ...current,
-            zoom: clampZoom(current.zoom * factor),
-        }))
+    const fit = Math.max(0, Math.min(width, mapHeight) - 2 * MARGIN) / PLANE
+    const { view, canvasRef, canvasHandlers, isClick, ...zoom } = useMapView({
+        fit,
+        hasCanvas: layer !== null,
+    })
 
-    /* The wheel zooms the map instead of scrolling the page: React's wheel
-     * listeners are passive and can't stop the scroll, so this one is
-     * added by hand */
-    const canvasRef = useRef<SVGSVGElement>(null)
-    const hasCanvas = layer !== null
-    useEffect(() => {
-        const canvas = canvasRef.current
-        if (!canvas) {
-            return
-        }
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault()
-            zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP)
-        }
-        canvas.addEventListener('wheel', onWheel, { passive: false })
-        return () => canvas.removeEventListener('wheel', onWheel)
-    }, [hasCanvas])
-    const onPointerDown = (event: PointerEvent) => {
-        drag.current = { x: event.clientX, y: event.clientY, moved: false }
-    }
-    const onPointerMove = (event: PointerEvent) => {
-        const start = drag.current
-        /* Only while the primary button is down */
-        if (!start || !(event.buttons & 1)) {
-            return
-        }
-        const dx = event.clientX - start.x
-        const dy = event.clientY - start.y
-        if (Math.abs(dx) + Math.abs(dy) >= CLICK_SLOP) {
-            start.moved = true
-        }
-        if (start.moved) {
-            drag.current = { x: event.clientX, y: event.clientY, moved: true }
-            setView((current) => ({
-                ...current,
-                x: current.x + dx / (fit * current.zoom),
-                y: current.y + dy / (fit * current.zoom),
-            }))
-        }
-    }
-    /* A press that didn't move ends now; one that dragged ends after the
-     * click that follows it, which must not count as a feature click */
-    const onPointerUp = () => {
-        if (drag.current?.moved) {
-            setTimeout(() => {
-                drag.current = null
-            })
-        } else {
-            drag.current = null
-        }
-    }
+    const rootRef = useRef<HTMLDivElement>(null)
     const onFeatureClick = (feature: MapFeature, event: MouseEvent) => {
-        const wasDrag = drag.current?.moved
-        drag.current = null
-        if (!wasDrag && layer) {
-            onDataClick?.(toDataClick(feature, layer.dataItem), {
-                additive: event.ctrlKey || event.metaKey,
-            })
+        if (isClick() && layer) {
+            onDataClick?.(
+                toDataClick(feature, layer.dataItem),
+                toClickOptions(event, rootRef.current as HTMLElement)
+            )
         }
     }
 
     if (!layer) {
         return <p className={classes.empty}>{i18n.t('No layer to show')}</p>
     }
+
+    const hoveredFeature = layer.features.find(
+        (feature) => feature.orgUnit.id === hoveredId
+    )
+
+    /* With a highlight, the features it keeps are the selection */
+    const selectedFeatures = shownHighlight
+        ? layer.features.filter((feature) =>
+              isHighlighted(
+                  shownHighlight,
+                  toDataClick(feature, layer.dataItem)
+              )
+          )
+        : []
 
     /* Centred, then zoomed about the centre and panned */
     const transform = [
@@ -159,7 +118,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
     ].join(' ')
 
     return (
-        <div className={classes.map} data-test="fake-map">
+        <div ref={rootRef} className={classes.map} data-test="fake-map">
             <div className={classes.header}>
                 <div className={classes.title}>{visualization.name}</div>
                 <div className={classes.subtitle}>
@@ -175,9 +134,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                 role="img"
                 aria-label={visualization.name}
                 ref={canvasRef}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
+                {...canvasHandlers}
             >
                 <g transform={transform} data-test="fake-map-plane">
                     {layer.features.map((feature) => (
@@ -187,7 +144,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             fill={feature.color}
                             className={
                                 isHighlighted(
-                                    highlight,
+                                    shownHighlight,
                                     toDataClick(feature, layer.dataItem)
                                 )
                                     ? classes.feature
@@ -195,6 +152,13 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             }
                             data-test="fake-feature"
                             onClick={(event) => onFeatureClick(feature, event)}
+                            onContextMenu={(event) =>
+                                onFeatureClick(feature, event)
+                            }
+                            onPointerEnter={() =>
+                                setHoveredId(feature.orgUnit.id)
+                            }
+                            onPointerLeave={() => setHoveredId(null)}
                         >
                             <title>
                                 {`${feature.orgUnit.name}: ${
@@ -211,6 +175,22 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             className={classes.outline}
                         />
                     ))}
+                    {/* Last, so neighbours and outlines don't cover them */}
+                    {selectedFeatures.map((feature) => (
+                        <path
+                            key={feature.orgUnit.id}
+                            d={toPath(feature.orgUnit.shape)}
+                            className={classes.selection}
+                            data-test="fake-feature-selection"
+                        />
+                    ))}
+                    {hoveredFeature && (
+                        <path
+                            d={toPath(hoveredFeature.orgUnit.shape)}
+                            className={classes.hover}
+                            data-test="fake-feature-hover"
+                        />
+                    )}
                 </g>
             </svg>
             <ul className={classes.legend} data-test="fake-map-legend">
@@ -230,19 +210,19 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                         label: i18n.t('Zoom in'),
                         icon: <IconAdd16 />,
                         dataTest: 'fake-map-zoom-in',
-                        onClick: () => zoomBy(ZOOM_STEP),
+                        onClick: zoom.zoomIn,
                     },
                     {
                         label: i18n.t('Zoom out'),
                         icon: <IconSubtract16 />,
                         dataTest: 'fake-map-zoom-out',
-                        onClick: () => zoomBy(1 / ZOOM_STEP),
+                        onClick: zoom.zoomOut,
                     },
                     {
                         label: i18n.t('Whole map'),
                         icon: <IconHome16 />,
                         dataTest: 'fake-map-reset',
-                        onClick: () => setView(WHOLE_MAP),
+                        onClick: zoom.showWholeMap,
                     },
                 ].map(({ label, icon, dataTest, onClick }) => (
                     <button

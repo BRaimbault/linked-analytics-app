@@ -1,13 +1,18 @@
-import type { LinkItem } from '@modules/interactions/apply-links'
+import type { LinkItem, OrgUnitDepth } from '@modules/interactions/apply-links'
 import {
     findSelectorChannel,
-    findViewChannel,
-    getClickedItems,
-    LINK_DIMENSIONS,
     SELECTOR_DIMENSIONS,
-    toggleValue,
+    setValue,
     type ChannelMember,
 } from '@modules/interactions/channels'
+import { applyClick } from '@modules/interactions/clicks'
+import {
+    drillDown,
+    drillUpTo,
+    resetDrill,
+    resetFollowersDrills,
+    type LinksState,
+} from '@modules/interactions/drills'
 import {
     createChannel,
     joinChannels,
@@ -15,6 +20,7 @@ import {
     moveViewToChannel,
     removeView,
     setMemberRoles,
+    setOrgUnitDepth,
     type ChannelChoice,
     type InteractionsState,
     type ViewLink,
@@ -28,6 +34,8 @@ const initialState: InteractionsState = {
     channels: [],
     linkableViews: [],
     detached: {},
+    drills: {},
+    selectedPoints: {},
 }
 
 /* The channels between views (docs/interactions.md §4) */
@@ -45,29 +53,8 @@ export const interactionsSlice = createSlice({
                 additive: boolean
             }>
         ) {
-            const { viewId, click, additive } = action.payload
-            if (!state.linkableViews.some(({ id }) => id === viewId)) {
-                return
-            }
-            const items = getClickedItems(click)
-            for (const dimension of LINK_DIMENSIONS) {
-                const item = items[dimension]
-                const hasChannel = state.channels.some(
-                    (channel) => channel.dimension === dimension
-                )
-                if (item && !hasChannel) {
-                    createChannel(state, dimension)
-                }
-                const channel = findViewChannel(
-                    state.channels,
-                    viewId,
-                    dimension
-                )
-                if (item && channel?.members[viewId].send) {
-                    channel.value = toggleValue(channel.value, item, additive)
-                    channel.setBy = channel.value.length ? viewId : null
-                }
-            }
+            const { viewId, ...rest } = action.payload
+            applyClick(state, viewId, rest)
         },
         selectorValueChanged(
             state,
@@ -78,9 +65,24 @@ export const interactionsSlice = createSlice({
                 action.payload.viewId
             )
             if (channel) {
-                channel.value = action.payload.value
-                channel.setBy = null
+                setValue(channel, action.payload.value)
+                resetFollowersDrills(state, channel, null)
             }
+        },
+        viewDrilledDown(
+            state,
+            action: PayloadAction<{ viewId: string; item: LinkItem }>
+        ) {
+            drillDown(state, action.payload.viewId, action.payload.item)
+        },
+        viewDrilledUpTo(
+            state,
+            action: PayloadAction<{ viewId: string; item: LinkItem }>
+        ) {
+            drillUpTo(state, action.payload.viewId, action.payload.item)
+        },
+        viewDrillReset(state, action: PayloadAction<string>) {
+            resetDrill(state, action.payload)
         },
         viewChannelChanged(
             state,
@@ -95,6 +97,12 @@ export const interactionsSlice = createSlice({
         ) {
             const { roles, ...link } = action.payload
             setMemberRoles(state, link, roles)
+        },
+        orgUnitDepthChanged(
+            state,
+            action: PayloadAction<{ viewId: string; depth: OrgUnitDepth }>
+        ) {
+            setOrgUnitDepth(state, action.payload.viewId, action.payload.depth)
         },
         selectorChannelChanged(
             state,
@@ -135,6 +143,7 @@ export const interactionsSlice = createSlice({
     },
     selectors: {
         selectChannels: (state) => state.channels,
+        selectDrills: (state) => state.drills,
     },
 })
 
@@ -143,6 +152,19 @@ export const {
     selectorValueChanged,
     viewChannelChanged,
     viewRolesChanged,
+    orgUnitDepthChanged,
     selectorChannelChanged,
+    viewDrilledDown,
+    viewDrilledUpTo,
+    viewDrillReset,
 } = interactionsSlice.actions
-export const { selectChannels } = interactionsSlice.selectors
+export const { selectChannels, selectDrills } = interactionsSlice.selectors
+
+/* What the drill rules read. It's a new object each time, so derive a
+ * value that compares by content from it (see useViewLinks) */
+export const selectLinksState = (state: {
+    interactions: InteractionsState
+}): LinksState => ({
+    channels: selectChannels(state),
+    drills: selectDrills(state),
+})

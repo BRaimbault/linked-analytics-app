@@ -1,12 +1,16 @@
+import type { OrgUnitDepth } from '@modules/interactions/apply-links'
 import {
     findSelectorChannel,
     findViewChannel,
     getNextChannelLabel,
     LINK_DIMENSIONS,
+    setValue,
     type Channel,
     type ChannelMember,
     type LinkDimension,
 } from '@modules/interactions/channels'
+import type { SelectedPoint } from '@modules/interactions/clicks'
+import type { Drills } from '@modules/interactions/drills'
 import type { PluginViewType } from '@modules/workspace/view-types'
 
 /* Who belongs to which channel, and how that changes: the defaults of
@@ -22,6 +26,9 @@ export type InteractionsState = {
     linkableViews: LinkableView[]
     /* Dimensions a view was taken out of: the defaults leave it out */
     detached: Record<string, LinkDimension[]>
+    drills: Drills
+    /* The points each view selected by clicking */
+    selectedPoints: Record<string, SelectedPoint[]>
 }
 
 /* One view's link for one dimension */
@@ -80,6 +87,7 @@ export const createChannel = (
         dimension,
         value: [],
         setBy: null,
+        before: [],
         selectorViewId,
         members: {},
     }
@@ -119,7 +127,7 @@ const removeUnusedChannels = (state: InteractionsState) => {
 const leaveChannel = (channel: Channel, viewId: string) => {
     delete channel.members[viewId]
     if (channel.setBy === viewId) {
-        channel.setBy = null
+        setValue(channel, channel.value)
     }
 }
 
@@ -132,6 +140,8 @@ export const removeView = (state: InteractionsState, viewId: string) => {
     }
     state.linkableViews = state.linkableViews.filter(({ id }) => id !== viewId)
     delete state.detached[viewId]
+    delete state.drills[viewId]
+    delete state.selectedPoints[viewId]
     removeUnusedChannels(state)
 }
 
@@ -188,7 +198,7 @@ export const moveViewToChannel = (
 export const setMemberRoles = (
     state: InteractionsState,
     link: ViewLink,
-    roles: ChannelMember
+    roles: Pick<ChannelMember, 'send' | 'receive'>
 ) => {
     const channel = findViewChannel(state.channels, link.viewId, link.dimension)
     if (!channel) {
@@ -198,9 +208,21 @@ export const setMemberRoles = (
         moveViewToChannel(state, link, 'none')
         return
     }
-    channel.members[link.viewId] = roles
+    channel.members[link.viewId] = { ...channel.members[link.viewId], ...roles }
     if (!roles.send && channel.setBy === link.viewId) {
-        channel.setBy = null
+        setValue(channel, channel.value)
+    }
+}
+
+/* Kept with the view's membership, so it moves with it between channels */
+export const setOrgUnitDepth = (
+    state: InteractionsState,
+    viewId: string,
+    depth: OrgUnitDepth
+) => {
+    const channel = findViewChannel(state.channels, viewId, 'ou')
+    if (channel) {
+        channel.members[viewId].depth = depth
     }
 }
 

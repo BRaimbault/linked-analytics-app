@@ -1,8 +1,10 @@
 import i18n from '@dhis2/d2-i18n'
 import { buildDemoTable, toDataClick } from '@modules/demo/analytics'
+import { withRelatedOrgUnits } from '@modules/demo/highlight'
 import { isHighlighted, type PluginProps } from '@modules/plugins/contract'
 import type { VisualizationObject } from '@modules/visualization/analytical-object'
-import { useEffect, useMemo, type FC } from 'react'
+import { useEffect, useMemo, useRef, type FC } from 'react'
+import { toClickOptions } from './click-options'
 import { FakeChart, SERIES_COLORS, type PointHandlers } from './fake-chart'
 import { FakePivotTable } from './fake-pivot-table'
 import classes from './styles/fake-visualization.module.css'
@@ -24,6 +26,11 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
     onLoadingComplete,
 }) => {
     const table = useMemo(() => buildDemoTable(visualization), [visualization])
+    const rootRef = useRef<HTMLDivElement>(null)
+    const shownHighlight = useMemo(
+        () => withRelatedOrgUnits(highlight),
+        [highlight]
+    )
 
     useEffect(() => {
         onLoadingComplete?.()
@@ -31,18 +38,23 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
 
     const handlers: PointHandlers = {
         onPointClick: (item, category, event) =>
-            onDataClick?.(toDataClick(item, category), {
-                additive: event.ctrlKey || event.metaKey,
-            }),
+            onDataClick?.(
+                toDataClick(item, category),
+                toClickOptions(event, rootRef.current as HTMLElement)
+            ),
         isDimmed: (item, category) =>
-            !isHighlighted(highlight, toDataClick(item, category)),
+            !isHighlighted(shownHighlight, toDataClick(item, category)),
     }
     const filteredBy = table.filters
         .map((items) => items.map(({ name }) => name).join(', '))
         .join(' · ')
 
     return (
-        <div className={classes.visualization} data-test="fake-visualization">
+        <div
+            ref={rootRef}
+            className={classes.visualization}
+            data-test="fake-visualization"
+        >
             <div className={classes.header}>
                 <div className={classes.title}>{visualization.name}</div>
                 {filteredBy && (

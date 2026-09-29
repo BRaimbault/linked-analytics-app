@@ -11,6 +11,7 @@ const channel = (overrides: Partial<Channel>): Channel => ({
     dimension: 'pe',
     value: [],
     setBy: null,
+    before: [],
     selectorViewId: null,
     members: {},
     ...overrides,

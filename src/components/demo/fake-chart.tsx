@@ -31,6 +31,7 @@ export const niceMax = (value: number): number => {
     return (step as number) * power
 }
 
+/* onPointClick takes right-clicks too; the event tells them apart */
 export type PointHandlers = {
     onPointClick: (
         series: AxisItem,
@@ -67,6 +68,8 @@ export const FakeChart: FC<
     const point = (item: AxisItem, category: AxisItem) => ({
         className: isDimmed(item, category) ? classes.dimmed : undefined,
         onClick: (event: MouseEvent) => onPointClick(item, category, event),
+        onContextMenu: (event: MouseEvent) =>
+            onPointClick(item, category, event),
     })
 
     return (

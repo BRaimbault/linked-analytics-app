@@ -1,26 +1,40 @@
 import { useAppDispatch, useAppSelector } from '@hooks'
-import type { IncomingLinks } from '@modules/interactions/apply-links'
-import { getHighlight, getIncomingLinks } from '@modules/interactions/channels'
+import type {
+    IncomingLinks,
+    OrgUnitDepth,
+} from '@modules/interactions/apply-links'
+import { getViewLinks } from '@modules/interactions/drills'
 import type { DataClick, Highlight } from '@modules/plugins/contract'
-import { dataClicked, selectChannels } from '@store/interactions-slice'
+import { dataClicked, selectLinksState } from '@store/interactions-slice'
 import { useCallback, useMemo } from 'react'
 
-/* A plugin view's side of its channels: the values it is rewritten with,
- * what it highlights, and where its clicks go. The values are read as
- * text, so they keep their identity until they change: a plugin gets new
- * props, and refetches, only then. */
+/* A plugin view's side of its channels and drills: the values it is
+ * rewritten with, what it highlights, and where its clicks go. They are
+ * read as text, so they keep their identity until they change: a plugin
+ * gets a new object, and refetches, only when what rewrites it changes,
+ * not when only the highlight does. */
 export const useViewLinks = (viewId: string) => {
     const dispatch = useAppDispatch()
-    const incomingText = useAppSelector((state) =>
-        JSON.stringify(getIncomingLinks(selectChannels(state), viewId))
-    )
+    const rewriteText = useAppSelector((state) => {
+        const { incoming, orgUnitDepth } = getViewLinks(
+            selectLinksState(state),
+            viewId
+        )
+        return JSON.stringify({ incoming, orgUnitDepth })
+    })
     const highlightText = useAppSelector((state) =>
-        JSON.stringify(getHighlight(selectChannels(state), viewId) ?? null)
+        JSON.stringify(
+            getViewLinks(selectLinksState(state), viewId).highlight ?? null
+        )
     )
 
-    const incoming = useMemo(
-        () => JSON.parse(incomingText) as IncomingLinks,
-        [incomingText]
+    const { incoming, orgUnitDepth } = useMemo(
+        () =>
+            JSON.parse(rewriteText) as {
+                incoming: IncomingLinks
+                orgUnitDepth: OrgUnitDepth
+            },
+        [rewriteText]
     )
     const highlight = useMemo(
         () => (JSON.parse(highlightText) as Highlight | null) ?? undefined,
@@ -33,5 +47,5 @@ export const useViewLinks = (viewId: string) => {
         [dispatch, viewId]
     )
 
-    return { incoming, highlight, onDataClick }
+    return { incoming, orgUnitDepth, highlight, onDataClick }
 }

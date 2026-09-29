@@ -37,6 +37,9 @@ export const FakePivotTable: FC<PointHandlers & { table: DemoTable }> = ({
                                 onClick={(event) =>
                                     onPointClick(item, category, event)
                                 }
+                                onContextMenu={(event) =>
+                                    onPointClick(item, category, event)
+                                }
                             >
                                 {table
                                     .valueOf(item, category)

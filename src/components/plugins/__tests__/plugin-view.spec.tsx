@@ -93,6 +93,45 @@ describe('PluginView', () => {
         expect(screen.queryByTestId('renderer')).toBeNull()
     })
 
+    it('passes clicks on, a right-click’s position turned into the page’s', () => {
+        const onDataClick = vi.fn()
+        render(
+            <PluginSourcesProvider sources={sources}>
+                <PluginView
+                    type="visualization"
+                    object={object}
+                    onDataClick={onDataClick}
+                />
+            </PluginSourcesProvider>
+        )
+        resizeTo(400, 300)
+        vi.spyOn(
+            screen.getByTestId('plugin-view'),
+            'getBoundingClientRect'
+        ).mockReturnValue({ left: 100, top: 50 } as DOMRect)
+        const sendClick = Renderer.mock.lastCall?.[0].onDataClick
+        const click = { ou: { id: 'DemoNorth01' } }
+
+        act(() => sendClick?.(click, { additive: true }))
+        act(() =>
+            sendClick?.(click, {
+                additive: false,
+                trigger: 'context',
+                position: { x: 10, y: 20 },
+            })
+        )
+
+        expect(onDataClick).toHaveBeenNthCalledWith(1, click, {
+            additive: true,
+            position: undefined,
+        })
+        expect(onDataClick).toHaveBeenNthCalledWith(2, click, {
+            additive: false,
+            trigger: 'context',
+            position: { x: 110, y: 70 },
+        })
+    })
+
     it('draws nothing for a type without a plugin, and stops observing when gone', () => {
         const { unmount } = render(<PluginView type="map" object={object} />)
         resizeTo(400, 300)

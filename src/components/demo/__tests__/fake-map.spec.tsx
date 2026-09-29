@@ -58,6 +58,16 @@ describe('FakeMap', () => {
         expect(onDataClick).toHaveBeenLastCalledWith(expect.anything(), {
             additive: true,
         })
+
+        expect(fireEvent.contextMenu(north, { clientX: 12, clientY: 34 })).toBe(
+            false
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                ou: expect.objectContaining({ id: 'DemoNorth01' }),
+            }),
+            { additive: false, trigger: 'context', position: { x: 12, y: 34 } }
+        )
     })
 
     it('pans with a drag, which doesn’t count as a click, and not on a hover', async () => {
@@ -96,6 +106,9 @@ describe('FakeMap', () => {
         draw(malariaMap)
         const svg = screen.getByRole('img')
         const whole = scaleOf()
+        /* The whole map keeps 16px around it: 400 high, less the 44px
+         * header, less 32, for the 100-unit plane */
+        expect(whole).toBeCloseTo((400 - 44 - 32) / 100)
 
         /* The wheel zooms instead of scrolling the page */
         expect(fireEvent.wheel(svg, { deltaY: -100 })).toBe(false)
@@ -138,6 +151,19 @@ describe('FakeMap', () => {
                     feature.getAttribute('class')?.includes('dimmed')
                 )
         ).toEqual([true, true, true, false])
+        /* The selection's edge is drawn last, over its neighbours, and the
+         * edge of the feature under the pointer after it */
+        const plane = screen.getByTestId('fake-map-plane')
+        expect(plane.lastElementChild).toBe(
+            screen.getByTestId('fake-feature-selection')
+        )
+        const [north] = screen.getAllByTestId('fake-feature')
+        fireEvent.pointerEnter(north)
+        expect(plane.lastElementChild).toBe(
+            screen.getByTestId('fake-feature-hover')
+        )
+        fireEvent.pointerLeave(north)
+        expect(screen.queryByTestId('fake-feature-hover')).toBeNull()
         expect(onLoadingComplete).toHaveBeenCalledTimes(1)
     })
 

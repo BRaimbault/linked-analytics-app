@@ -50,14 +50,28 @@
     cursor: pointer;
 }
 
-.feature:hover {
-    stroke: var(--colors-grey900);
-    stroke-width: 0.6;
-}
-
 /* What highlight leaves out */
 .dimmed {
     opacity: 0.25;
+}
+
+/* The edges of the feature under the pointer and of the selected ones,
+ * drawn over everything else: a feature's own stroke would sit under
+ * its neighbours and the outlines */
+.hover {
+    fill: none;
+    stroke: var(--colors-grey900);
+    stroke-width: 0.6;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.selection {
+    fill: none;
+    stroke: var(--colors-grey900);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    pointer-events: none;
 }
 
 /* The units the features lie in, over the features */

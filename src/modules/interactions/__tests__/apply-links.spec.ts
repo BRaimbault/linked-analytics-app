@@ -7,7 +7,7 @@ import type {
 import { getDimensionItemIds } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
 
-const OPTIONS = { orgUnitLevelCount: 3 }
+const OPTIONS = { orgUnitLevelCount: 3, orgUnitDepth: 1 } as const
 const [ancLine, malariaByDistrict, pentaTable] = DEMO_VISUALIZATIONS
 const [pentaMap] = DEMO_MAPS
 
@@ -54,6 +54,30 @@ describe('applyLinks', () => {
             )
 
             expect(ids(linked, 'ou')).toEqual(['DemoNorth01', 'LEVEL-3'])
+        })
+
+        it('shows the selected org unit or its sub-x2-units, as the view asks', () => {
+            const root = { id: 'DemoLand001', path: '/DemoLand001' }
+            const itself = applyLinks(
+                malariaByDistrict,
+                { ou: [north] },
+                { ...OPTIONS, orgUnitDepth: 0 }
+            )
+            const twoDown = applyLinks(
+                malariaByDistrict,
+                { ou: [root] },
+                { ...OPTIONS, orgUnitDepth: 2 }
+            )
+            /* A district has only one level below it */
+            const clamped = applyLinks(
+                malariaByDistrict,
+                { ou: [north] },
+                { ...OPTIONS, orgUnitDepth: 2 }
+            )
+
+            expect(ids(itself, 'ou')).toEqual(['DemoNorth01'])
+            expect(ids(twoDown, 'ou')).toEqual(['DemoLand001', 'LEVEL-3'])
+            expect(ids(clamped, 'ou')).toEqual(['DemoNorth01', 'LEVEL-3'])
         })
 
         it('shows a unit at the deepest level itself, as it has no children', () => {

@@ -49,6 +49,15 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         rows: [orgUnits('USER_ORGUNIT', 'LEVEL-3')],
         filters: [data(DATA_ITEM_IDS.penta3)],
     },
+    /* A line per district: clicks on it carry an org unit and a period */
+    {
+        id: 'DemoVisAnc2',
+        name: 'ANC 1st visits by district, last 12 months',
+        type: 'LINE',
+        columns: [orgUnits('USER_ORGUNIT_CHILDREN')],
+        rows: [periods('LAST_12_MONTHS')],
+        filters: [data(DATA_ITEM_IDS.anc1)],
+    },
 ]
 
 export const DEMO_MAPS: MapObject[] = [

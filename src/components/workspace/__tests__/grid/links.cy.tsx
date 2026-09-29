@@ -166,4 +166,53 @@ describe('linked views', () => {
         clickFeature('Kestrel')
         cy.get('[data-test="selector-view"]').should('contain.text', 'Kestrel')
     })
+
+    it('opens the drill menu at the pointer on a right-click, and drills both ways', () => {
+        setUpLinkedViews()
+
+        mapFeature('East').rightclick(20, 30, { scrollBehavior: false })
+
+        /* At the pointer, not at the plugin's corner */
+        mapFeature('East').then((feature) => {
+            const { left, top } = feature[0].getBoundingClientRect()
+            cy.get('[data-test="drill-menu"]').should((menu) => {
+                const box = menu[0].getBoundingClientRect()
+                expect(box.left).to.be.closeTo(left + 20, 4)
+                expect(box.top).to.be.closeTo(top + 30, 4)
+            })
+        })
+        cy.get('[data-test="drill-menu"] [role="menuitem"]')
+            .contains('Drill down into East')
+            .click()
+
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+        mapFeature('Dawn Plains').should('exist')
+        /* A drill counts as a click: the chart follows East */
+        expectChartCategories([
+            'Dawn Plains',
+            'Elm Ridge',
+            'Fern Lake',
+            'Granite Bay',
+        ])
+
+        /* Up to East's level: the districts, East still the value */
+        mapFeature('Elm Ridge').rightclick({ scrollBehavior: false })
+        cy.get('[data-test="drill-menu"] [role="menuitem"]')
+            .contains('Drill up to East')
+            .click()
+        mapFeature('North').should('exist')
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+        expectChartCategories([
+            'Dawn Plains',
+            'Elm Ridge',
+            'Fern Lake',
+            'Granite Bay',
+        ])
+
+        mapFeature('North').rightclick({ scrollBehavior: false })
+        cy.get('[data-test="drill-menu"] [role="menuitem"]')
+            .contains('Back to the saved item')
+            .click()
+        expectChartCategories(['North', 'West', 'East', 'South'])
+    })
 })

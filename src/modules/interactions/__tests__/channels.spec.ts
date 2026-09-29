@@ -1,9 +1,9 @@
 import {
+    getClickKey,
     getClickedItems,
     getHighlight,
     getIncomingLinks,
     getNextChannelLabel,
-    toggleValue,
     type Channel,
 } from '@modules/interactions/channels'
 import { describe, expect, it } from 'vitest'
@@ -13,6 +13,7 @@ const channel = (overrides: Partial<Channel>): Channel => ({
     dimension: 'ou',
     value: [],
     setBy: null,
+    before: [],
     selectorViewId: null,
     members: {},
     ...overrides,
@@ -93,12 +94,12 @@ describe('channels', () => {
         })
     })
 
-    it('replaces, clears or adds to a value on a click', () => {
-        expect(toggleValue([], north, false)).toEqual([north])
-        expect(toggleValue([west], north, false)).toEqual([north])
-        expect(toggleValue([north], north, false)).toEqual([])
-        expect(toggleValue([north, west], north, false)).toEqual([north])
-        expect(toggleValue([west], north, true)).toEqual([west, north])
-        expect(toggleValue([west, north], north, true)).toEqual([west])
+    it('tells points apart by every dimension they carry', () => {
+        const point = { ou: north, pe: { id: '202601' } }
+
+        expect(getClickKey(point)).toBe(getClickKey({ ...point }))
+        expect(getClickKey(point)).not.toBe(
+            getClickKey({ ...point, dx: { id: 'DemoAnc4th1' } })
+        )
     })
 })

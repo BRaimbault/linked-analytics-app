@@ -11,8 +11,10 @@ import type {
 /* Rewrites a view's object with the values it receives, as the dashboard
  * does for its filters (getFilteredVisualization), with the rules of
  * docs/interactions.md §2:
- * - ou on an axis (a bar per district, a choropleth) becomes the children
- *   of the selection; in a filter, the selection itself;
+ * - ou on an axis (a bar per district, a choropleth) becomes the units the
+ *   view shows for the selection: itself, its sub-units or its
+ *   sub-x2-units; in a filter, the selection itself (its sub-units would
+ *   add up to the same);
  * - pe in a filter is the selection; on an axis, the periods of the
  *   axis's own type within the selection, or the one containing it.
  * A dimension the object lacks is added to its filters. */
@@ -21,9 +23,16 @@ export type LinkItem = DimensionItem & { path?: string }
 
 export type IncomingLinks = Partial<Record<'ou' | 'pe', LinkItem[]>>
 
+/* How many levels below the selection a view shows, as the org unit
+ * picker's "sub-units" and "sub-x2-units" */
+export type OrgUnitDepth = 0 | 1 | 2
+
+export const DEFAULT_ORG_UNIT_DEPTH: OrgUnitDepth = 1
+
 export type ApplyLinksOptions = {
-    /* The deepest org unit level: a unit there has no children to show */
+    /* The deepest org unit level: nothing is shown below it */
     orgUnitLevelCount: number
+    orgUnitDepth: OrgUnitDepth
 }
 
 type LaidOut = Pick<VisualizationObject, 'columns' | 'rows' | 'filters'>
@@ -33,26 +42,30 @@ const isOnAxis = (object: LaidOut, dimension: string) =>
         (entry) => entry.dimension === dimension
     )
 
-const depthOf = ({ path }: LinkItem) =>
+const levelOf = ({ path }: LinkItem) =>
     path ? path.split('/').filter(Boolean).length : null
 
-/* The selection's children: the units at the next level within it */
-const childrenOf = (
+/* The units at the view's depth within the selection, stopping at the
+ * deepest level: a unit there shows itself */
+const unitsBelow = (
     items: LinkItem[],
-    { orgUnitLevelCount }: ApplyLinksOptions
+    { orgUnitLevelCount, orgUnitDepth }: ApplyLinksOptions
 ): DimensionItem[] => {
     const levels = new Set(
         items
-            .map(depthOf)
+            .map(levelOf)
             .filter(
-                (depth): depth is number =>
-                    depth !== null && depth < orgUnitLevelCount
+                (level): level is number =>
+                    level !== null && level < orgUnitLevelCount
             )
-            .map((depth) => `LEVEL-${depth + 1}`)
+            .map(
+                (level) =>
+                    `LEVEL-${Math.min(level + orgUnitDepth, orgUnitLevelCount)}`
+            )
     )
     return [
         ...items.map(({ id, name }) => ({ id, name })),
-        ...[...levels].map((id) => ({ id })),
+        ...(orgUnitDepth > 0 ? [...levels].map((id) => ({ id })) : []),
     ]
 }
 
@@ -101,7 +114,7 @@ const rewrite = <T extends LaidOut>(
             result,
             'ou',
             isOnAxis(object, 'ou')
-                ? childrenOf(incoming.ou, options)
+                ? unitsBelow(incoming.ou, options)
                 : incoming.ou.map(({ id, name }) => ({ id, name }))
         )
     }

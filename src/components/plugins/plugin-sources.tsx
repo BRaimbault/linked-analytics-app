@@ -20,6 +20,9 @@ export type PluginSources = {
     selectorItems: Partial<Record<LinkDimension, LinkItem[]>>
     /* The deepest org unit level, where a linked unit has no children */
     orgUnitLevelCount: number
+    /* An org unit's name from its id, for one a click only names in its
+     * path (a parent to drill up to) */
+    getOrgUnitName: (id: string) => string | undefined
 }
 
 export const NO_PLUGIN_SOURCES: PluginSources = {
@@ -27,6 +30,7 @@ export const NO_PLUGIN_SOURCES: PluginSources = {
     savedItems: {},
     selectorItems: {},
     orgUnitLevelCount: 0,
+    getOrgUnitName: () => undefined,
 }
 
 const PluginSourcesContext = createContext<PluginSources>(NO_PLUGIN_SOURCES)

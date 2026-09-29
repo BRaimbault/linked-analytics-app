@@ -5,7 +5,7 @@ import type { VisualizationObject } from '@modules/visualization/analytical-obje
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const [ancLine, malariaColumns, pentaTable] = DEMO_VISUALIZATIONS
+const [ancLine, malariaColumns, pentaTable, ancByDistrict] = DEMO_VISUALIZATIONS
 
 const draw = (
     visualization: VisualizationObject,
@@ -42,6 +42,31 @@ describe('FakeVisualization', () => {
         expect(
             screen.getByText('August 2025').getAttribute('transform')
         ).toContain('rotate')
+    })
+
+    it('draws a line per district, whose points send the district and the month', () => {
+        const onDataClick = vi.fn()
+        draw(ancByDistrict, { onDataClick })
+
+        expect(screen.getAllByTestId('fake-series')).toHaveLength(4)
+        expect(screen.getAllByTestId('fake-point')).toHaveLength(48)
+        expect(screen.getByText('West', { selector: 'li' })).toBeInTheDocument()
+
+        /* West's line (the second), its first month */
+        fireEvent.click(screen.getAllByTestId('fake-point')[12])
+
+        expect(onDataClick).toHaveBeenCalledWith(
+            {
+                ou: {
+                    id: 'DemoWest001',
+                    name: 'West',
+                    path: '/DemoLand001/DemoWest001',
+                    level: 'DemoLevel02',
+                },
+                pe: { id: '202508', name: 'August 2025' },
+            },
+            { additive: false }
+        )
     })
 
     it('draws a pivot table, the series across and the categories down', () => {
@@ -94,6 +119,33 @@ describe('FakeVisualization', () => {
 
         draw(pentaTable)
         fireEvent.click(screen.getAllByTestId('fake-point')[0])
+    })
+
+    it('sends a right-click on a point or a cell with where it happened, and no browser menu', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(malariaColumns, { onDataClick })
+        const [bar] = screen.getAllByTestId('fake-point')
+
+        /* jsdom lays nothing out: the root is at the page's corner */
+        const opened = fireEvent.contextMenu(bar, { clientX: 30, clientY: 40 })
+
+        expect(opened).toBe(false)
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                ou: expect.objectContaining({ id: 'DemoNorth01' }),
+            }),
+            { additive: false, trigger: 'context', position: { x: 30, y: 40 } }
+        )
+        unmount()
+
+        draw(pentaTable, { onDataClick })
+        fireEvent.contextMenu(screen.getAllByTestId('fake-point')[0])
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                ou: expect.objectContaining({ id: 'DemoChN0101' }),
+            }),
+            expect.objectContaining({ trigger: 'context' })
+        )
     })
 
     it('dims what the highlight leaves out, in charts and tables', () => {

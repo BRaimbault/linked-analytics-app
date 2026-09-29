@@ -37,7 +37,7 @@ Aggregate analytics share one dimensional model: `dx` (data), `pe` (period), `ou
 - Items can be UIDs, `LEVEL-n`, `OU_GROUP-x`, or user keywords (`USER_ORGUNIT` …).
 - **DV and Maps drill the same way**: `{id, path}` + `LEVEL-(n+1)`. See DV's `onDrill` in `Visualization.jsx` and Maps' `drillUpDown` in `src/util/map.js`.
 - **Rule per receiving view, depending on where `ou` sits in it:**
-    - on an axis (a bar per district, a choropleth map) → the children of the selection (`id` + `LEVEL-next`);
+    - on an axis (a bar per district, a choropleth map) → the children of the selection (`id` + `LEVEL-next`) by default. Each view can choose, in its Links section: the selected org unit itself, its sub-units, or its sub-x2-units (`LEVEL-next+1`), as the org unit picker names them. It stops at the deepest level;
     - only as a filter (a trend line, a single value) → the selection itself (`id`).
 - Earth Engine, facility and org unit layers take `ou` links too (aggregation, boundaries).
 
@@ -342,12 +342,22 @@ What this gives up: a list of every channel, including those without a selector.
 
 ### 5.6 Drilling the view you click
 
-A sender isn't rewritten by its own clicks, but you may still want to drill it. The view's ⋯ menu gets "Drill into {value}" and "Drill up", which rewrite that view with the same `applyLinks` rules. With "Views send clicks" off, the plugin's own drill menu is back.
+A sender isn't rewritten by its own clicks, but you may still want to drill it. As built:
+
+- **A right-click on a point** opens a menu at the pointer (the plugin reports it, [§6](#contract-same-in-both-plugins)); **the view's ⋯ menu** offers the same entries, from what the view shows.
+    - "Drill down into X": the view shows X's sub-units. Offered when X has a level below, and its sub-units don't show already.
+    - "Drill up to P" (X's parent): the view shows P's level, P and its siblings within P's parent, as DV's drill up; P alone at the top. Offered whenever X has a parent, drilled or not. A parent the plugin only names in the path takes its name from the sources, or reads "Drill up a level".
+    - "Back to the saved item", while drilled.
+    - From the ⋯ menu, down is into the unit the view set by a click, and up is to the level of the unit it's drilled into (or of the parent of the unit it set).
+- **A drill counts as a click**: a view that sends sets its org unit channel to the unit it drills to (X or P), so the others follow; "Back to the saved item" gives the channel back what it held before. A view that doesn't send drills alone.
+- A drilled view shows its focus whatever its channel holds, and doesn't highlight a unit whose sub-units it shows. A new value from another view or a selector resets the drill of the views that follow it.
+- With "Views send clicks" off, the plugin's own drill menu is back (later, with the workspace settings).
 
 ### 5.7 Later
 
 - **Drag to connect**, Figma-style: drag a badge onto a view to add it to that channel. This competes with dockview's drag and drop.
 - **Templates**, e.g. "compare two org units": two channels and a 2×2 layout in one go.
+- **A channel default**, if views should start aligned: with nothing selected, a channel holds a default value (set in its selector's settings, from the same short list), and each view chooses, per dimension, to show that default or its own saved item's. Clearing goes back to the default. Periods would be fixed ones (years, quarters), which convert to any axis. Discussed on 29 September 2026 and left out: with nothing selected, each view shows its own saved item, as on a dashboard.
 
 ## 6. Upstream PRs
 
@@ -362,12 +372,19 @@ type DataClick = {
     pe?: DataClickItem
     dx?: DataClickItem
 }
-onDataClick?: (click: DataClick, options: { additive: boolean }) => void
+type DataClickOptions = {
+    additive: boolean // Ctrl/Cmd-click
+    trigger?: 'context' // a right-click
+    position?: { x: number; y: number } // with a right-click: from the plugin's top-left corner
+}
+onDataClick?: (click: DataClick, options: DataClickOptions) => void
 highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }
 onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 ```
 
 - The payload holds only the clicked point's coordinates (the dimensions on its axes), as ids. `additive` is true for Ctrl/Cmd-click.
+- A right-click sends `trigger: 'context'` and where it happened, from the plugin's own top-left corner (the iframe's viewport), and stops the browser's menu: the plugin opens no menu of its own, and the app opens its drill menu at that point ([§5.6](#56-drilling-the-view-you-click)). The app turns the position into page coordinates, as it knows where the iframe is.
+- How the app reads a click: a plain click selects its point alone, and sets every linked dimension it carries; clicking the only selected point again (every dimension alike, the data item included: two series at one place are two points) brings back what the channels held before. Ctrl/Cmd-click adds the point to the view's selection, or takes it out; each channel holds the items of the selected points, so two cells of a column are two org units in one period, two of a row one org unit in two periods. Two cells across give the four combinations to the other views (channels hold lists per dimension, not points). A drilled view with nothing left selected passes the org unit it's drilled into, so the others show what it shows. The view that set a value isn't rewritten with it, and keeps showing what it followed before its click. No Shift-click ranges ([§8](#8-decisions-and-open-questions)).
 - `highlight` restyles matching items without refetching ([Filter vs highlight](#filter-vs-highlight)).
 - When `onDataClick` is passed, a click calls it directly and skips the plugin's own drill menu.
 - Agree on the names with the maintainers (Community of Practice or the PR descriptions), so both plugins ship the same shape.
@@ -441,6 +458,8 @@ In the browser, with the plugins served locally:
 - **Views send clicks by default**, with workspace settings to change that ([§5.1](#51-zero-configuration-by-default)).
 - **No Maps timelines**: the period selector's play mode steps through periods instead.
 - **No separate Interactions tab** ([§5.4](#54-where-the-wiring-is-set-no-separate-tab)).
+- **A map keeps its zoom and pan** when a link or a drill rewrites it, as the contract asks; it doesn't zoom to its new features (29 September 2026).
+- **No Shift-click ranges** for now: Ctrl/Cmd-click adds or removes points one at a time (29 September 2026).
 
 **Open:**
 
