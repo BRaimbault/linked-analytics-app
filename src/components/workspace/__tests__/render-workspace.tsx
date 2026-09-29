@@ -1,3 +1,9 @@
+import { DEMO_PLUGIN_SOURCES } from '@components/demo/demo-plugin-sources'
+import {
+    NO_PLUGIN_SOURCES,
+    PluginSourcesProvider,
+    type PluginSources,
+} from '@components/plugins/plugin-sources'
 import { Workspace } from '@components/workspace/workspace'
 import { within, screen } from '@testing-library/react'
 import { afterAll, beforeAll, vi } from 'vitest'
@@ -20,8 +26,17 @@ export const mockContainerSize = () => {
     })
 }
 
-export const renderWorkspace = async () => {
-    const view = renderWithStore(<Workspace />)
+/* In demo mode, plugin views draw the fake plugins; a test may give its
+ * own sources */
+export const renderWorkspace = async ({
+    demo = false,
+    sources = demo ? DEMO_PLUGIN_SOURCES : NO_PLUGIN_SOURCES,
+}: { demo?: boolean; sources?: PluginSources } = {}) => {
+    const view = renderWithStore(
+        <PluginSourcesProvider sources={sources}>
+            <Workspace />
+        </PluginSourcesProvider>
+    )
     await screen.findByRole('tab', { name: 'Add views' })
     return view
 }

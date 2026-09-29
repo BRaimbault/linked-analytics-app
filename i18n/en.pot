@@ -5,11 +5,47 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-28T15:48:36.602Z\n"
-"PO-Revision-Date: 2026-09-28T15:48:36.602Z\n"
+"POT-Creation-Date: 2026-09-29T07:23:23.942Z\n"
+"PO-Revision-Date: 2026-09-29T07:23:23.943Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
+
+msgid "No layer to show"
+msgstr "No layer to show"
+
+msgid "No value"
+msgstr "No value"
+
+msgid "Zoom in"
+msgstr "Zoom in"
+
+msgid "Zoom out"
+msgstr "Zoom out"
+
+msgid "Whole map"
+msgstr "Whole map"
+
+msgid "No data to show"
+msgstr "No data to show"
+
+msgid "Sets the value"
+msgstr "Sets the value"
+
+msgid "Sends clicks and follows the value"
+msgstr "Sends clicks and follows the value"
+
+msgid "Org unit"
+msgstr "Org unit"
+
+msgid "Period"
+msgstr "Period"
+
+msgid "{{dimension}} {{label}}"
+msgstr "{{dimension}} {{label}}"
+
+msgid "Nothing selected"
+msgstr "Nothing selected"
 
 msgid "{{title}} added"
 msgstr "{{title}} added"
@@ -34,6 +70,18 @@ msgstr "Notes"
 
 msgid "Restore the maximized view to add another"
 msgstr "Restore the maximized view to add another"
+
+msgid "Saved item"
+msgstr "Saved item"
+
+msgid "Choose a saved item"
+msgstr "Choose a saved item"
+
+msgid "Clear"
+msgstr "Clear"
+
+msgid "Each view shows its own"
+msgstr "Each view shows its own"
 
 msgid "Choosing a saved map, or creating one with layers, will happen here."
 msgstr "Choosing a saved map, or creating one with layers, will happen here."
@@ -179,9 +227,6 @@ msgstr "Visualization"
 msgid "Visualization {{number}}"
 msgstr "Visualization {{number}}"
 
-msgid "Period"
-msgstr "Period"
-
 msgid "Period {{number}}"
 msgstr "Period {{number}}"
 
@@ -194,9 +239,6 @@ msgstr ""
 
 msgid "A workspace holds up to {{max}} period selectors"
 msgstr "A workspace holds up to {{max}} period selectors"
-
-msgid "Org unit"
-msgstr "Org unit"
 
 msgid "Org unit {{number}}"
 msgstr "Org unit {{number}}"

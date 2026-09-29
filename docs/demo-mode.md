@@ -1,6 +1,6 @@
 # Demo mode: fake plugins on synthetic data
 
-- **Status**: proposal, not built; decided where [§11](#11-decisions-and-open-questions) says so. Plan step 3, before the real plugins.
+- **Status**: proposal, decided where [§11](#11-decisions-and-open-questions) says so; being built from 28 September 2026 (branch `feat/demo-mode`), in the order of [§10](#10-where-it-fits-in-the-plan). Plan step 3, before the real plugins.
 - **Related**: [plugins.md](plugins.md) (what the real plugins do), [interactions.md §6](interactions.md#6-upstream-prs) (the contract the fakes implement), [view-settings.md](view-settings.md).
 
 A mode where every view is a **fake plugin**: a small stand-in for DV or Maps that takes exactly the props of the real plugin, and draws synthetic data. Nothing is requested from a DHIS2 server.
@@ -139,6 +139,8 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **Code layout** (following [Where helpers live](../CLAUDE.md#where-helpers-live-in-srcmodules)):
     - `src/modules/demo/`: the synthetic data, value formula, period resolution and capability profiles, pure and unit-tested;
     - `src/components/demo/`: the fake plugins and the demo providers;
+    - `src/components/plugins/`: the plugin adapter (`PluginView`) and `PluginSourcesProvider`, which the demo fills with the fakes, its saved items, its selector lists (`modules/demo/selector-items.ts`) and its number of org unit levels; `src/modules/plugins/contract.ts`: the contract's props;
+    - the links themselves are not demo code: `src/modules/interactions/` (`applyLinks`, the period helper, the channel rules), `src/store/interactions-slice.ts`, and `src/components/interactions/` (badges, channel names and colors, `useViewLinks`);
     - the `?demo` switch in the app's entry, loading the demo code on demand.
 
 ## 11. Decisions and open questions
@@ -148,6 +150,9 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - Demo mode lives **inside the real app**, behind the `?demo` flag, rather than as a separate build.
 - **No public hosting**: demos are given from the app on a DHIS2 server.
 - **Made-up map shapes**, not real boundaries.
+- **Made-up names** too ("Demoland", districts North, West, East and South, and chiefdoms such as Amber Hills): real district names with invented numbers could pass for real health data. The data items keep the dev server's names (ANC 1st visit, Penta 3 coverage), which read like the real database.
+- **A fixed demo date**, 31 August 2026: relative periods resolve against it.
+- **Opening an item**: in demo mode a view's settings tab has a "Saved item" select over the demo's items; the real app gets `OpenFileDialog` in plan step 4.
 - **Demo mode comes before the real plugins**, since the first demos show the vision ([§10](#10-where-it-fits-in-the-plan)).
 - **The first fakes read synthetic data directly**, without a fake data engine ([§6](#6-running-without-a-server)).
 

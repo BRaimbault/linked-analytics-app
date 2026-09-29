@@ -1,3 +1,4 @@
+import type { PluginObject } from '@modules/plugins/contract'
 import type { SplitAxis, ViewSizes } from '@modules/workspace/grid-tree'
 import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
 import {
@@ -46,6 +47,8 @@ export const EDGE_POSITIONS: EdgePosition[] = ['top', 'left', 'right', 'bottom']
 /* A text view also holds its text */
 export type ViewPanelParams = Pick<WorkspaceView, 'type' | 'number'> & {
     text?: string
+    /* The saved item a plugin view shows, as the plugin receives it */
+    object?: PluginObject
 }
 
 export type ViewSettingsPanelParams = { viewId: string }

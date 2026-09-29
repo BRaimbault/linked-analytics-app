@@ -1,10 +1,14 @@
+import { usePluginSources } from '@components/plugins/plugin-sources'
 import type { ViewPanelParams } from '@components/workspace/controller/panels'
 import { useAppSelector } from '@hooks'
-import { getViewKind } from '@modules/workspace/view-types'
+import { SELECTOR_DIMENSIONS } from '@modules/interactions/channels'
+import { getViewKind, isPluginViewType } from '@modules/workspace/view-types'
 import { selectViewHeaders } from '@store/workspace-settings-slice'
 import { selectActiveView } from '@store/workspace-slice'
 import type { IDockviewPanelProps } from 'dockview-react'
 import type { FC } from 'react'
+import { PluginPanel } from './plugin-panel'
+import { SelectorPanel } from './selector-panel'
 import classes from './styles/view-panel.module.css'
 import { TextViewPanel } from './text-view-panel'
 import { ViewPlaceholderPanel } from './view-placeholder-panel'
@@ -18,13 +22,33 @@ export const ViewPanel: FC<IDockviewPanelProps<ViewPanelParams>> = (props) => {
     const selectedViewId = useAppSelector(selectActiveView)?.id
     const isFramed = viewHeaders === 'hover' && selectedViewId === props.api.id
 
+    const { renderers, selectorItems } = usePluginSources()
+    const { type, object } = props.params
+    const pluginType = isPluginViewType(type) && renderers[type] ? type : null
+    const selectorDimension = SELECTOR_DIMENSIONS[type]
+    const selectorList = selectorDimension && selectorItems[selectorDimension]
+
+    const getBody = () => {
+        if (getViewKind(type) === 'text') {
+            return <TextViewPanel {...props} />
+        }
+        if (selectorList) {
+            return <SelectorPanel viewId={props.api.id} items={selectorList} />
+        }
+        return pluginType && object ? (
+            <PluginPanel
+                viewId={props.api.id}
+                type={pluginType}
+                object={object}
+            />
+        ) : (
+            <ViewPlaceholderPanel {...props} />
+        )
+    }
+
     return (
         <div className={classes.viewBody}>
-            {getViewKind(props.params.type) === 'text' ? (
-                <TextViewPanel {...props} />
-            ) : (
-                <ViewPlaceholderPanel {...props} />
-            )}
+            {getBody()}
             {isFramed && (
                 <div
                     className={classes.selectedFrame}

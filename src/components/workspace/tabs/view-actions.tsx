@@ -1,3 +1,4 @@
+import { ChannelBadges } from '@components/interactions/channel-badges'
 import {
     getEdgePlacements,
     moveViewToEdge,
@@ -126,6 +127,7 @@ export const ViewActions: FC<IDockviewHeaderActionsProps> = ({
 
     return (
         <div className={classes.headerActions}>
+            {activePanel && <ChannelBadges viewId={activePanel.id} />}
             {activePanel && !isMaximized && (
                 <ViewMenu api={containerApi} view={activePanel} />
             )}

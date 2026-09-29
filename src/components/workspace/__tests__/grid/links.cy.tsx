@@ -1,0 +1,111 @@
+import {
+    expectChartCategories,
+    mapFeature,
+    openSavedItem,
+} from './demo-helpers'
+import { clickTile, inViewHeader, mountWorkspace, SMOKE } from './grid-helpers'
+
+/* A map of malaria by district beside a chart of the same, and, when
+ * asked, an org unit selector in the bar above them */
+const setUpLinkedViews = ({ selector = false } = {}) => {
+    mountWorkspace({ demo: true })
+    clickTile('map')
+    clickTile('visualization')
+    if (selector) {
+        clickTile('org-unit-selector')
+    }
+    openSavedItem('Map 1', 'Malaria cases by district')
+    openSavedItem(
+        'Visualization 1',
+        'Malaria cases by district, last 12 months'
+    )
+    expectChartCategories(['North', 'West', 'East', 'South'])
+}
+
+/* Where it is: scrolling it into view would scroll the 800px mount */
+const clickFeature = (name: string) =>
+    mapFeature(name).click({ scrollBehavior: false })
+
+const expectDimmed = (name: string, dimmed: boolean) =>
+    mapFeature(name)
+        .invoke('attr', 'class')
+        .should(dimmed ? 'match' : 'not.match', /dimmed/)
+
+describe('linked views', () => {
+    it('makes the chart follow a district clicked on the map', SMOKE, () => {
+        setUpLinkedViews()
+
+        clickFeature('North')
+
+        expectChartCategories(['Amber Hills', 'Birch Valley', 'Cedar Coast'])
+        /* The map highlights its click, and isn't filtered by it */
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+        expectDimmed('West', true)
+        expectDimmed('North', false)
+
+        clickFeature('North')
+
+        expectChartCategories(['North', 'West', 'East', 'South'])
+        expectDimmed('West', false)
+    })
+
+    it('makes the map follow a district clicked on the chart', () => {
+        setUpLinkedViews()
+
+        /* The West bar */
+        cy.get('[data-test="fake-point"]')
+            .eq(1)
+            .click({ scrollBehavior: false })
+
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+        mapFeature('Kestrel').should('exist')
+        cy.get('[data-test="fake-point"]')
+            .eq(0)
+            .invoke('attr', 'class')
+            .should('match', /dimmed/)
+        cy.get('[data-test="fake-point"]')
+            .eq(1)
+            .invoke('attr', 'class')
+            .should('not.match', /dimmed/)
+    })
+
+    it('shows the channel in each view’s header, without cutting its title', () => {
+        setUpLinkedViews()
+        clickFeature('North')
+
+        for (const title of ['Map 1', 'Visualization 1']) {
+            inViewHeader(title, '[data-test="channel-badge-A"]')
+                .should('have.text', 'A→←')
+                .and('be.visible')
+            inViewHeader(title, '.dv-default-tab-content').should((name) => {
+                const element = name[0]
+                expect(element.scrollWidth).to.be.at.most(element.clientWidth)
+            })
+        }
+    })
+
+    it('lets the selector set the value for both views', () => {
+        setUpLinkedViews({ selector: true })
+        cy.get('[data-test="selector-view"]')
+            .should('contain.text', 'Org unit A')
+            .find('[data-test="dhis2-uicore-select-input"]')
+            .click({ scrollBehavior: false })
+        cy.get('[data-test="dhis2-uicore-singleselectoption"]')
+            .contains('West')
+            .click()
+
+        const westChiefdoms = [
+            'Kestrel',
+            'Lark Meadow',
+            'Maple Point',
+            'Nettle Hill',
+        ]
+        expectChartCategories(westChiefdoms)
+        cy.get('[data-test="fake-feature"]').should('have.length', 4)
+        mapFeature('Kestrel').should('exist')
+
+        /* A click on the map shows in the selector */
+        clickFeature('Kestrel')
+        cy.get('[data-test="selector-view"]').should('contain.text', 'Kestrel')
+    })
+})

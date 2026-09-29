@@ -1,5 +1,33 @@
+import type { PluginObject } from '@modules/plugins/contract'
 import type { DockviewApi } from 'dockview-react'
-import { getViewGroups } from './panels'
+import { getViewGroups, type ViewPanelParams } from './panels'
+
+/* The saved item a plugin view shows, kept in its params, which dockview
+ * keeps with the layout; the view itself stays where it is */
+export const setViewObject = (
+    api: DockviewApi,
+    viewId: string,
+    object: PluginObject
+): void => {
+    const view = api.getPanel(viewId)
+    view?.api.updateParameters({ ...view.params, object })
+}
+
+export const getViewObject = (
+    api: DockviewApi,
+    viewId: string
+): PluginObject | undefined =>
+    (api.getPanel(viewId)?.params as ViewPanelParams | undefined)?.object
+
+/* Calls back when a view's params change, e.g. its saved item */
+export const onViewParamsChange = (
+    api: DockviewApi,
+    viewId: string,
+    listener: () => void
+): { dispose: () => void } =>
+    api.getPanel(viewId)?.api.onDidParametersChange(listener) ?? {
+        dispose: () => {},
+    }
 
 export const closeView = (api: DockviewApi, viewId: string): void => {
     const view = api.getPanel(viewId)

@@ -61,6 +61,7 @@ Never rely on training data for DHIS2 API specifics. Look them up against the de
 
 What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md). The rules that shape code:
 
+- **The plugin adapter** is `PluginView` (`src/components/plugins/`): it mounts whatever `PluginSourcesProvider` gives for a view type, with the contract's props (`src/modules/plugins/contract.ts`), sized to the view's body. Demo mode provides the fakes (`src/components/demo/`); the app provides nothing until plan step 4, so views keep their placeholders. A view's saved item is in its params (`object`).
 - **Embed with `Plugin`** from `@dhis2/app-runtime/experimental` (an iframe plus props passed over post-robot). It types only its own layout props, so re-type it for the props we send (see EV `src/plugin-host/plugin-host-app.tsx`). Give it a fixed `width` and `height`: without them some plugins render at 0×0.
 - **Plugin URL**: look the app up in `/api/apps` by key (`data-visualizer`, `maps`, `line-listing`) and use `pluginLaunchUrl`; fall back to `${baseUrl}/dhis-web-data-visualizer/plugin.html` or `${baseUrl}/dhis-web-maps/plugin.html`. Reference: dashboard-app `plugin.js` (`getPluginLaunchUrl`).
 - **Props**: pass what the dashboard passes (dashboard-app `IframePlugin.jsx`): `visualization`, `isVisualizationLoaded: true`, `forDashboard: true`, `displayProperty`, `onError`, `onInstallationStatusChange`, `cacheId`, `isParentCached`.
@@ -77,8 +78,8 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
 ## Plan
 
 1. **Tooling** (done): the EV setup: Vitest, strict TypeScript, path aliases, ESLint, Stylelint, ls-lint, Prettier, commitlint and git hooks, the RTK Query data layer, generated API types, CI.
-2. **Workspace grid with placeholders** (finishing): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md). What's left from the external review is listed in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review); only the small items are needed before merging.
-3. **Vision demo** (next; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
+2. **Workspace grid with placeholders** (done, #7): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md); the reviews and their fixes are in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review).
+3. **Vision demo** (in progress, branch `feat/demo-mode`; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
     - synthetic data, and the **plugin adapter** mounting fake DV and Maps plugins with the proposed upstream contract (`onDataClick`, `highlight`, `onLoadingComplete`);
     - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), item 2);
     - the `?demo` switch, a banner, and a preset workspace that one click loads or resets.

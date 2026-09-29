@@ -127,7 +127,7 @@ Checked with Chrome's touch emulation:
 - **Components** in `src/components/workspace/`:
     - `workspace.tsx`, `workspace-api-context.tsx`, `view-type-icon.tsx`;
     - `tabs/` (the tab, the icon tab, its name tooltip and its header actions), `insert-zones/`;
-    - `panels/`: the Workspace tab, the palette, settings, `view-panel` (a view's body by kind), the text view, placeholders, `ToolPanel`, the swap spacer and the empty-grid watermark;
+    - `panels/`: the Workspace tab, the palette, settings (with `saved-item-picker`), `view-panel` (a view's body by kind), `plugin-panel` (a plugin view's body, through the plugin adapter in `components/plugins/`, rewritten with its channels' values), `selector-panel` (a selector's short list), the text view, placeholders, `ToolPanel`, the swap spacer and the empty-grid watermark;
     - shared hooks: `use-current-drag`, `use-drop-target`, `use-add-view`, `use-dockview-value`, `use-workspace-minimum-size`.
 - Each folder has its own CSS module; `styles/workspace.module.css` keeps only the theme and dockview overrides.
 
@@ -135,7 +135,7 @@ Checked with Chrome's touch emulation:
 
 - Vitest covers the pure modules and the controller (against `__tests__/fake-dockview.ts`), and the components in jsdom. It owns the 100% coverage.
 - The fake dockview copies the behavior the controller relies on: will and did events around each layout change; hidden (zero) sizes while a view is maximized; the cell a view leaves showing its next tab; removing an edge group discarding its panels; leaving maximize as a layout change. When the controller starts relying on more, the fake learns it first.
-- Cypress component tests cover what jsdom can't: real layout, CSS and drag and drop. The scenarios live in `src/components/workspace/__tests__/grid/`, one spec per group (adding, moving, swapping, sizing, selectors, text, headers, the palette, the tools strip, its tabs, settings tabs and the Workspace tab), sharing `grid-helpers.tsx`.
+- Cypress component tests cover what jsdom can't: real layout, CSS and drag and drop. The scenarios live in `src/components/workspace/__tests__/grid/`, one spec per group (adding, moving, swapping, sizing, selectors, text, headers, the palette, the tools strip, its tabs, settings tabs and the Workspace tab), sharing `grid-helpers.tsx`; the demo's plugins and the links between them have `demo.cy.tsx` and `links.cy.tsx`, sharing `demo-helpers.tsx`.
 - The mount renders like the app shell: Roboto (`typeface-roboto`, imported in `cypress/support/component.ts`) and DHIS2's `CssReset`, which makes buttons take the page's font. Without them each browser measured text in its own fallback font, and layout checks tested what no user sees.
 - They pass in Chrome and in Firefox (`pnpm cy:comp:run --browser firefox`). Two Firefox differences shaped the palette: a wrapping flex row is sized from its items' content, so tiles have a width and not only a flex basis; and a drag starts only on what a button holds, not on the button itself, so a tile's content fills its whole face.
 
