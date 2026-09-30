@@ -124,3 +124,12 @@
     margin: var(--spacers-dp16);
     color: var(--colors-grey700);
 }
+
+/* Over the map's top, clear of the zoom control on the right */
+.notices {
+    position: absolute;
+    z-index: 1;
+    inset-block-start: calc(44px + var(--spacers-dp8));
+    inset-inline: var(--spacers-dp8) calc(26px + 2 * var(--spacers-dp8));
+    pointer-events: none;
+}

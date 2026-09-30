@@ -13,7 +13,7 @@ const OPTIONS = {
     orgUnitDepth: 1,
     getLegendSetId: (id: string) => getDataItem(id)?.legendSetId,
 } as const
-const [ancLine, malariaByDistrict, , pentaTable] = DEMO_VISUALIZATIONS
+const [ancLine, malariaByDistrict, , , , pentaTable] = DEMO_VISUALIZATIONS
 const [pentaMap] = DEMO_MAPS
 
 const north = {

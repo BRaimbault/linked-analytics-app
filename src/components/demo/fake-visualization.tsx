@@ -7,11 +7,14 @@ import { useEffect, useMemo, useRef, type FC } from 'react'
 import { toClickOptions } from './click-options'
 import { FakeChart, SERIES_COLORS, type PointHandlers } from './fake-chart'
 import { FakePivotTable } from './fake-pivot-table'
+import { PeriodNotices } from './period-notices'
 import classes from './styles/fake-visualization.module.css'
 
 /* The header above the chart: the name, what it's filtered by, and the
  * series' legend */
 const HEADER_HEIGHT = 56
+/* A notice's line above the chart, as in period-notices.module.css */
+const NOTICE_HEIGHT = 20
 
 /* Stands in for DV, with the props of the proposed plugin contract: it
  * draws the object it's given from the demo's data, sends a clicked
@@ -50,6 +53,11 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
         isDimmed: (item, category) =>
             !isHighlighted(shownHighlight, toDataClick(item, category)),
     }
+    const hasValues = table.series.some((item) =>
+        table.categories.some(
+            (category) => table.valueOf(item, category) !== null
+        )
+    )
     const filteredBy = table.filters
         .map((items) => items.map(({ name }) => name).join(', '))
         .join(' · ')
@@ -96,18 +104,34 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
                     </ul>
                 )}
             </div>
-            {!table.series.length || !table.categories.length ? (
-                <p className={classes.empty}>{i18n.t('No data to show')}</p>
-            ) : visualization.type === 'PIVOT_TABLE' ? (
-                <FakePivotTable table={table} {...handlers} />
+            {!hasValues ? (
+                <div className={classes.empty}>
+                    <p>{i18n.t('No data to show')}</p>
+                    <PeriodNotices notices={table.notices} />
+                </div>
             ) : (
-                <FakeChart
-                    table={table}
-                    kind={visualization.type}
-                    width={width}
-                    height={Math.max(0, height - HEADER_HEIGHT)}
-                    {...handlers}
-                />
+                <>
+                    <PeriodNotices
+                        notices={table.notices}
+                        className={classes.notices}
+                    />
+                    {visualization.type === 'PIVOT_TABLE' ? (
+                        <FakePivotTable table={table} {...handlers} />
+                    ) : (
+                        <FakeChart
+                            table={table}
+                            kind={visualization.type}
+                            width={width}
+                            height={Math.max(
+                                0,
+                                height -
+                                    HEADER_HEIGHT -
+                                    NOTICE_HEIGHT * table.notices.length
+                            )}
+                            {...handlers}
+                        />
+                    )}
+                </>
             )}
         </div>
     )

@@ -19,6 +19,7 @@ import {
 } from 'react'
 import { toClickOptions } from './click-options'
 import { FakeMapLegend } from './fake-map-legend'
+import { PeriodNotices } from './period-notices'
 import classes from './styles/fake-map.module.css'
 import { useLegendLock } from './use-legend-lock'
 import { useMapView } from './use-map-view'
@@ -128,6 +129,10 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                         .join(' · ')}
                 </div>
             </div>
+            <PeriodNotices
+                notices={layer.notices}
+                className={classes.notices}
+            />
             <svg
                 width={width}
                 height={mapHeight}

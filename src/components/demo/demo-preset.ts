@@ -7,8 +7,12 @@ import type { PluginObject } from '@modules/plugins/contract'
 import type { ViewType } from '@modules/workspace/view-types'
 import type { DockviewApi } from 'dockview-react'
 
-const [ancVisits, , , pentaByChiefdom] = DEMO_VISUALIZATIONS
-const [, malariaByDistrict] = DEMO_MAPS
+const savedItem = <T extends PluginObject>(items: T[], id: string) =>
+    items.find((item) => item.id === id) as T
+
+const ancVisits = savedItem(DEMO_VISUALIZATIONS, 'DemoVisAnc1')
+const pentaByChiefdom = savedItem(DEMO_VISUALIZATIONS, 'DemoVisPen1')
+const malariaByDistrict = savedItem(DEMO_MAPS, 'DemoMapMal1')
 
 /* Added as clicks would add them: a chart, then a map beside it, then a
  * pivot table under the chart (a click halves the first largest cell),

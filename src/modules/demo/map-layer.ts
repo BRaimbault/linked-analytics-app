@@ -1,10 +1,11 @@
 import type { MapView } from '@modules/visualization/analytical-object'
 import { getDimensionItemIds } from '@modules/visualization/analytical-object'
+import { getTotal } from './aggregation'
 import { getDataItem, getLegendSet } from './data-items'
 import { getOrgUnit, resolveOrgUnits, type DemoOrgUnit } from './org-units'
+import { checkPeriods, type PeriodNotice } from './period-check'
 import { getPeriodItemName, resolvePeriods } from './periods'
 import type { Shape } from './shapes'
-import { getTotal } from './values'
 
 /* What a fake map draws for a thematic layer, worked out from its map
  * view as the Maps app reads one: dx in columns, ou in rows, pe in
@@ -32,6 +33,8 @@ export type DemoMapLayer = {
     /* The range of the values shown, which automatic classes fit; none
      * with a legend set, whose classes are fixed */
     dataRange: ClassRange | null
+    /* Why some or all of the features have no value for these periods */
+    notices: PeriodNotice[]
 }
 
 const DEFAULT_COLOR_SCALE = '#ffffcc,#c2e699,#78c679,#31a354,#006837'
@@ -125,5 +128,12 @@ export const buildDemoMapLayer = (
               }))
             : intervals.entries,
         dataRange: legendSet ? null : dataRange,
+        notices: dataItem
+            ? checkPeriods(
+                  [dataItem.id],
+                  orgUnits.map(({ id }) => id),
+                  periodIds
+              )
+            : [],
     }
 }

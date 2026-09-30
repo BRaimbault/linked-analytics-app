@@ -122,16 +122,37 @@ export const FakeChart: FC<
                     value: valueOf(item, category) ?? 0,
                 }))
                 if (kind === 'LINE') {
+                    /* A missing value breaks the line, and has no point */
+                    const known = points.filter(
+                        ({ category }) => valueOf(item, category) !== null
+                    )
+                    const runs = points
+                        .reduce<(typeof points)[]>(
+                            (all, current) => {
+                                if (valueOf(item, current.category) === null) {
+                                    return [...all, []]
+                                }
+                                all[all.length - 1].push(current)
+                                return all
+                            },
+                            [[]]
+                        )
+                        .filter((run) => run.length)
                     return (
                         <g key={item.id} data-test="fake-series">
-                            <polyline
-                                className={classes.line}
-                                stroke={color}
-                                points={points
-                                    .map(({ x, value }) => `${x},${y(value)}`)
-                                    .join(' ')}
-                            />
-                            {points.map(({ category, x, value }) => (
+                            {runs.map((run) => (
+                                <polyline
+                                    key={run[0].category.id}
+                                    className={classes.line}
+                                    stroke={color}
+                                    points={run
+                                        .map(
+                                            ({ x, value }) => `${x},${y(value)}`
+                                        )
+                                        .join(' ')}
+                                />
+                            ))}
+                            {known.map(({ category, x, value }) => (
                                 <circle
                                     key={category.id}
                                     cx={x}

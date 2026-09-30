@@ -50,6 +50,25 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         rows: [periods('LAST_12_MONTHS')],
         filters: [data(DATA_ITEM_IDS.anc1)],
     },
+    /* Weekly where malaria is reported weekly: the East and South lines
+     * stay empty, as those districts report monthly */
+    {
+        id: 'DemoVisMal2',
+        name: 'Malaria cases by district, last 12 weeks',
+        type: 'LINE',
+        columns: [orgUnits('USER_ORGUNIT_CHILDREN')],
+        rows: [periods('LAST_12_WEEKS')],
+        filters: [data(DATA_ITEM_IDS.malaria)],
+    },
+    /* A stock: a quarter shows its last month, not a sum */
+    {
+        id: 'DemoVisAct1',
+        name: 'Antimalarial stock, last 4 quarters',
+        type: 'COLUMN',
+        columns: [data(DATA_ITEM_IDS.actStock)],
+        rows: [periods('LAST_4_QUARTERS')],
+        filters: [orgUnits('USER_ORGUNIT')],
+    },
     {
         id: 'DemoVisPen1',
         name: 'Penta 3 coverage by chiefdom, last 4 quarters',

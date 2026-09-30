@@ -79,9 +79,24 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 
 - **Org units**: 1 country, 4 districts, 3 to 4 chiefdoms each, about 20 units in all. Each has an `id`, `name`, `path`, `level` (as the real UID), and a made-up polygon for the map: chiefdoms tile their district, and districts tile the country.
 - **Levels and groups**: 3 levels (National, District, Chiefdom), and 2 org unit groups, so the org unit picker's level and group selects have content.
-- **Periods**: monthly, quarterly and yearly periods for the two years before a fixed demo date. Relative periods are resolved against that date, so demos don't change with the real date.
-- **Data items**: 3 or 4 indicators and data elements (e.g. ANC 1st visit, ANC 4th visit, Penta 3 coverage), with a legend set for one of them.
-- **Values**: a seeded formula per data item: a base per district, a seasonal curve over the months, and noise from the org unit and period ids. Totals roll up from chiefdoms to districts and the country, so drilling gives consistent numbers.
+- **Periods**: ISO weeks, months, quarters and years for the two years before a fixed demo date, each a range of days (`modules/demo/calendar.ts`, `periods.ts`). Relative periods (weeks included) are resolved against that date, so demos don't change with the real date.
+- **Data items**, collected and aggregated as DHIS2 does it, so the demo shows what linking periods runs into (`data-items.ts`):
+
+    | Item                             | Collected                                               | Aggregation            |
+    | -------------------------------- | ------------------------------------------------------- | ---------------------- |
+    | ANC 1st visit, ANC 4th visit     | monthly                                                 | `SUM`                  |
+    | Malaria cases confirmed          | weekly in North and West, monthly in East, South        | `SUM`                  |
+    | Penta 3 doses given              | monthly                                                 | `SUM`                  |
+    | Population under 1 year          | yearly                                                  | `AVERAGE_SUM_ORG_UNIT` |
+    | Antimalarial (ACT) stock on hand | monthly                                                 | `LAST`                 |
+    | Penta 3 coverage <1y (indicator) | doses ÷ population × 100, annualized, with a legend set | —                      |
+
+- **Values**: a seeded formula per data element, chiefdom and period it's collected in (`values.ts`): a base per district, a season, a slow trend, and noise from the ids.
+- **Aggregation**, following what tests on 2.43 and 2.44 servers showed (`aggregation.ts`):
+    - a period takes the stored values whose period has its middle day in it, and is no longer than it: a week counts in the month holding most of its days, and **a monthly value is never split into weeks**;
+    - `SUM` adds up; `LAST` takes the latest; `AVERAGE_SUM_ORG_UNIT` weighs by days, so **the yearly population repeats into every shorter period**;
+    - places add up; the indicator divides its parts' totals and scales to a year.
+    - So weeks sent to a monthly view give no data, and a weekly view of the whole country leaves East and South out. The fakes say why (`period-check.ts`, `components/demo/period-notices.tsx`): "No weekly values for ANC 1st visit, which is collected monthly", as the proposed `@dhis2/analytics` feature would let DV and Maps say it.
 - **Demo items**: a few saved-looking visualizations and maps built from these, so "Open a saved item" has something to open.
 
 ## 6. Running without a server

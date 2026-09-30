@@ -1,6 +1,6 @@
+import { getTotal, getValue } from '@modules/demo/aggregation'
 import { buildDemoTable, toDataClick } from '@modules/demo/analytics'
 import { DATA_ITEM_IDS } from '@modules/demo/data-items'
-import { getTotal, getValue } from '@modules/demo/values'
 import type { VisualizationObject } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
 

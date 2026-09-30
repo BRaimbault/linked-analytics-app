@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-29T16:03:21.584Z\n"
-"PO-Revision-Date: 2026-09-29T16:03:21.585Z\n"
+"POT-Creation-Date: 2026-09-30T14:43:10.613Z\n"
+"PO-Revision-Date: 2026-09-30T14:43:10.616Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
@@ -55,6 +55,28 @@ msgstr "Whole map"
 
 msgid "No data to show"
 msgstr "No data to show"
+
+msgid "weekly"
+msgstr "weekly"
+
+msgid "monthly"
+msgstr "monthly"
+
+msgid "quarterly"
+msgstr "quarterly"
+
+msgid "yearly"
+msgstr "yearly"
+
+msgid ""
+"{{item}} is collected {{collected}} in {{places}}, which have no {{asked}} "
+"values."
+msgstr ""
+"{{item}} is collected {{collected}} in {{places}}, which have no {{asked}} "
+"values."
+
+msgid "No {{asked}} values for {{item}}, which is collected {{collected}}."
+msgstr "No {{asked}} values for {{item}}, which is collected {{collected}}."
 
 msgid "Sets the value"
 msgstr "Sets the value"

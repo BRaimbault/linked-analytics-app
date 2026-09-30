@@ -1,0 +1,21 @@
+.notices {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* One line each, 18px, as NOTICE_HEIGHT in fake-visualization.tsx */
+.notice {
+    overflow: hidden;
+    box-sizing: border-box;
+    block-size: 18px;
+    margin: 0;
+    padding-inline: var(--spacers-dp8);
+    border-inline-start: 3px solid var(--colors-yellow500);
+    background: var(--colors-yellow050);
+    font-size: 11px;
+    line-height: 18px;
+    color: var(--colors-grey800);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

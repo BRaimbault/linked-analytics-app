@@ -1,86 +1,52 @@
 import { DATA_ITEM_IDS } from '@modules/demo/data-items'
-import { getChildren, ROOT_ORG_UNIT_ID } from '@modules/demo/org-units'
-import { getPeriod } from '@modules/demo/periods'
-import { getValue, seededRandom } from '@modules/demo/values'
+import { getPeriod, type DemoPeriod } from '@modules/demo/periods'
+import { getLeafValue, seededRandom } from '@modules/demo/values'
 import { describe, expect, it } from 'vitest'
 
-const { anc1, anc4, penta3, malaria } = DATA_ITEM_IDS
-const COUNTS = [anc1, anc4, malaria]
-
-const sum = (values: (number | null)[]) =>
-    values.reduce<number>((total, value) => total + (value ?? 0), 0)
+const { anc1, anc4, malaria, actStock, populationUnder1 } = DATA_ITEM_IDS
+const period = (id: string) => getPeriod(id) as DemoPeriod
+const KESTREL = 'DemoChW0101'
 
 describe('demo values', () => {
-    it('draws noise that is always the same for the same text', () => {
+    it('draws noise that is always the same for the same text, and differs at the end', () => {
         expect(seededRandom('a')).toBe(seededRandom('a'))
         expect(seededRandom('a')).not.toBe(seededRandom('b'))
         expect(seededRandom('a')).toBeGreaterThanOrEqual(0)
         expect(seededRandom('a')).toBeLessThan(1)
-    })
-
-    it('adds counts up from chiefdoms to districts and the country', () => {
-        for (const dataItemId of COUNTS) {
-            const districts = getChildren(ROOT_ORG_UNIT_ID)
-            for (const district of districts) {
-                expect(getValue(dataItemId, district.id, '2025')).toBe(
-                    sum(
-                        getChildren(district.id).map(({ id }) =>
-                            getValue(dataItemId, id, '2025')
-                        )
-                    )
-                )
-            }
-            expect(getValue(dataItemId, ROOT_ORG_UNIT_ID, '2025')).toBe(
-                sum(districts.map(({ id }) => getValue(dataItemId, id, '2025')))
-            )
-        }
-    })
-
-    it('adds counts up from months to quarters and years', () => {
-        for (const periodId of ['2025Q2', '2025', '2026']) {
-            const months = getPeriod(periodId)?.monthIds ?? []
-            expect(getValue(anc1, 'DemoEast001', periodId)).toBe(
-                sum(months.map((month) => getValue(anc1, 'DemoEast001', month)))
-            )
-        }
-    })
-
-    it('works a coverage out from its parts, not as an average', () => {
-        const coverage = getValue(penta3, ROOT_ORG_UNIT_ID, '2025') as number
-        const districts = getChildren(ROOT_ORG_UNIT_ID).map(
-            ({ id }) => getValue(penta3, id, '2025') as number
+        /* Ids that differ only in their last character, as weeks do */
+        const weeks = ['1', '2', '3', '4', '5'].map((week) =>
+            seededRandom(`DemoMalar01:DemoChN0101:2025W${week}`)
         )
-
-        expect(coverage).toBeGreaterThan(Math.min(...districts))
-        expect(coverage).toBeLessThan(Math.max(...districts))
-        /* One decimal, as DHIS2 shows a percentage */
-        expect(Math.round(coverage * 10) / 10).toBe(coverage)
+        expect(new Set(weeks.map((value) => value.toFixed(2))).size).toBe(5)
     })
 
-    it('keeps values plausible, and different between places', () => {
-        const north = getValue(penta3, 'DemoNorth01', '2025') as number
-        const south = getValue(penta3, 'DemoSouth01', '2025') as number
+    it('stores a value per chiefdom and period, in proportion to the period', () => {
+        const month = getLeafValue(malaria, KESTREL, period('202508'))
+        const week = getLeafValue(malaria, KESTREL, period('2025W33'))
 
-        expect(north).toBeGreaterThan(south)
-        for (const value of [north, south]) {
-            expect(value).toBeGreaterThan(30)
-            expect(value).toBeLessThan(110)
-        }
+        /* A week holds about a quarter of a month's cases */
+        expect(week).toBeGreaterThan(month / 7)
+        expect(week).toBeLessThan(month / 2.5)
+        expect(Number.isInteger(week)).toBe(true)
+    })
+
+    it('keeps values plausible', () => {
         /* Fewer women come back for a 4th visit */
-        expect(getValue(anc4, 'DemoWest001', '2025')).toBeLessThan(
-            getValue(anc1, 'DemoWest001', '2025') as number
+        expect(getLeafValue(anc4, KESTREL, period('202503'))).toBeLessThan(
+            getLeafValue(anc1, KESTREL, period('202503'))
         )
-    })
-
-    it('peaks malaria with the rains, in August', () => {
-        expect(getValue(malaria, ROOT_ORG_UNIT_ID, '202508')).toBeGreaterThan(
-            2 * (getValue(malaria, ROOT_ORG_UNIT_ID, '202502') as number)
+        /* Malaria peaks with the rains, and the stock runs lowest then */
+        expect(
+            getLeafValue(malaria, KESTREL, period('202508'))
+        ).toBeGreaterThan(2 * getLeafValue(malaria, KESTREL, period('202502')))
+        expect(getLeafValue(actStock, KESTREL, period('202508'))).toBeLessThan(
+            getLeafValue(actStock, KESTREL, period('202502'))
         )
-    })
-
-    it('has no value for an unknown data item, org unit or period', () => {
-        expect(getValue('nope', ROOT_ORG_UNIT_ID, '2025')).toBeNull()
-        expect(getValue(anc1, 'nope', '2025')).toBeNull()
-        expect(getValue(anc1, ROOT_ORG_UNIT_ID, '2023')).toBeNull()
+        /* The population grows a little from one year to the next */
+        expect(
+            getLeafValue(populationUnder1, KESTREL, period('2026'))
+        ).toBeGreaterThan(
+            getLeafValue(populationUnder1, KESTREL, period('2025'))
+        )
     })
 })

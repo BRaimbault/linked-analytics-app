@@ -156,6 +156,17 @@
 }
 
 .empty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
     margin: var(--spacers-dp16);
     color: var(--colors-grey700);
+}
+
+.empty p {
+    margin: 0;
+}
+
+.notices {
+    margin-inline: var(--spacers-dp8);
 }

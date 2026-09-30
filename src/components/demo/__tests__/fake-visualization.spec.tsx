@@ -5,7 +5,8 @@ import type { VisualizationObject } from '@modules/visualization/analytical-obje
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const [ancLine, malariaColumns, ancByDistrict, pentaTable] = DEMO_VISUALIZATIONS
+const [ancLine, malariaColumns, ancByDistrict, malariaWeeks, , pentaTable] =
+    DEMO_VISUALIZATIONS
 
 const draw = (
     visualization: VisualizationObject,
@@ -241,14 +242,34 @@ describe('FakeVisualization', () => {
         expect(dimmedPoints().slice(0, 4)).toEqual([false, true, true, true])
     })
 
-    it('leaves a pivot cell empty where the demo has no value', () => {
-        /* A data item the demo doesn't have */
+    it('leaves a pivot cell empty where the demo has no value, and says why', () => {
+        /* Malaria by week: the east and south report monthly */
         draw({
             ...pentaTable,
-            filters: [{ dimension: 'dx', items: [{ id: 'nope' }] }],
+            columns: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
+            filters: [{ dimension: 'dx', items: [{ id: 'DemoMalar01' }] }],
+        })
+        const cells = screen.getAllByTestId('fake-point')
+
+        /* North's first chiefdom, then the east's first (3 + 4 rows down) */
+        expect(cells[0]).not.toBeEmptyDOMElement()
+        expect(cells[7 * 4]).toBeEmptyDOMElement()
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'Malaria cases confirmed is collected monthly in East, South, which have no weekly values.'
+        )
+    })
+
+    it('says why there is no data, when the periods are shorter than collected', () => {
+        draw({
+            ...ancLine,
+            rows: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
         })
 
-        expect(screen.getAllByTestId('fake-point')[0]).toBeEmptyDOMElement()
+        expect(screen.getByText('No data to show')).toBeInTheDocument()
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'No weekly values for ANC 1st visit, which is collected monthly.'
+        )
+        expect(screen.queryByTestId('fake-chart')).toBeNull()
     })
 
     it('says when it has finished drawing, and again for a new object', () => {
@@ -275,17 +296,38 @@ describe('FakeVisualization', () => {
     })
 
     it('keeps a missing value at zero, and fits in a tiny view', () => {
+        /* A bar per district for the last 4 weeks: the east's is missing */
         draw(
             {
                 ...malariaColumns,
-                filters: [{ dimension: 'pe', items: [{ id: '1999' }] }],
+                filters: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
             },
             { width: 10, height: 10 }
         )
+        const bars = screen.getAllByTestId('fake-point')
 
-        expect(screen.getAllByTestId('fake-point')[0]).toHaveAttribute(
-            'height',
-            '0'
+        expect(bars).toHaveLength(4)
+        expect(bars[2]).toHaveAttribute('height', '0')
+        expect(screen.getByTestId('fake-chart')).toBeInTheDocument()
+    })
+
+    it('draws weekly lines where malaria is reported weekly', () => {
+        draw(malariaWeeks)
+        const [north, west, east, south] = screen.getAllByTestId('fake-series')
+
+        /* The east and south report monthly: no points, no line */
+        for (const series of [north, west]) {
+            expect(within(series).getAllByTestId('fake-point')).toHaveLength(12)
+            expect(series.querySelectorAll('polyline')).toHaveLength(1)
+        }
+        for (const series of [east, south]) {
+            expect(within(series).queryAllByTestId('fake-point')).toHaveLength(
+                0
+            )
+            expect(series.querySelectorAll('polyline')).toHaveLength(0)
+        }
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'East, South'
         )
     })
 

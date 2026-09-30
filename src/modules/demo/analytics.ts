@@ -3,10 +3,11 @@ import type {
     Dimension,
     VisualizationObject,
 } from '@modules/visualization/analytical-object'
+import { getTotal } from './aggregation'
 import { resolveDataItems } from './data-items'
 import { resolveOrgUnits } from './org-units'
+import { checkPeriods, type PeriodNotice } from './period-check'
 import { getPeriodItemName, resolvePeriods } from './periods'
-import { getTotal } from './values'
 
 /* The table a fake visualization draws, worked out from its object as
  * DV's analytics request reads it: the first dimension in columns gives
@@ -30,6 +31,8 @@ export type DemoTable = {
     /* What the filters hold, e.g. to show what a view is filtered by */
     filters: AxisItem[][]
     valueOf: (series: AxisItem, category: AxisItem) => number | null
+    /* Why some or all of the values are missing for these periods */
+    notices: PeriodNotice[]
 }
 
 const isDemoDimension = (dimension: string): dimension is DemoDimension =>
@@ -112,7 +115,11 @@ export const buildDemoTable = (object: VisualizationObject): DemoTable => {
                 : resolve(entry)
         )
 
-    return { series, categories, filters, valueOf }
+    const idsIn = (dimension: DemoDimension) =>
+        (all.get(dimension) ?? []).map(({ id }) => id)
+    const notices = checkPeriods(idsIn('dx'), idsIn('ou'), idsIn('pe'))
+
+    return { series, categories, filters, valueOf, notices }
 }
 
 /* What a click on a point sends: the ids on its axes */

@@ -1,7 +1,7 @@
+import { getTotal } from '@modules/demo/aggregation'
 import { DATA_ITEM_IDS } from '@modules/demo/data-items'
 import { buildDemoMapLayer } from '@modules/demo/map-layer'
 import { DEMO_MAPS } from '@modules/demo/saved-items'
-import { getTotal } from '@modules/demo/values'
 import type { MapView } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
 
