@@ -29,6 +29,8 @@ The design and the repo's history live in `docs/` ([index, terms and conventions
 - [map-layers.md](docs/map-layers.md): options to limit layers per map (proposal).
 - [demo-mode.md](docs/demo-mode.md): fake plugins on synthetic data. Its `released` profile mirrors plugins.md.
 - [code-structure.md](docs/code-structure.md): how `src/` is organized, where a new domain's code goes, and the moves planned for later.
+- [data-period-types.md](docs/data-period-types.md): which period types a data item can fill, and the helpers proposed for `@dhis2/analytics`.
+- [data-org-units.md](docs/data-org-units.md): the follow-up for org units: which places a data item covers.
 
 ## Working with the user
 

@@ -40,15 +40,17 @@ Aggregate analytics share one dimensional model: `dx` (data), `pe` (period), `ou
     - on an axis (a bar per district, a choropleth map) → the children of the selection (`id` + `LEVEL-next`) by default. Each view can choose, in its Links section: the selected org unit itself, its sub-units, or its sub-x2-units (`LEVEL-next+1`), as the org unit picker names them. It stops at the deepest level;
     - only as a filter (a trend line, a single value) → the selection itself (`id`).
 - Earth Engine, facility and org unit layers take `ou` links too (aggregation, boundaries).
+- A received unit can leave a view empty or short, as a period can: data entered at facilities only, a data set assigned to some districts, a unit with no geometry on a map. A follow-up to the period helpers proposes the same checks for places: [data-org-units.md](data-org-units.md).
 
 ### Period (`pe`)
 
 - A received fixed period replaces the view's periods, relative ones included.
-- Analytics aggregates to any period type, so a month in a filter works for any view.
-- **Rule per receiving view:**
+- Analytics aggregates to any **longer** period type, never a shorter one: monthly data asked by week is empty, except averaged data, which repeats. An element can also be collected at several types. So a received period can leave a view empty or short. The helpers proposed for `@dhis2/analytics` tell before the request and explain an empty result after: [data-period-types.md](data-period-types.md).
+- **Rule per receiving view** (the follow option _The period_, [§5.7](#57-follow-options)):
     - `pe` only as a filter → the selected period;
     - `pe` on an axis → the periods of the axis's own type that fall within the selection (a year → its 12 months);
     - if the selection is shorter than the axis type (a month into a yearly axis), the period that contains it.
+- A view with relative periods on an axis can instead keep its span and move it to end at the selection (_Up to the period_), so a trend stays a trend. How other tools handle periods across views: Grafana and Kibana share a range and let each panel keep its grouping; Tableau anchors relative dates to a chosen date; Power BI and Tableau filter rows, which DHIS2's period items can't.
 
     This needs a period helper, e.g. from `@dhis2/multi-calendar-dates`, as `@dhis2/analytics` uses.
 
@@ -120,7 +122,7 @@ Two ways for a receiver to react:
     - Maps: style the matching features (outline, others faded).
     - Both must apply it **without refetching**. DV's `VisualizationPluginWrapper` refetches when `visualization`, `filters` or `forDashboard` change, so the new prop must stay out of that dependency list.
 - **Contract**: one more optional prop in the same PRs as `onDataClick` ([§6](#6-upstream-prs)): `highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }`.
-- **In the app**: each receiving member gets a mode, `filter` or `highlight` (Power BI's two icons). A sender always gets `highlight` for its own clicks, when the plugin supports it. The default for receivers is `filter` until the plugins support highlight; it's a workspace setting ([§5.1](#51-zero-configuration-by-default)).
+- **In the app**: each receiving member gets a mode, `filter` or `highlight` (Power BI's two icons), as one of its follow options per dimension ([§5.7](#57-follow-options)). A sender always gets `highlight` for its own clicks, when the plugin supports it. The default for receivers is `filter` until the plugins support highlight; it's a workspace setting ([§5.1](#51-zero-configuration-by-default)).
 - **Later, once highlight exists**: hover sync (Grafana's shared crosshair), which needs an `onDataHover` callback. And multi-select with Ctrl/Cmd-click, which adds to the channel value instead of replacing it: `onDataClick(click, { additive: boolean })`.
 
 ## 3. What the plugins allow without upstream changes
@@ -355,7 +357,50 @@ A sender isn't rewritten by its own clicks, but you may still want to drill it. 
 - A drilled view shows its focus whatever its channel holds, and doesn't highlight a unit whose sub-units it shows. A new value from another view or a selector resets the drill of the views that follow it.
 - With "Views send clicks" off, the plugin's own drill menu is back (later, with the workspace settings).
 
-### 5.7 Later
+### 5.7 Follow options
+
+A view that follows a value can follow it in several ways, one choice per dimension, in its Links section under "Follow the value". The org unit depth ("Org units on an axis") is one such choice, and filter or highlight ([Filter vs highlight](#filter-vs-highlight)) another; follow options gather them. Designed on 30 September 2026, not built.
+
+| Dimension | Option                                                 | What the view shows for the value received                                                                                                                         | Offered when                    |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| Period    | **Up to the period**                                   | Its own relative span, ending at the period: "Last 12 months", receiving March 2026, shows April 2025 to March 2026, with March highlighted (`relativePeriodDate`) | Its periods are relative        |
+|           | **The period**                                         | The period, in the view's own type: its months for a quarter, the containing quarter for a month ([§2](#period-pe))                                                | Always                          |
+|           | **Highlight only**                                     | Its own periods, with the period highlighted                                                                                                                       | The plugin supports `highlight` |
+| Org unit  | **Selected org unit**, **Sub-units**, **Sub-x2-units** | As built: the unit, or the levels below it ([§2](#org-unit-ou))                                                                                                    | Always                          |
+|           | **Highlight only**                                     | Its own org units, with the unit highlighted                                                                                                                       | The plugin supports `highlight` |
+| Data      | **Replace** (as built)                                 | The item, or its own items narrowed to it ([Data](#data-dx))                                                                                                       | Always                          |
+
+- **Defaults**: _Up to the period_ for relative periods on an axis, so trends stay trends; _The period_ for fixed periods and for periods in a filter (as built); _Sub-units_ for org units on an axis (as built). _Highlight only_ is never a default.
+- **Finer than the data**: a period shorter than the view's data can fill (weeks sent to monthly data) is lifted to the containing period of the data's type, with the received part highlighted, and the Links row says so ("Collected monthly: shows January for week 3"). A unit below where the data is entered works the same way, with its parent.
+- **Options that can't work** for the view's data are disabled, with the reason in a tooltip, like the Links checkboxes; options that would leave it partial are marked. Both come from the checks ([§5.9](#59-how-the-checks-are-used)).
+- A view doesn't switch options on its own: when a value leaves it empty or short, it keeps its option and shows why, in a badge on its header.
+
+### 5.8 What a selector offers
+
+Follow options are the receiving side; a selector is the sending side, before anyone picks. For each of its options, a selector asks its channel's followers whether they can show it ([§5.9](#59-how-the-checks-are-used)):
+
+- **every follower can**: the option shows as normal;
+- **some can**: it's marked ("2 of 3 views"), and its tooltip names the others and why;
+- **none can**: it's disabled, with the reason.
+
+Options are never hidden: a period that vanished when a view joined the channel would surprise the user, and marking keeps the choice with them.
+
+In a selector's settings tab, where its list is chosen ([§5.5](#55-selectors-live-in-grid-cells)), the same checks suggest a default list (the options every follower can show) and warn when the author adds one that some can't. Clicks have no list, so a clicked value relies on the follow options alone.
+
+### 5.9 How the checks are used
+
+The checks are the four capabilities of [data-period-types.md](data-period-types.md) (and [data-org-units.md](data-org-units.md) for places): an item's collection profile, whether a value suits it, and, after an empty result, whether the value is the cause and what the data really holds.
+
+- **One function, three uses.** "Can this view show this value?" is answered from the view's cached collection profile by a pure check. The follow options call it for the value a view receives (§5.7); a selector calls it for each follower and each option (§5.8); the empty-result explanation calls the after-query capabilities. The profile's requests are paid once per view, when its saved item is opened.
+- **Where it comes from**: the `@dhis2/analytics` pure functions and request builders, once they exist, with our own RTK Query endpoints (`api/data-items.ts`), not the library's hooks, since they fetch with `useDataQuery`, which this app restricts. Demo mode gets the profile from the plugin sources, built from the demo's metadata in the library's shape; the demo's `modules/demo/period-check.ts` stands in until then.
+- **Where it goes**: the option and marking decisions in `modules/interactions/` (pure), the profile source in the plugin sources, the badge and the Links texts in `components/interactions/`.
+- **Limits:**
+    - The profile shows what the metadata allows, not what happened: IDSR's two weekly data sets are both assigned to every facility, and each facility uses one. Marks and disabled options are a guide; only the after-query capabilities read the data.
+    - It shows today's setup: a period type or an assignment that changed shows up only in the data.
+    - Complex items (nested indicators, many data sets) need several requests; they're cached per view.
+    - **The app can't see an empty result**: the plugins draw in iframes. Until the contract reports it ([§6](#contract-same-in-both-plugins)), the explanation runs on demand, from a "Why is this empty?" action on the view.
+
+### 5.10 Later
 
 - **Drag to connect**, Figma-style: drag a badge onto a view to add it to that channel. This competes with dockview's drag and drop.
 - **Templates**, e.g. "compare two org units": two channels and a 2×2 layout in one go.
@@ -381,7 +426,7 @@ type DataClickOptions = {
 }
 onDataClick?: (click: DataClick, options: DataClickOptions) => void
 highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }
-onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
+onLoadingComplete?: (result?: { empty: boolean }) => void // DV's wrapper must forward it; Maps adds it
 ```
 
 **What a plugin sends: `onDataClick`.**
@@ -403,6 +448,7 @@ onLoadingComplete?: () => void // DV's wrapper must forward it; Maps adds it
 
 - A plugin calls it once it has drawn its data, after each change of `visualization`.
 - **Why**: the period selector's play mode steps through periods and waits until every view has drawn before the next step ([§5.5](#55-selectors-live-in-grid-cells)); without it, a fixed delay has to guess, and a slow view falls behind. It also lets the app show that a view is loading, and tests wait for a view instead of a delay.
+- **`empty`**: true when the analytics response had no values to draw. The app can't see inside the plugin's iframe, so without it, it can't tell a linked view came back empty, nor explain why ([§5.9](#59-how-the-checks-are-used)). Optional, so a plugin can add it later.
 - DV's wrapper must forward it; Maps adds it.
 
 **How the app reads clicks** (the app's side; nothing for the plugins to do): a plain click selects its point, replacing the points that share a dimension with it (a cell replaces everything, a column header the periods only, so the rows picked stay); clicking the one point it would replace takes it out. Ctrl/Cmd-click adds the point, or takes it out. Each channel holds the items of the selected points: two cells of a column are two org units in one period, two of a row one org unit in two periods; two cells across give the four combinations to the other views (channels hold lists per dimension, not points). With nothing left selected, the channels get back what they held before, or, for a drilled view, the org unit it's drilled into. The view that set a value isn't rewritten with it, and keeps showing what it followed before its click. No Shift-click ranges ([§8](#8-decisions-and-open-questions)).
@@ -470,6 +516,7 @@ In the browser, with the plugins served locally:
     - a channel's color comes from its letter (a fixed palette), so the state holds no color;
     - the state keeps who set the value (`setBy`): that view isn't rewritten, and highlights the value;
     - the badge menu that clears a value, the outline of a channel's members on hover, and the pulse and announcement on a change are not built yet.
+    - **Next on the fakes: follow options and selector marking** ([§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)): _Up to the period_ and _Highlight only_ first, with the demo's check as the stand-in; then the selector marking. They switch to the `@dhis2/analytics` checks once those exist.
 3. **On the real plugins** (plan step 4): `ou` and `pe` receivers in DV and Maps, DV `onDrill` as the interim `ou` sender, and Maps remounts for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
 4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.
 5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
@@ -489,10 +536,12 @@ In the browser, with the plugins served locally:
 - **No separate Interactions tab** ([§5.4](#54-where-the-wiring-is-set-no-separate-tab)).
 - **A map keeps its zoom and pan** when a link or a drill rewrites it, as the contract asks; it doesn't zoom to its new features (29 September 2026).
 - **No Shift-click ranges** for now: Ctrl/Cmd-click adds or removes points one at a time (29 September 2026).
+- **Follow options**, one choice per dimension of how a view follows a value, with _Up to the period_ as the default for relative periods on an axis; **selectors mark their options** from their followers' checks, and never hide them; **one check, three uses** (follow options, selector options, empty results), from a collection profile cached per view (30 September 2026, [§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)).
 
 **Open:**
 
-- The upstream prop names (`onDataClick`, `highlight`), to agree with the maintainers.
+- The upstream prop names (`onDataClick`, `highlight`), to agree with the maintainers, and whether `onLoadingComplete` reports `empty`.
+- Whether "Why is this empty?" runs the after-query checks from a view's ⋯ menu or from its header badge, until plugins report `empty`.
 - How to show "not supported" for EV and LL.
 - Whether a saved map using a timeline or split view should warn when opened in a view.
 - Positioning against the Dashboard app: this app focuses on ad hoc exploration and interactions.
