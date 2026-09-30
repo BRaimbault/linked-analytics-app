@@ -5,11 +5,165 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-28T15:48:36.602Z\n"
-"PO-Revision-Date: 2026-09-28T15:48:36.602Z\n"
+"POT-Creation-Date: 2026-09-30T14:43:10.613Z\n"
+"PO-Revision-Date: 2026-09-30T14:43:10.616Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
+
+msgid "Demo data. Nothing here comes from the server."
+msgstr "Demo data. Nothing here comes from the server."
+
+msgid "Demo"
+msgstr "Demo"
+
+msgid "Reset the demo"
+msgstr "Reset the demo"
+
+msgid "The classes stay as they are. Click to let them follow the data"
+msgstr "The classes stay as they are. Click to let them follow the data"
+
+msgid "The classes follow the data. Click to keep them as they are"
+msgstr "The classes follow the data. Click to keep them as they are"
+
+msgid "Fit the classes to the data shown"
+msgstr "Fit the classes to the data shown"
+
+msgid "Fixed"
+msgstr "Fixed"
+
+msgid "Follows data"
+msgstr "Follows data"
+
+msgid "Refit"
+msgstr "Refit"
+
+msgid "No layer to show"
+msgstr "No layer to show"
+
+msgid "No value"
+msgstr "No value"
+
+msgid "Zoom in"
+msgstr "Zoom in"
+
+msgid "Zoom out"
+msgstr "Zoom out"
+
+msgid "Whole map"
+msgstr "Whole map"
+
+msgid "No data to show"
+msgstr "No data to show"
+
+msgid "weekly"
+msgstr "weekly"
+
+msgid "monthly"
+msgstr "monthly"
+
+msgid "quarterly"
+msgstr "quarterly"
+
+msgid "yearly"
+msgstr "yearly"
+
+msgid ""
+"{{item}} is collected {{collected}} in {{places}}, which have no {{asked}} "
+"values."
+msgstr ""
+"{{item}} is collected {{collected}} in {{places}}, which have no {{asked}} "
+"values."
+
+msgid "No {{asked}} values for {{item}}, which is collected {{collected}}."
+msgstr "No {{asked}} values for {{item}}, which is collected {{collected}}."
+
+msgid "Sets the value"
+msgstr "Sets the value"
+
+msgid "Sets the value by clicking, and follows it"
+msgstr "Sets the value by clicking, and follows it"
+
+msgid "Sets the value by clicking"
+msgstr "Sets the value by clicking"
+
+msgid "Follows the value"
+msgstr "Follows the value"
+
+msgid "Org unit"
+msgstr "Org unit"
+
+msgid "Period"
+msgstr "Period"
+
+msgid "Data"
+msgstr "Data"
+
+msgid "{{dimension}} {{label}}"
+msgstr "{{dimension}} {{label}}"
+
+msgid "Nothing selected"
+msgstr "Nothing selected"
+
+msgid "{{label}} · {{value}}"
+msgstr "{{label}} · {{value}}"
+
+msgid "Selected org unit"
+msgstr "Selected org unit"
+
+msgid "Sub-units"
+msgstr "Sub-units"
+
+msgid "Sub-x2-units"
+msgstr "Sub-x2-units"
+
+msgid "A click on a map carries no period."
+msgstr "A click on a map carries no period."
+
+msgid "Channel"
+msgstr "Channel"
+
+msgid "New channel"
+msgstr "New channel"
+
+msgid "None"
+msgstr "None"
+
+msgid "Org units on an axis"
+msgstr "Org units on an axis"
+
+msgid "Show"
+msgstr "Show"
+
+msgid "Set the value by clicking"
+msgstr "Set the value by clicking"
+
+msgid "Follow the value"
+msgstr "Follow the value"
+
+msgid "A selector always sets the value of its channel."
+msgstr "A selector always sets the value of its channel."
+
+msgid "Set the value by picking"
+msgstr "Set the value by picking"
+
+msgid "A selector always shows the value of its channel."
+msgstr "A selector always shows the value of its channel."
+
+msgid "Links"
+msgstr "Links"
+
+msgid "Drill down into {{name}}"
+msgstr "Drill down into {{name}}"
+
+msgid "Drill up to {{name}}"
+msgstr "Drill up to {{name}}"
+
+msgid "Drill up a level"
+msgstr "Drill up a level"
+
+msgid "Back to the saved item"
+msgstr "Back to the saved item"
 
 msgid "{{title}} added"
 msgstr "{{title}} added"
@@ -35,6 +189,18 @@ msgstr "Notes"
 msgid "Restore the maximized view to add another"
 msgstr "Restore the maximized view to add another"
 
+msgid "Saved item"
+msgstr "Saved item"
+
+msgid "Choose a saved item"
+msgstr "Choose a saved item"
+
+msgid "Clear"
+msgstr "Clear"
+
+msgid "Each view shows its own"
+msgstr "Each view shows its own"
+
 msgid "Choosing a saved map, or creating one with layers, will happen here."
 msgstr "Choosing a saved map, or creating one with layers, will happen here."
 
@@ -53,9 +219,6 @@ msgstr "Choosing the org units this selector offers will happen here."
 
 msgid "Choosing the data items this selector offers will happen here."
 msgstr "Choosing the data items this selector offers will happen here."
-
-msgid "Links to other views will be set here."
-msgstr "Links to other views will be set here."
 
 msgid "Write a title or a note"
 msgstr "Write a title or a note"
@@ -179,9 +342,6 @@ msgstr "Visualization"
 msgid "Visualization {{number}}"
 msgstr "Visualization {{number}}"
 
-msgid "Period"
-msgstr "Period"
-
 msgid "Period {{number}}"
 msgstr "Period {{number}}"
 
@@ -195,9 +355,6 @@ msgstr ""
 msgid "A workspace holds up to {{max}} period selectors"
 msgstr "A workspace holds up to {{max}} period selectors"
 
-msgid "Org unit"
-msgstr "Org unit"
-
 msgid "Org unit {{number}}"
 msgstr "Org unit {{number}}"
 
@@ -210,9 +367,6 @@ msgstr ""
 
 msgid "A workspace holds up to {{max}} org unit selectors"
 msgstr "A workspace holds up to {{max}} org unit selectors"
-
-msgid "Data"
-msgstr "Data"
 
 msgid "Data {{number}}"
 msgstr "Data {{number}}"

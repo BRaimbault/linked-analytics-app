@@ -1,0 +1,172 @@
+.visualization {
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    background: var(--colors-white);
+    font-size: 12px;
+    color: var(--colors-grey900);
+}
+
+/* 56px, as HEADER_HEIGHT in fake-visualization.tsx */
+.header {
+    box-sizing: border-box;
+    block-size: 56px;
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp8);
+    overflow: hidden;
+}
+
+.title {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.subtitle {
+    overflow: hidden;
+    color: var(--colors-grey700);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacers-dp4) var(--spacers-dp12);
+    margin-block: var(--spacers-dp2) 0;
+    padding: 0;
+    list-style: none;
+    color: var(--colors-grey800);
+}
+
+/* A series picks its item, as an axis label picks its category */
+.series {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp4);
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.series:hover {
+    color: var(--colors-grey900);
+    text-decoration: underline;
+}
+
+.series:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: 1px;
+}
+
+.swatch {
+    display: inline-block;
+    inline-size: 10px;
+    block-size: 10px;
+    border-radius: 2px;
+}
+
+.chart {
+    display: block;
+    flex: none;
+}
+
+.tick line {
+    stroke: var(--colors-grey300);
+}
+
+.tick text {
+    fill: var(--colors-grey700);
+    font-size: 10px;
+    text-anchor: end;
+}
+
+.category {
+    fill: var(--colors-grey800);
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.category:hover {
+    fill: var(--colors-grey900);
+    text-decoration: underline;
+}
+
+.line {
+    fill: none;
+    stroke-width: 2;
+}
+
+.chart [data-test='fake-point'],
+.table [data-test='fake-point'] {
+    cursor: pointer;
+}
+
+/* What highlight leaves out */
+.dimmed {
+    opacity: 0.25;
+}
+
+.tableScroller {
+    flex: 1;
+    overflow: auto;
+    padding-inline: var(--spacers-dp8);
+}
+
+.table {
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+    padding-block: 3px;
+    padding-inline: var(--spacers-dp8);
+    border: 1px solid var(--colors-grey300);
+    white-space: nowrap;
+}
+
+.table thead th,
+.table tbody th {
+    background: var(--colors-grey100);
+    font-weight: 500;
+    text-align: start;
+}
+
+.table td {
+    text-align: end;
+}
+
+.table td:hover {
+    background: var(--colors-grey100);
+}
+
+/* Row and column headers pick their row or column */
+.table .label {
+    cursor: pointer;
+}
+
+.table .label:hover {
+    background: var(--colors-grey200);
+}
+
+.empty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+    margin: var(--spacers-dp16);
+    color: var(--colors-grey700);
+}
+
+.empty p {
+    margin: 0;
+}
+
+.notices {
+    margin-inline: var(--spacers-dp8);
+}

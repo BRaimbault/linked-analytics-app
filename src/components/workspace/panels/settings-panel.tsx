@@ -1,11 +1,18 @@
+import { LinksSection } from '@components/interactions/links-section'
+import { usePluginSources } from '@components/plugins/plugin-sources'
 import type { ViewSettingsPanelParams } from '@components/workspace/controller/panels'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import i18n from '@dhis2/d2-i18n'
 import { useAppSelector } from '@hooks'
-import { getViewTitle, type ViewType } from '@modules/workspace/view-types'
+import {
+    getViewTitle,
+    isPluginViewType,
+    type ViewType,
+} from '@modules/workspace/view-types'
 import { selectViews } from '@store/workspace-slice'
 import type { IDockviewPanelProps } from 'dockview-react'
 import type { FC } from 'react'
+import { SavedItemPicker } from './saved-item-picker'
 import classes from './styles/panels.module.css'
 import { ToolPanel } from './tool-panel'
 
@@ -31,15 +38,20 @@ const SETTINGS_HINTS: Partial<Record<ViewType, () => string>> = {
 
 export const SettingsPanel: FC<
     IDockviewPanelProps<ViewSettingsPanelParams>
-> = ({ api, params }) => {
+> = ({ api, containerApi, params }) => {
     const view = useAppSelector(selectViews).find(
         ({ id }) => id === params.viewId
     )
 
+    const savedItems = usePluginSources().savedItems
     const hint = view && SETTINGS_HINTS[view.type]
     if (!view || !hint) {
         return null
     }
+    /* With saved items to open (in demo mode), a picker replaces the hint */
+    const items = isPluginViewType(view.type)
+        ? (savedItems[view.type] ?? [])
+        : []
 
     return (
         <ToolPanel api={api} dataTest={`settings-panel-${view.id}`}>
@@ -47,10 +59,21 @@ export const SettingsPanel: FC<
                 <ViewTypeIcon type={view.type} />
                 {getViewTitle(view.type, view.number)}
             </p>
-            <p className={classes.toolHint}>{hint()}</p>
-            <p className={classes.toolHint}>
-                {i18n.t('Links to other views will be set here.')}
-            </p>
+            {items.length ? (
+                <div
+                    className={classes.settingsPicker}
+                    data-test="saved-item-picker"
+                >
+                    <SavedItemPicker
+                        api={containerApi}
+                        viewId={view.id}
+                        items={items}
+                    />
+                </div>
+            ) : (
+                <p className={classes.toolHint}>{hint()}</p>
+            )}
+            <LinksSection viewId={view.id} type={view.type} />
         </ToolPanel>
     )
 }

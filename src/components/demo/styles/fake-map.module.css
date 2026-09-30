@@ -1,0 +1,135 @@
+.map {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
+    background: var(--colors-white);
+    font-size: 12px;
+    color: var(--colors-grey900);
+}
+
+/* 44px, as HEADER_HEIGHT in fake-map.tsx */
+.header {
+    box-sizing: border-box;
+    block-size: 44px;
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp8);
+    overflow: hidden;
+}
+
+.title {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.subtitle {
+    overflow: hidden;
+    color: var(--colors-grey700);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.canvas {
+    display: block;
+    flex: none;
+    background: #dbe9f4;
+    cursor: grab;
+    touch-action: none;
+}
+
+.canvas:active {
+    cursor: grabbing;
+}
+
+.feature {
+    stroke: var(--colors-white);
+    stroke-width: 0.3;
+    cursor: pointer;
+}
+
+/* What highlight leaves out */
+.dimmed {
+    opacity: 0.25;
+}
+
+/* The edges of the feature under the pointer and of the selected ones,
+ * drawn over everything else: a feature's own stroke would sit under
+ * its neighbours and the outlines */
+.hover {
+    fill: none;
+    stroke: var(--colors-grey900);
+    stroke-width: 0.6;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.selection {
+    fill: none;
+    stroke: var(--colors-grey900);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+/* The units the features lie in, over the features */
+.outline {
+    fill: none;
+    stroke: var(--colors-grey800);
+    stroke-width: 0.6;
+    pointer-events: none;
+}
+
+.zoom {
+    position: absolute;
+    inset-block-start: calc(44px + var(--spacers-dp8));
+    inset-inline-end: var(--spacers-dp8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--colors-grey400);
+    border-radius: 3px;
+    background: var(--colors-white);
+}
+
+.zoomButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 26px;
+    block-size: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--colors-grey800);
+    cursor: pointer;
+}
+
+.zoomButton + .zoomButton {
+    border-block-start: 1px solid var(--colors-grey300);
+}
+
+.zoomButton:hover {
+    background: var(--colors-grey100);
+}
+
+.zoomButton:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}
+
+.empty {
+    margin: var(--spacers-dp16);
+    color: var(--colors-grey700);
+}
+
+/* Over the map's top, clear of the zoom control on the right */
+.notices {
+    position: absolute;
+    z-index: 1;
+    inset-block-start: calc(44px + var(--spacers-dp8));
+    inset-inline: var(--spacers-dp8) calc(26px + 2 * var(--spacers-dp8));
+    pointer-events: none;
+}

@@ -29,6 +29,8 @@ The design and the repo's history live in `docs/` ([index, terms and conventions
 - [map-layers.md](docs/map-layers.md): options to limit layers per map (proposal).
 - [demo-mode.md](docs/demo-mode.md): fake plugins on synthetic data. Its `released` profile mirrors plugins.md.
 - [code-structure.md](docs/code-structure.md): how `src/` is organized, where a new domain's code goes, and the moves planned for later.
+- [data-period-types.md](docs/data-period-types.md): which period types a data item can fill, and the helpers proposed for `@dhis2/analytics`.
+- [data-org-units.md](docs/data-org-units.md): the follow-up for org units: which places a data item covers.
 
 ## Working with the user
 
@@ -61,6 +63,7 @@ Never rely on training data for DHIS2 API specifics. Look them up against the de
 
 What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md). The rules that shape code:
 
+- **The plugin adapter** is `PluginView` (`src/components/plugins/`): it mounts whatever `PluginSourcesProvider` gives for a view type, with the contract's props (`src/modules/plugins/contract.ts`), sized to the view's body. Demo mode provides the fakes (`src/components/demo/`); the app provides nothing until plan step 4, so views keep their placeholders. A view's saved item is in its params (`object`).
 - **Embed with `Plugin`** from `@dhis2/app-runtime/experimental` (an iframe plus props passed over post-robot). It types only its own layout props, so re-type it for the props we send (see EV `src/plugin-host/plugin-host-app.tsx`). Give it a fixed `width` and `height`: without them some plugins render at 0×0.
 - **Plugin URL**: look the app up in `/api/apps` by key (`data-visualizer`, `maps`, `line-listing`) and use `pluginLaunchUrl`; fall back to `${baseUrl}/dhis-web-data-visualizer/plugin.html` or `${baseUrl}/dhis-web-maps/plugin.html`. Reference: dashboard-app `plugin.js` (`getPluginLaunchUrl`).
 - **Props**: pass what the dashboard passes (dashboard-app `IframePlugin.jsx`): `visualization`, `isVisualizationLoaded: true`, `forDashboard: true`, `displayProperty`, `onError`, `onInstallationStatusChange`, `cacheId`, `isParentCached`.
@@ -77,14 +80,15 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
 ## Plan
 
 1. **Tooling** (done): the EV setup: Vitest, strict TypeScript, path aliases, ESLint, Stylelint, ls-lint, Prettier, commitlint and git hooks, the RTK Query data layer, generated API types, CI.
-2. **Workspace grid with placeholders** (finishing): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md). What's left from the external review is listed in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review); only the small items are needed before merging.
-3. **Vision demo** (next; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
+2. **Workspace grid with placeholders** (done, #7): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md); the reviews and their fixes are in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review).
+3. **Vision demo** (in progress, branch `feat/demo-mode`; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
     - synthetic data, and the **plugin adapter** mounting fake DV and Maps plugins with the proposed upstream contract (`onDataClick`, `highlight`, `onLoadingComplete`);
-    - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), item 2);
+    - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou`, `pe` and `dx`, period, org unit and data selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), items 2 and 7);
     - the `?demo` switch, a banner, and a preset workspace that one click loads or resets.
+    - All of this is built (http://localhost:3000/?demo; progress in [docs/history.md §5](docs/history.md#5-in-progress-demo-mode-plan-step-3)).
     - Once it runs, share the demo and the contract ([docs/interactions.md §6](docs/interactions.md#6-upstream-prs)) with the DV and Maps maintainers: the upstream PRs have the longest lead time.
 4. **Real plugins** (planned): the same adapter mounts the DV and Maps plugins, with a saved item picked through `OpenFileDialog`. Check performance with 4 at once first, including memory and main-thread cost on a deployed build: it can change how many plugins the app allows. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. Links reach them within the released plugins' limits (DV `onDrill`, Maps remounts). See [docs/plugins.md](docs/plugins.md). Place the new code as planned in [docs/code-structure.md §4](docs/code-structure.md#4-rules-for-new-code).
-5. **Interactions, complete** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): link mode and the link settings, the upstream PRs and click senders on the real plugins, play mode, `dx` channels, then LL and EV receivers.
+5. **Interactions, complete** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): link mode and the link settings, the upstream PRs and click senders on the real plugins, play mode, `dx` channels on the real plugins (with the compatibility check), then LL and EV receivers.
 6. **View settings** (planned; [docs/view-settings.md §7](docs/view-settings.md#7-order-of-work)): hand off to DV or Maps for full editing, then in-app editors for visualizations and map layers, with Save as, Save and Revert. The map editor's scope depends on [docs/map-layers.md](docs/map-layers.md). Can run alongside step 5.
 7. **Persistence** (planned): save workspaces, in the URL first, then the dataStore. The URL step can come as early as step 4, growing out of the demo's preset workspace. With sharing come a **layout lock** (a Workspace setting: views keep working, the layout can't change) and then a **presentation mode** built on it (no headers, no tools strip). Design in [docs/workspace-grid.md §11](docs/workspace-grid.md#11-later-lock-and-presentation).
 
@@ -161,6 +165,7 @@ A helper lives in the domain of what it **produces**, not the domains it reads f
     - A few scenarios per group are tagged `SMOKE` (`{ tags: '@smoke' }`, through `@cypress/grep`): the ones that would catch a broken group fastest. Tag a new scenario only when it covers something no smoke test does.
     - CI runs them all, in Chrome and in Firefox; the git hooks don't. Locally, add `--browser firefox` after palette, tab or drag changes.
     - The mount renders like the app shell (Roboto and DHIS2's `CssReset`): keep it that way, or text is measured in each browser's fallback font.
+    - `cypress/support/component.ts` ignores one known DHIS2 UI error ("this.inputRef.current", from a select removed within 50ms of a window resize). Remove it when upgrading `@dhis2/ui` to a release with the upstream fix ([docs/history.md §5](docs/history.md#5-in-progress-demo-mode-plan-step-3), item 6).
     - Pitfalls: a DHIS2 `MenuItem` ignores clicks on its `li` (click its `[role="menuitem"]`); aliases of `invoke()` queries are re-run when read (store values in variables); the mount has no DHIS2 header, so tooltips at the top flip over their buttons; the 800px mount is taller than the screenshot viewport, so focusing or clicking can scroll the page (`dragTo` scrolls its source into view first); after a failure screenshot, animation frames nearly stop, so dockview never positions view bodies: that's why there are no retries (`retries: 0`), and why checks measure against a view's cell, not its body. The drag helpers wait for animation frames, not fixed times. Hover: Chrome is launched as a desktop with a mouse (`--blink-settings` in `cypress.config.ts`, as its DevTools media emulation doesn't take here), and headless Firefox reports `(hover: none)`. Expect hover-only controls through `hiddenUntilHoverOpacity`, not a fixed opacity, and skip a case that needs one or the other where the media doesn't match (see `headers.cy.tsx`).
 
 ### Running checks

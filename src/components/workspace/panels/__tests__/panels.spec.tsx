@@ -23,7 +23,7 @@ describe('SettingsPanel', () => {
         expect(screen.getByText(/saved visualization/)).toBeInTheDocument()
     })
 
-    it('tells what a selector\u2019s settings will hold, and that links go here', () => {
+    it('tells what a selector\u2019s settings will hold, and shows its links', () => {
         const { store } = renderWithStore(
             <SettingsPanel {...panelProps({ viewId: 'ou-a' })} />
         )
@@ -38,9 +38,23 @@ describe('SettingsPanel', () => {
         expect(
             screen.getByText(/org units this selector offers/)
         ).toBeInTheDocument()
-        expect(
-            screen.getByText('Links to other views will be set here.')
-        ).toBeInTheDocument()
+        expect(screen.getByTestId('links-selector')).toHaveTextContent(
+            'ChannelA · Nothing selected'
+        )
+    })
+
+    it('gives a data selector its channel in the Links section', () => {
+        const { store } = renderWithStore(
+            <SettingsPanel {...panelProps({ viewId: 'dx-a' })} />
+        )
+
+        act(() => {
+            store.dispatch(
+                viewAdded({ id: 'dx-a', type: 'data-selector', number: 1 })
+            )
+        })
+
+        expect(screen.getByTestId('links-selector')).toHaveTextContent('Data')
     })
 
     it.each([

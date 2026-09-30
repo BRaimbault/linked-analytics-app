@@ -1,0 +1,341 @@
+import { niceMax } from '@components/demo/fake-chart'
+import { FakeVisualization } from '@components/demo/fake-visualization'
+import { DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
+import type { VisualizationObject } from '@modules/visualization/analytical-object'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+
+const [ancLine, malariaColumns, ancByDistrict, malariaWeeks, , pentaTable] =
+    DEMO_VISUALIZATIONS
+
+const draw = (
+    visualization: VisualizationObject,
+    props: Partial<Parameters<typeof FakeVisualization>[0]> = {}
+) =>
+    render(
+        <FakeVisualization
+            visualization={visualization}
+            width={600}
+            height={400}
+            {...props}
+        />
+    )
+
+describe('FakeVisualization', () => {
+    it('draws a column chart, a bar per district, with its name and filter', () => {
+        draw(malariaColumns)
+
+        expect(screen.getAllByTestId('fake-point')).toHaveLength(4)
+        expect(
+            screen.getByText('Malaria cases by district, last 12 months')
+        ).toBeInTheDocument()
+        expect(screen.getByText('Last 12 months')).toBeInTheDocument()
+        expect(
+            screen.getByRole('button', { name: 'Malaria cases confirmed' })
+        ).toBeInTheDocument()
+    })
+
+    it('draws a line chart, a point per month and series, names turned to fit', () => {
+        draw(ancLine)
+
+        expect(screen.getAllByTestId('fake-series')).toHaveLength(2)
+        expect(screen.getAllByTestId('fake-point')).toHaveLength(24)
+        expect(
+            screen.getByText('August 2025').getAttribute('transform')
+        ).toContain('rotate')
+    })
+
+    it('draws a line per district, whose points send the district and the month', () => {
+        const onDataClick = vi.fn()
+        draw(ancByDistrict, { onDataClick })
+
+        expect(screen.getAllByTestId('fake-series')).toHaveLength(4)
+        expect(screen.getAllByTestId('fake-point')).toHaveLength(48)
+        expect(screen.getByRole('button', { name: 'West' })).toBeInTheDocument()
+
+        /* West's line (the second), its first month */
+        fireEvent.click(screen.getAllByTestId('fake-point')[12])
+
+        expect(onDataClick).toHaveBeenCalledWith(
+            {
+                ou: {
+                    id: 'DemoWest001',
+                    name: 'West',
+                    path: '/DemoLand001/DemoWest001',
+                    level: 'DemoLevel02',
+                },
+                pe: { id: '202508', name: 'August 2025' },
+            },
+            { additive: false }
+        )
+    })
+
+    it('draws a pivot table, the series across and the categories down', () => {
+        draw(pentaTable)
+        const table = screen.getByTestId('fake-table')
+
+        expect(within(table).getAllByRole('columnheader')).toHaveLength(5)
+        expect(within(table).getAllByRole('rowheader')).toHaveLength(14)
+    })
+
+    it('sends a clicked point’s ids, additive with Ctrl or Cmd', () => {
+        const onDataClick = vi.fn()
+        draw(malariaColumns, { onDataClick })
+        const [north] = screen.getAllByTestId('fake-point')
+
+        fireEvent.click(north)
+        fireEvent.click(north, { metaKey: true })
+
+        expect(onDataClick).toHaveBeenNthCalledWith(
+            1,
+            {
+                dx: { id: 'DemoMalar01', name: 'Malaria cases confirmed' },
+                ou: {
+                    id: 'DemoNorth01',
+                    name: 'North',
+                    path: '/DemoLand001/DemoNorth01',
+                    level: 'DemoLevel02',
+                },
+            },
+            { additive: false }
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(expect.anything(), {
+            additive: true,
+        })
+    })
+
+    it('takes clicks on pivot cells too, and does nothing without a listener', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(pentaTable, { onDataClick })
+        const [cell] = screen.getAllByTestId('fake-point')
+
+        fireEvent.click(cell, { ctrlKey: true })
+        expect(onDataClick).toHaveBeenCalledWith(
+            expect.objectContaining({
+                pe: expect.objectContaining({ id: '2025Q3' }),
+            }),
+            { additive: true }
+        )
+        unmount()
+
+        draw(pentaTable)
+        fireEvent.click(screen.getAllByTestId('fake-point')[0])
+    })
+
+    it('sends a right-click on a point or a cell with where it happened, and no browser menu', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(malariaColumns, { onDataClick })
+        const [bar] = screen.getAllByTestId('fake-point')
+
+        /* jsdom lays nothing out: the root is at the page's corner */
+        const opened = fireEvent.contextMenu(bar, { clientX: 30, clientY: 40 })
+
+        expect(opened).toBe(false)
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                ou: expect.objectContaining({ id: 'DemoNorth01' }),
+            }),
+            { additive: false, trigger: 'context', position: { x: 30, y: 40 } }
+        )
+        unmount()
+
+        draw(pentaTable, { onDataClick })
+        fireEvent.contextMenu(screen.getAllByTestId('fake-point')[0])
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                ou: expect.objectContaining({ id: 'DemoChN0101' }),
+            }),
+            expect.objectContaining({ trigger: 'context' })
+        )
+    })
+
+    it('sends a clicked label with its own dimension alone: an axis category, a row or a column header', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(malariaColumns, { onDataClick })
+
+        fireEvent.click(screen.getByText('West'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            {
+                ou: {
+                    id: 'DemoWest001',
+                    name: 'West',
+                    path: '/DemoLand001/DemoWest001',
+                    level: 'DemoLevel02',
+                },
+            },
+            { additive: false }
+        )
+        fireEvent.contextMenu(screen.getByText('West'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            expect.objectContaining({ ou: expect.anything() }),
+            expect.objectContaining({ trigger: 'context' })
+        )
+        unmount()
+
+        draw(pentaTable, { onDataClick })
+        fireEvent.click(screen.getByText('Birch Valley'), { ctrlKey: true })
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            {
+                ou: expect.objectContaining({ id: 'DemoChN0102' }),
+            },
+            { additive: true }
+        )
+        fireEvent.click(
+            screen.getByRole('columnheader', { name: 'July - September 2025' })
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { pe: { id: '2025Q3', name: 'July - September 2025' } },
+            { additive: false }
+        )
+        fireEvent.contextMenu(screen.getByText('Birch Valley'))
+        fireEvent.contextMenu(
+            screen.getByRole('columnheader', { name: 'July - September 2025' })
+        )
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { pe: expect.objectContaining({ id: '2025Q3' }) },
+            expect.objectContaining({ trigger: 'context' })
+        )
+    })
+
+    it('sends a series clicked in the legend, as its own dimension alone', () => {
+        const onDataClick = vi.fn()
+        const { unmount } = draw(ancByDistrict, { onDataClick })
+        const series = (name: string) =>
+            screen
+                .getAllByTestId('fake-legend-series')
+                .find((button) => button.textContent === name) as HTMLElement
+
+        fireEvent.click(series('East'), { ctrlKey: true })
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { ou: expect.objectContaining({ id: 'DemoEast001' }) },
+            { additive: true }
+        )
+        fireEvent.contextMenu(series('East'))
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { ou: expect.objectContaining({ id: 'DemoEast001' }) },
+            expect.objectContaining({ trigger: 'context' })
+        )
+        unmount()
+
+        draw(ancLine, { onDataClick })
+        fireEvent.click(screen.getAllByTestId('fake-legend-series')[0])
+        expect(onDataClick).toHaveBeenLastCalledWith(
+            { dx: expect.objectContaining({ id: expect.any(String) }) },
+            { additive: false }
+        )
+    })
+
+    it('dims what the highlight leaves out, in charts and tables', () => {
+        const dimmedPoints = () =>
+            screen
+                .getAllByTestId('fake-point')
+                .map((point) => point.getAttribute('class') !== null)
+
+        const { unmount } = draw(malariaColumns, {
+            highlight: { ou: ['DemoEast001'] },
+        })
+        expect(dimmedPoints()).toEqual([true, true, false, true])
+        unmount()
+
+        draw(pentaTable, { highlight: { pe: ['2025Q3'] } })
+        /* The first row: a cell per quarter, the first one kept */
+        expect(dimmedPoints().slice(0, 4)).toEqual([false, true, true, true])
+    })
+
+    it('leaves a pivot cell empty where the demo has no value, and says why', () => {
+        /* Malaria by week: the east and south report monthly */
+        draw({
+            ...pentaTable,
+            columns: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
+            filters: [{ dimension: 'dx', items: [{ id: 'DemoMalar01' }] }],
+        })
+        const cells = screen.getAllByTestId('fake-point')
+
+        /* North's first chiefdom, then the east's first (3 + 4 rows down) */
+        expect(cells[0]).not.toBeEmptyDOMElement()
+        expect(cells[7 * 4]).toBeEmptyDOMElement()
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'Malaria cases confirmed is collected monthly in East, South, which have no weekly values.'
+        )
+    })
+
+    it('says why there is no data, when the periods are shorter than collected', () => {
+        draw({
+            ...ancLine,
+            rows: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
+        })
+
+        expect(screen.getByText('No data to show')).toBeInTheDocument()
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'No weekly values for ANC 1st visit, which is collected monthly.'
+        )
+        expect(screen.queryByTestId('fake-chart')).toBeNull()
+    })
+
+    it('says when it has finished drawing, and again for a new object', () => {
+        const onLoadingComplete = vi.fn()
+        const { rerender } = draw(malariaColumns, { onLoadingComplete })
+        expect(onLoadingComplete).toHaveBeenCalledTimes(1)
+
+        rerender(
+            <FakeVisualization
+                visualization={ancLine}
+                width={600}
+                height={400}
+                onLoadingComplete={onLoadingComplete}
+            />
+        )
+
+        expect(onLoadingComplete).toHaveBeenCalledTimes(2)
+    })
+
+    it('says so when there is nothing to draw', () => {
+        draw({ ...malariaColumns, rows: [] })
+
+        expect(screen.getByText('No data to show')).toBeInTheDocument()
+    })
+
+    it('keeps a missing value at zero, and fits in a tiny view', () => {
+        /* A bar per district for the last 4 weeks: the east's is missing */
+        draw(
+            {
+                ...malariaColumns,
+                filters: [{ dimension: 'pe', items: [{ id: 'LAST_4_WEEKS' }] }],
+            },
+            { width: 10, height: 10 }
+        )
+        const bars = screen.getAllByTestId('fake-point')
+
+        expect(bars).toHaveLength(4)
+        expect(bars[2]).toHaveAttribute('height', '0')
+        expect(screen.getByTestId('fake-chart')).toBeInTheDocument()
+    })
+
+    it('draws weekly lines where malaria is reported weekly', () => {
+        draw(malariaWeeks)
+        const [north, west, east, south] = screen.getAllByTestId('fake-series')
+
+        /* The east and south report monthly: no points, no line */
+        for (const series of [north, west]) {
+            expect(within(series).getAllByTestId('fake-point')).toHaveLength(12)
+            expect(series.querySelectorAll('polyline')).toHaveLength(1)
+        }
+        for (const series of [east, south]) {
+            expect(within(series).queryAllByTestId('fake-point')).toHaveLength(
+                0
+            )
+            expect(series.querySelectorAll('polyline')).toHaveLength(0)
+        }
+        expect(screen.getByTestId('period-notices')).toHaveTextContent(
+            'East, South'
+        )
+    })
+
+    it('tops the value axis with a round number just above the largest', () => {
+        expect(niceMax(0)).toBe(1)
+        expect(niceMax(2080)).toBe(2500)
+        expect(niceMax(21000)).toBe(25000)
+        expect(niceMax(95)).toBe(100)
+        expect(niceMax(10)).toBe(10)
+    })
+})

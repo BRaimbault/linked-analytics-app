@@ -145,3 +145,8 @@ export const PLUGIN_VIEW_TYPES = [
     'map',
     'visualization',
 ] as const satisfies readonly ViewType[]
+
+export type PluginViewType = (typeof PLUGIN_VIEW_TYPES)[number]
+
+export const isPluginViewType = (type: ViewType): type is PluginViewType =>
+    (PLUGIN_VIEW_TYPES as readonly ViewType[]).includes(type)

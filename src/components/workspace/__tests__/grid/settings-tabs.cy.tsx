@@ -42,9 +42,8 @@ describe('settings tabs and the selected view', () => {
         cy.get('[data-test="edit-view-settings"]').click()
 
         cy.get('.dv-edge-group .dv-active-tab').should('have.text', 'Map 1')
-        cy.contains('Links to other views will be set here.').should(
-            'be.visible'
-        )
+        cy.contains(/Choosing a saved map/).should('be.visible')
+        cy.get('[data-test="links-section"]').should('exist')
     })
 
     it('closes a view from its settings tab', SMOKE, () => {

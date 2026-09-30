@@ -28,6 +28,21 @@ describe('App', () => {
         expect(await screen.findByTestId('workspace')).toBeInTheDocument()
     })
 
+    it('shows the demo workspace with ?demo, and only then', async () => {
+        window.history.pushState({}, '', '/?demo')
+        renderApp({ me: { id: 'user-a' } })
+
+        expect(await screen.findByTestId('demo-banner')).toBeInTheDocument()
+        window.history.pushState({}, '', '/')
+    })
+
+    it('shows no demo banner without ?demo', async () => {
+        renderApp({ me: { id: 'user-a' } })
+
+        await screen.findByTestId('workspace')
+        expect(screen.queryByTestId('demo-banner')).toBeNull()
+    })
+
     it('shows an error when the current user cannot be loaded', async () => {
         renderApp({
             me: () => {

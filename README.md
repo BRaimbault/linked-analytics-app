@@ -21,6 +21,7 @@ The git hooks switch to the `.nvmrc` version themselves when nvm is installed, s
     - generates TypeScript types from the dev server's OpenAPI spec into `src/types/dhis2-openapi-schemas/` (gitignored) if they're missing. So the first install needs the dev server to be reachable.
 2. Check `dhis2.env.json`, and change the server or credentials if needed.
 3. `pnpm start --proxy https://dev.im.dhis2.org/analytics-dev`, open http://localhost:3000, and sign in with the server and credentials from `dhis2.env.json`.
+4. For the demo, open http://localhost:3000/?demo: fake DV and Maps plugins on made-up data, with a linked workspace to start from ([docs/demo-mode.md](docs/demo-mode.md)). "Reset the demo" in the Workspace tab brings it back.
 
 ## Scripts
 
