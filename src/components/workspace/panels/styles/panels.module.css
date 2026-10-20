@@ -1,5 +1,15 @@
 /* The cell is the container, so a short cell (a selector at its preferred
  * height) gets one row */
+.settingsPicker {
+    max-inline-size: 360px;
+    margin-block: var(--spacers-dp8);
+}
+
+.pluginBody {
+    block-size: 100%;
+    background: var(--colors-white);
+}
+
 .placeholder {
     container-type: size;
     block-size: 100%;

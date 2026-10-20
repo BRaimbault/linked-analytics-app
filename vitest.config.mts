@@ -12,6 +12,9 @@ export default defineConfig({
         clearMocks: true,
         unstubEnvs: true,
         unstubGlobals: true,
+        /* Specs that mount the whole workspace take about a second alone,
+         * and several times that in a full coverage run, all files at once */
+        testTimeout: 15_000,
         exclude: [
             ...configDefaults.exclude,
             '**/.d2/**',

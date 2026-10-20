@@ -1,3 +1,5 @@
+import { ChannelBadges } from '@components/interactions/channel-badges'
+import { useDrillActions } from '@components/interactions/use-drill-actions'
 import {
     getEdgePlacements,
     moveViewToEdge,
@@ -72,6 +74,7 @@ const ViewMenu: FC<{ api: DockviewApi; view: IDockviewPanel }> = ({
 }) => {
     const dispatch = useAppDispatch()
     const { swapTargets, edges } = useViewMoves(api, view)
+    const drills = useDrillActions(view.id)
 
     const swaps = swapTargets.map((target) => ({
         key: target.id,
@@ -98,7 +101,8 @@ const ViewMenu: FC<{ api: DockviewApi; view: IDockviewPanel }> = ({
         },
     }))
 
-    if (!swaps.length && !moves.length) {
+    const actions = [...drills, ...swaps, ...moves]
+    if (!actions.length) {
         return null
     }
 
@@ -106,7 +110,7 @@ const ViewMenu: FC<{ api: DockviewApi; view: IDockviewPanel }> = ({
         <ActionsMenu
             label={i18n.t('View actions')}
             dataTest="view-actions-button"
-            actions={[...swaps, ...moves]}
+            actions={actions}
         />
     )
 }
@@ -126,6 +130,7 @@ export const ViewActions: FC<IDockviewHeaderActionsProps> = ({
 
     return (
         <div className={classes.headerActions}>
+            {activePanel && <ChannelBadges viewId={activePanel.id} />}
             {activePanel && !isMaximized && (
                 <ViewMenu api={containerApi} view={activePanel} />
             )}

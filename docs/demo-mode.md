@@ -1,6 +1,6 @@
 # Demo mode: fake plugins on synthetic data
 
-- **Status**: proposal, not built; decided where [§11](#11-decisions-and-open-questions) says so. Plan step 3, before the real plugins.
+- **Status**: decided where [§11](#11-decisions-and-open-questions) says so. The first demo is built (branch `feat/demo-mode`, 28 and 29 September 2026: the five items of [§10](#10-where-it-fits-in-the-plan)); what comes after it is still a proposal. Open it with `?demo`.
 - **Related**: [plugins.md](plugins.md) (what the real plugins do), [interactions.md §6](interactions.md#6-upstream-prs) (the contract the fakes implement), [view-settings.md](view-settings.md).
 
 A mode where every view is a **fake plugin**: a small stand-in for DV or Maps that takes exactly the props of the real plugin, and draws synthetic data. Nothing is requested from a DHIS2 server.
@@ -68,7 +68,7 @@ Each fake plugin reads its profile and behaves accordingly. Each `released` cell
 
 - Layers: a thematic layer (choropleth), and org unit boundaries drawn from the same shapes. Other layer types draw as an empty layer with a "not in demo mode" note. How many layers a map may have follows [map-layers.md](map-layers.md).
 - Reads each map view like the real plugin: `dx` in `columns`, `ou` in `rows`, `pe` in `filters`, and `colorScale`, `classes`, `method` for the style.
-- Draws made-up district and chiefdom shapes (simple polygons, not real boundaries) as SVG, with a legend, and keeps its own zoom and pan so the `released` rebuild visibly loses them.
+- Draws made-up district and chiefdom shapes (not real boundaries: a concave mainland with a bay, a peninsula and two straight land borders, plus one chiefdom that is an island. On a grid of cells, each cell goes to the nearest chiefdom seed in a bent plane, and a few pairs of chiefdoms meet along a straight line; borders are traced along the cells and smoothed. A shape has a ring per part, as a GeoJSON MultiPolygon; `modules/demo/land-grid.ts` and `shapes.ts`) as SVG, with a legend, and keeps its own zoom and pan so the `released` rebuild visibly loses them.
 - Clicks: none under `released`. Under `proposed`, a feature click calls `onDataClick` with `ou` (`id`, `name`, `path`, `level`) and the layer's `dx`.
 
 Both take a **`loadDelay`** (e.g. 300–1200 ms) before drawing and calling `onLoadingComplete`. That way the period selector's play mode, loading states and "wait for every receiver" can be tried as they would behave on a real server.
@@ -79,9 +79,24 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 
 - **Org units**: 1 country, 4 districts, 3 to 4 chiefdoms each, about 20 units in all. Each has an `id`, `name`, `path`, `level` (as the real UID), and a made-up polygon for the map: chiefdoms tile their district, and districts tile the country.
 - **Levels and groups**: 3 levels (National, District, Chiefdom), and 2 org unit groups, so the org unit picker's level and group selects have content.
-- **Periods**: monthly, quarterly and yearly periods for the two years before a fixed demo date. Relative periods are resolved against that date, so demos don't change with the real date.
-- **Data items**: 3 or 4 indicators and data elements (e.g. ANC 1st visit, ANC 4th visit, Penta 3 coverage), with a legend set for one of them.
-- **Values**: a seeded formula per data item: a base per district, a seasonal curve over the months, and noise from the org unit and period ids. Totals roll up from chiefdoms to districts and the country, so drilling gives consistent numbers.
+- **Periods**: ISO weeks, months, quarters and years for the two years before a fixed demo date, each a range of days (`modules/demo/calendar.ts`, `periods.ts`). Relative periods (weeks included) are resolved against that date, so demos don't change with the real date.
+- **Data items**, collected and aggregated as DHIS2 does it, so the demo shows what linking periods runs into (`data-items.ts`):
+
+    | Item                             | Collected                                               | Aggregation            |
+    | -------------------------------- | ------------------------------------------------------- | ---------------------- |
+    | ANC 1st visit, ANC 4th visit     | monthly                                                 | `SUM`                  |
+    | Malaria cases confirmed          | weekly in North and West, monthly in East, South        | `SUM`                  |
+    | Penta 3 doses given              | monthly                                                 | `SUM`                  |
+    | Population under 1 year          | yearly                                                  | `AVERAGE_SUM_ORG_UNIT` |
+    | Antimalarial (ACT) stock on hand | monthly                                                 | `LAST`                 |
+    | Penta 3 coverage <1y (indicator) | doses ÷ population × 100, annualized, with a legend set | —                      |
+
+- **Values**: a seeded formula per data element, chiefdom and period it's collected in (`values.ts`): a base per district, a season, a slow trend, and noise from the ids.
+- **Aggregation**, following what tests on 2.43 and 2.44 servers showed (`aggregation.ts`):
+    - a period takes the stored values whose period has its middle day in it, and is no longer than it: a week counts in the month holding most of its days, and **a monthly value is never split into weeks**;
+    - `SUM` adds up; `LAST` takes the latest; `AVERAGE_SUM_ORG_UNIT` weighs by days, so **the yearly population repeats into every shorter period**;
+    - places add up; the indicator divides its parts' totals and scales to a year.
+    - So weeks sent to a monthly view give no data, and a weekly view of the whole country leaves East and South out. The fakes say why (`period-check.ts`, `components/demo/period-notices.tsx`): "No weekly values for ANC 1st visit, which is collected monthly", as the proposed `@dhis2/analytics` feature would let DV and Maps say it.
 - **Demo items**: a few saved-looking visualizations and maps built from these, so "Open a saved item" has something to open.
 
 ## 6. Running without a server
@@ -99,8 +114,10 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **Hidden behind a URL flag**: `?demo` turns it on, and removing it turns it off. There's no menu entry, so everyday users don't meet it.
 - **The whole workspace goes demo**: every view is fake, and real and demo views are never mixed.
 - The demo providers wrap the workspace inside the app shell. The shell and its header stay real (the user is logged in), but everything below them talks to the fake engine.
-- **A banner stays visible** while it's on ("Demo data: nothing here comes from the server"), so a screenshot can't pass for real data.
-- **A preset workspace** loads with the flag: a map, a chart, a pivot table, and a period and an org unit selector, already linked. "Reset the demo" in the Workspace tab brings it back, so a demo never starts with a minute of dragging views around.
+- **A banner stays visible** while it's on ("Demo data. Nothing here comes from the server."), so a screenshot can't pass for real data.
+- **A preset workspace** loads with the flag: a map, a chart, a pivot table, and a period, an org unit and a data selector, already linked. "Reset the demo" in the Workspace tab brings it back, so a demo never starts with a minute of dragging views around.
+    - As built (`components/demo/demo-preset.ts`): the views are added as clicks add them, so they take the same places and sizes. The chart (ANC visits by month) and the map (malaria by district) sit side by side, the table (Penta 3 by chiefdom and quarter) goes under the chart, and the selectors form a bar across the top. A district clicked on the map filters the chart and the table; a month clicked on the chart sets the map's period and the table's quarter. A data item picked in the data selector shows on the map and in the table, and narrows the chart when it's one of the chart's two.
+    - The workspace takes a preset as a prop (`WorkspacePreset`): it loads into an empty grid once the grid has its size, and the Workspace tab offers the reset under the preset's name. Resetting closes every view, which clears the channels too.
 - **The demo code loads on demand**, with a dynamic `import()` only when the flag is set, so the normal app doesn't download it.
 - **Nothing is saved**: demo workspaces never go to the dataStore. At most the browser's own storage keeps the current one.
 
@@ -139,7 +156,9 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **Code layout** (following [Where helpers live](../CLAUDE.md#where-helpers-live-in-srcmodules)):
     - `src/modules/demo/`: the synthetic data, value formula, period resolution and capability profiles, pure and unit-tested;
     - `src/components/demo/`: the fake plugins and the demo providers;
-    - the `?demo` switch in the app's entry, loading the demo code on demand.
+    - `src/components/plugins/`: the plugin adapter (`PluginView`) and `PluginSourcesProvider`, which the demo fills with the fakes, its saved items, its selector lists (`modules/demo/selector-items.ts`), its number of org unit levels and its data items' legend sets; `src/modules/plugins/contract.ts`: the contract's props;
+    - the links themselves are not demo code: `src/modules/interactions/` (`applyLinks`, the period helper, the channel rules), `src/store/interactions-slice.ts`, and `src/components/interactions/` (badges, channel names and colors, `useViewLinks`);
+    - the `?demo` switch in `components/app/app.tsx` (`modules/demo/demo-flag.ts`), which loads `components/demo/demo-workspace.tsx` with a dynamic `import()`: without the flag, only the flag's check is downloaded.
 
 ## 11. Decisions and open questions
 
@@ -148,6 +167,9 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - Demo mode lives **inside the real app**, behind the `?demo` flag, rather than as a separate build.
 - **No public hosting**: demos are given from the app on a DHIS2 server.
 - **Made-up map shapes**, not real boundaries.
+- **Made-up names** too ("Demoland", districts North, West, East and South, and chiefdoms such as Amber Hills): real district names with invented numbers could pass for real health data. The data items keep the dev server's names (ANC 1st visit, Penta 3 coverage), which read like the real database.
+- **A fixed demo date**, 31 August 2026: relative periods resolve against it.
+- **Opening an item**: in demo mode a view's settings tab has a "Saved item" select over the demo's items; the real app gets `OpenFileDialog` in plan step 4.
 - **Demo mode comes before the real plugins**, since the first demos show the vision ([§10](#10-where-it-fits-in-the-plan)).
 - **The first fakes read synthetic data directly**, without a fake data engine ([§6](#6-running-without-a-server)).
 

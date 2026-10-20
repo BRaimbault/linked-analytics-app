@@ -10,6 +10,7 @@ import {
     VIEW_SETTINGS_COMPONENT,
     WORKSPACE_PANEL_ID,
 } from '@components/workspace/controller/panels'
+import { loadPreset } from '@components/workspace/controller/preset'
 import {
     keepCloseFromSelecting,
     showSettingsForTarget,
@@ -28,6 +29,10 @@ import { WorkspaceTab } from '@components/workspace/tabs/workspace-tab'
 import { useCurrentDrag } from '@components/workspace/use-current-drag'
 import { useWorkspaceMinimumSize } from '@components/workspace/use-workspace-minimum-size'
 import { WorkspaceApiContext } from '@components/workspace/workspace-api-context'
+import {
+    WorkspacePresetContext,
+    type WorkspacePreset,
+} from '@components/workspace/workspace-preset'
 import i18n from '@dhis2/d2-i18n'
 import { useAppDispatch, useAppSelector } from '@hooks'
 import { selectViewHeaders } from '@store/workspace-settings-slice'
@@ -62,7 +67,7 @@ const components = {
     [SWAP_SPACER_COMPONENT]: SwapSpacer,
 }
 
-export const Workspace: FC = () => {
+export const Workspace: FC<{ preset?: WorkspacePreset }> = ({ preset }) => {
     const dispatch = useAppDispatch()
     const [api, setApi] = useState<DockviewApi | null>(null)
     const dragFormats = useCurrentDrag()
@@ -89,43 +94,57 @@ export const Workspace: FC = () => {
         })
     }, [api, dispatch])
 
+    /* After the effects above: the grid has its size, which the preset's
+     * views are placed and sized from */
+    useEffect(() => {
+        if (api && preset) {
+            loadPreset(api, preset.load)
+        }
+    }, [api, preset])
+
     return (
         <WorkspaceApiContext.Provider value={api}>
-            <div
-                ref={workspaceRef}
-                className={classes.workspace}
-                data-test="workspace"
-                data-dragging={dragFormats ? true : undefined}
-                data-view-headers={viewHeaders}
-                onPointerOver={(event) => markHoveredView(api, event.target)}
-                onPointerLeave={() => markHoveredView(api, null)}
-                style={minimumSize}
-                onPointerDownCapture={(event) => {
-                    if (keepCloseFromSelecting(event) || !api) {
-                        return
+            <WorkspacePresetContext.Provider value={preset ?? null}>
+                <div
+                    ref={workspaceRef}
+                    className={classes.workspace}
+                    data-test="workspace"
+                    data-dragging={dragFormats ? true : undefined}
+                    data-view-headers={viewHeaders}
+                    onPointerOver={(event) =>
+                        markHoveredView(api, event.target)
                     }
-                    const viewId = showSettingsForTarget(api, event.target)
-                    if (viewId) {
-                        dispatch(activeViewChanged(viewId))
-                    }
-                }}
-                onClickCapture={keepCloseFromSelecting}
-            >
-                <DockviewReact
-                    theme={THEME}
-                    components={components}
-                    defaultTabComponent={WorkspaceTab}
-                    rightHeaderActionsComponent={HeaderActions}
-                    watermarkComponent={Watermark}
-                    singleTabMode="fullwidth"
-                    defaultRenderer="always"
-                    dndEdges={getOuterEdgeDropModel()}
-                    dropOverlayModel={getDropOverlayModel}
-                    getAnnouncement={getWorkspaceAnnouncement}
-                    onReady={(event: DockviewReadyEvent) => setApi(event.api)}
-                />
-                <InsertZones api={api} dragFormats={dragFormats} />
-            </div>
+                    onPointerLeave={() => markHoveredView(api, null)}
+                    style={minimumSize}
+                    onPointerDownCapture={(event) => {
+                        if (keepCloseFromSelecting(event) || !api) {
+                            return
+                        }
+                        const viewId = showSettingsForTarget(api, event.target)
+                        if (viewId) {
+                            dispatch(activeViewChanged(viewId))
+                        }
+                    }}
+                    onClickCapture={keepCloseFromSelecting}
+                >
+                    <DockviewReact
+                        theme={THEME}
+                        components={components}
+                        defaultTabComponent={WorkspaceTab}
+                        rightHeaderActionsComponent={HeaderActions}
+                        watermarkComponent={Watermark}
+                        singleTabMode="fullwidth"
+                        defaultRenderer="always"
+                        dndEdges={getOuterEdgeDropModel()}
+                        dropOverlayModel={getDropOverlayModel}
+                        getAnnouncement={getWorkspaceAnnouncement}
+                        onReady={(event: DockviewReadyEvent) =>
+                            setApi(event.api)
+                        }
+                    />
+                    <InsertZones api={api} dragFormats={dragFormats} />
+                </div>
+            </WorkspacePresetContext.Provider>
         </WorkspaceApiContext.Provider>
     )
 }

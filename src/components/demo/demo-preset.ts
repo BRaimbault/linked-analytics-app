@@ -1,0 +1,46 @@
+import { addView } from '@components/workspace/controller/add-view'
+import { setViewObject } from '@components/workspace/controller/views'
+import type { WorkspacePreset } from '@components/workspace/workspace-preset'
+import i18n from '@dhis2/d2-i18n'
+import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
+import type { PluginObject } from '@modules/plugins/contract'
+import type { ViewType } from '@modules/workspace/view-types'
+import type { DockviewApi } from 'dockview-react'
+
+const savedItem = <T extends PluginObject>(items: T[], id: string) =>
+    items.find((item) => item.id === id) as T
+
+const ancVisits = savedItem(DEMO_VISUALIZATIONS, 'DemoVisAnc1')
+const pentaByChiefdom = savedItem(DEMO_VISUALIZATIONS, 'DemoVisPen1')
+const malariaByDistrict = savedItem(DEMO_MAPS, 'DemoMapMal1')
+
+/* Added as clicks would add them: a chart, then a map beside it, then a
+ * pivot table under the chart (a click halves the first largest cell),
+ * and the selectors in a bar across the top. Every view joins the
+ * selectors' channels. A district clicked on the map filters the chart
+ * and the table; a month clicked on the chart sets the map's period, and
+ * the table's quarter. A data item picked shows on the map and the table,
+ * and narrows the chart when it's one of the chart's two. */
+const DEMO_VIEWS: { type: ViewType; object?: PluginObject }[] = [
+    { type: 'visualization', object: ancVisits },
+    { type: 'map', object: malariaByDistrict },
+    { type: 'visualization', object: pentaByChiefdom },
+    { type: 'period-selector' },
+    { type: 'org-unit-selector' },
+    { type: 'data-selector' },
+]
+
+const loadDemoViews = (api: DockviewApi): void => {
+    for (const { type, object } of DEMO_VIEWS) {
+        const result = addView(api, type)
+        if (result.status === 'added' && object) {
+            setViewObject(api, result.viewId, object)
+        }
+    }
+}
+
+export const DEMO_PRESET: WorkspacePreset = {
+    load: loadDemoViews,
+    name: () => i18n.t('Demo'),
+    resetLabel: () => i18n.t('Reset the demo'),
+}

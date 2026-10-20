@@ -1,0 +1,12 @@
+.banner {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp12);
+    border-block-end: 1px solid var(--colors-yellow300);
+    background: var(--colors-yellow050);
+    color: var(--colors-yellow900);
+    font-size: 13px;
+}
