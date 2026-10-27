@@ -61,7 +61,7 @@
     "dependencies": {
         "@dhis2/analytics": "^29.8.1",
         "@dhis2/app-runtime": "^3.17.4",
-        "@dhis2/ui": "^10.17.0",
+        "@dhis2/ui": "^10.19.3",
         "@reduxjs/toolkit": "^2.13.0",
         "dockview-react": "^8.4.1",
         "loglevel": "^1.9.2",
