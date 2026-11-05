@@ -43,12 +43,7 @@ run_stylelint() {
 
 # Same file groups as lint-staged in package.json
 case "$file" in
-    *.tsx)
-        format
-        run_eslint
-        run_stylelint
-        ;;
-    *.js | *.jsx | *.ts | *.cjs | *.mjs | *.cts | *.mts)
+    *.js | *.jsx | *.ts | *.tsx | *.cjs | *.mjs | *.cts | *.mts)
         format
         run_eslint
         ;;

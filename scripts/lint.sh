@@ -25,7 +25,7 @@ echo ""
 
 # Stylelint check
 echo "🔍 Checking Stylelint..."
-if ! pnpm exec stylelint "**/*.{css,scss,tsx}" --max-warnings=0; then
+if ! pnpm exec stylelint "**/*.{css,scss}" --max-warnings=0; then
     echo "❌ Stylelint check failed"
     EXIT_CODE=1
 else

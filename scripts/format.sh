@@ -19,7 +19,7 @@ echo ""
 
 # Stylelint fix
 echo "🔧 Running Stylelint --fix..."
-if ! pnpm exec stylelint "**/*.{css,scss,tsx}" --fix --max-warnings=0; then
+if ! pnpm exec stylelint "**/*.{css,scss}" --fix --max-warnings=0; then
     echo "❌ Stylelint formatting failed"
     EXIT_CODE=1
 else
