@@ -1,5 +1,8 @@
 import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
-import { computeLayoutSizes } from '@modules/workspace/layout-sizing'
+import {
+    computeHeaderChangeSizes,
+    computeLayoutSizes,
+} from '@modules/workspace/layout-sizing'
 import { describe, expect, it } from 'vitest'
 import { buildTree, column, row, view, selector } from './grid-tree-builders'
 
@@ -9,7 +12,7 @@ const W = 1200
 const H = 800
 
 describe('computeLayoutSizes with selectors', () => {
-    /* The placeholder selector: preferred 320×120 */
+    /* A selector: preferred 320×96, its header over its content */
 
     it('gives a selector row at the outer edge its preferred height', () => {
         const before = buildTree(W, H, row(1, view('a', 70), view('b', 30)))
@@ -22,7 +25,7 @@ describe('computeLayoutSizes with selectors', () => {
         expect(
             computeLayoutSizes(before, after, { kind: 'insert', placedId: 'w' })
         ).toEqual([
-            { id: 'w', height: 120 },
+            { id: 'w', height: 96 },
             { id: 'a', width: 840 },
         ])
     })
@@ -155,6 +158,79 @@ describe('computeLayoutSizes with selectors', () => {
             { id: 's1', height: 120 },
             { id: 's1', width: 600 },
         ])
+    })
+
+    describe('when view headers are hidden or shown', () => {
+        /* A bar of 3 selectors over 2 plugins, its height a share of 800 */
+        const bar = (height: number, headerHeight: number) =>
+            buildTree(
+                W,
+                H,
+                column(
+                    1,
+                    row(
+                        height,
+                        selector('s1', 1, headerHeight),
+                        selector('s2', 1, headerHeight),
+                        selector('s3', 1, headerHeight)
+                    ),
+                    row(H - height, view('a'), view('b'))
+                )
+            )
+        const plugins = [
+            { id: 's1', width: 400 },
+            { id: 's2', width: 400 },
+            { id: 'a', width: 600 },
+        ]
+
+        it('shrinks a bar of selectors by the header, the plugins taking the rest', () => {
+            expect(computeHeaderChangeSizes(bar(96, 0), -35)).toEqual([
+                { id: 's1', height: 61 },
+                ...plugins,
+            ])
+        })
+
+        it('grows it back by the header, keeping a height the user gave it', () => {
+            expect(computeHeaderChangeSizes(bar(61, 35), 35)).toEqual([
+                { id: 's1', height: 96 },
+                ...plugins,
+            ])
+            expect(computeHeaderChangeSizes(bar(100, 35), 35)).toEqual([
+                { id: 's1', height: 135 },
+                ...plugins,
+            ])
+        })
+
+        it('counts a header per selector stacked along the line', () => {
+            const tree = buildTree(
+                W,
+                H,
+                column(
+                    1,
+                    row(
+                        192,
+                        column(1, selector('s1', 1, 0), selector('s2', 1, 0)),
+                        selector('s3', 1, 0)
+                    ),
+                    view('a', H - 192)
+                )
+            )
+
+            expect(computeHeaderChangeSizes(tree, -35)).toContainEqual({
+                id: 's3',
+                height: 122,
+            })
+        })
+
+        it('asks for nothing when no line is made of selectors alone', () => {
+            const tree = buildTree(
+                W,
+                H,
+                column(1, row(1, selector('s1'), view('a')), view('b'))
+            )
+
+            expect(computeHeaderChangeSizes(tree, -35)).toEqual([])
+        })
     })
 
     it('shares the grid among selectors when no plugin is left', () => {

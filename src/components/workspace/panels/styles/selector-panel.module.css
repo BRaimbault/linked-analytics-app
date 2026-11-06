@@ -1,0 +1,11 @@
+/* The channel's color down the side ties the selector to the badges of
+ * the views it drives */
+.selector {
+    box-sizing: border-box;
+    block-size: 100%;
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp12);
+    overflow: auto;
+    border-inline-start: 4px solid var(--channel-color);
+    background: var(--colors-white);
+}

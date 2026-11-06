@@ -1,5 +1,53 @@
+import type { PluginObject } from '@modules/plugins/contract'
+import type { SelectorControl } from '@modules/selectors/controls'
 import type { DockviewApi } from 'dockview-react'
-import { getViewGroups } from './panels'
+import { fitViewSizes } from './grid-layout'
+import { getViewGroups, type ViewPanelParams } from './panels'
+
+/* The saved item a plugin view shows, kept in its params, which dockview
+ * keeps with the layout; the view itself stays where it is */
+export const setViewObject = (
+    api: DockviewApi,
+    viewId: string,
+    object: PluginObject
+): void => {
+    const view = api.getPanel(viewId)
+    view?.api.updateParameters({ ...view.params, object })
+}
+
+/* A selector's control, kept in its params like a saved item. Its cell
+ * takes the control's minimum size at once (a tree needs height). */
+export const setViewControl = (
+    api: DockviewApi,
+    viewId: string,
+    control: SelectorControl
+): void => {
+    const view = api.getPanel(viewId)
+    view?.api.updateParameters({ ...view.params, control })
+    fitViewSizes(api)
+}
+
+export const getViewControl = (
+    api: DockviewApi,
+    viewId: string
+): SelectorControl | undefined =>
+    (api.getPanel(viewId)?.params as ViewPanelParams | undefined)?.control
+
+export const getViewObject = (
+    api: DockviewApi,
+    viewId: string
+): PluginObject | undefined =>
+    (api.getPanel(viewId)?.params as ViewPanelParams | undefined)?.object
+
+/* Calls back when a view's params change, e.g. its saved item */
+export const onViewParamsChange = (
+    api: DockviewApi,
+    viewId: string,
+    listener: () => void
+): { dispose: () => void } =>
+    api.getPanel(viewId)?.api.onDidParametersChange(listener) ?? {
+        dispose: () => {},
+    }
 
 export const closeView = (api: DockviewApi, viewId: string): void => {
     const view = api.getPanel(viewId)

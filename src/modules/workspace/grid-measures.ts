@@ -2,12 +2,12 @@ import {
     along,
     axisOf,
     getLeaves,
+    getPreferredAlong,
     getViewSizes,
     orthogonal,
     type GridLeaf,
     type GridNode,
     type GridOrientation,
-    type Size,
     type SplitAxis,
 } from './grid-tree'
 import { sum } from './line-lengths'
@@ -83,25 +83,25 @@ export const getMinLength = (
     }) ?? 0
 
 /* The length the node asks for along the axis when all its views have a
- * preferred size (selectors alone), or null: it then takes a share */
+ * preferred length along it (selectors alone), or null: it then takes a
+ * share */
 export const getPreferredLength = (
     node: GridNode,
     orientation: GridOrientation,
     measure: Measure
 ): number | null => {
-    const hasPreferred = (candidate: GridNode): boolean =>
-        getLeaves(candidate).every(
-            (leaf) =>
-                leaf.id === measure.excludeId ||
-                getViewSizes(leaf).preferred !== undefined
-        )
-    if (!hasPreferred(node)) {
+    const preferredOf = (leaf: GridLeaf) =>
+        getPreferredAlong(getViewSizes(leaf), measure.axis)
+    const hasPreferred = getLeaves(node).every(
+        (leaf) =>
+            leaf.id === measure.excludeId || preferredOf(leaf) !== undefined
+    )
+    if (!hasPreferred) {
         return null
     }
     return measureNode(node, orientation, {
         ...measure,
-        leafLength: (leaf) =>
-            along(getViewSizes(leaf).preferred as Size, measure.axis),
+        leafLength: (leaf) => preferredOf(leaf) as number,
         stack: (lengths) => Math.max(...lengths),
     })
 }

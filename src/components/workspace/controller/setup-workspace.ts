@@ -8,7 +8,12 @@ import {
     refuseDisallowedDrop,
     swapOrExpectMove,
 } from './drops'
-import { isSizingPaused, readGridTree, restoreProportions } from './grid-layout'
+import {
+    fitViewSizes,
+    isSizingPaused,
+    readGridTree,
+    restoreProportions,
+} from './grid-layout'
 import { addToolPanels, type ToolTitles } from './settings'
 import { createViewEvents } from './view-events'
 
@@ -39,6 +44,7 @@ export const setupWorkspace = (
         api.onDidMutateLayout(() => {
             if (!isSizingPaused(api)) {
                 restoreProportions(api, layoutBefore)
+                fitViewSizes(api)
             }
         }),
         api.onWillDragPanel(keepFixedToolsInPlace),

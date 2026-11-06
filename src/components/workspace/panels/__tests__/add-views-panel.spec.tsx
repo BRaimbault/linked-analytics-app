@@ -17,6 +17,7 @@ const createApi = () => {
     const listeners = new Set<() => void>()
     return {
         panels: [],
+        groups: [],
         activeGroup: undefined,
         addPanel: vi.fn(),
         hasMaximizedGroup: () => maximized,

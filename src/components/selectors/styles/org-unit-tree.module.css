@@ -1,0 +1,19 @@
+/* The tree takes what the header leaves, and scrolls */
+.tree {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp4);
+    block-size: 100%;
+}
+
+.nodes {
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+}
+
+/* While it opens as far as it fits, so a level tried and closed again
+ * doesn't flash */
+.nodes[data-settling] {
+    visibility: hidden;
+}

@@ -1,0 +1,42 @@
+.banner {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp12);
+    border-block-end: 1px solid var(--colors-yellow300);
+    background: var(--colors-yellow050);
+    color: var(--colors-yellow900);
+    font-size: 13px;
+}
+
+/* Set apart from the notice, in the same quiet color */
+.tours {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacers-dp4);
+    margin-inline-start: var(--spacers-dp16);
+}
+
+.tourLink {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--colors-yellow500);
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.tourLink:hover {
+    text-decoration-color: currentcolor;
+}
+
+.tourLink:focus-visible {
+    outline: 2px solid var(--colors-blue600);
+    outline-offset: 2px;
+}

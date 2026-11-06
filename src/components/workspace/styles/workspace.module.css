@@ -233,6 +233,13 @@
     max-block-size: 4px;
 }
 
+/* Headers hidden: views show their content only, on every device. The
+ * tools strip keeps its tabs. */
+.workspace[data-view-headers='hidden']
+    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+    display: none;
+}
+
 /* Headers on hover: a view's header floats over the top of its view
  * instead of taking room, so no view (and no plugin's iframe) resizes as
  * the pointer moves. It shows while the view is hovered (data-hovered, set

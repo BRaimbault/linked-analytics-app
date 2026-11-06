@@ -29,6 +29,8 @@ The design and the repo's history live in `docs/` ([index, terms and conventions
 - [map-layers.md](docs/map-layers.md): options to limit layers per map (proposal).
 - [demo-mode.md](docs/demo-mode.md): fake plugins on synthetic data. Its `released` profile mirrors plugins.md.
 - [code-structure.md](docs/code-structure.md): how `src/` is organized, where a new domain's code goes, and the moves planned for later.
+- [data-period-types.md](docs/data-period-types.md): which period types a data item can fill, and the helpers proposed for `@dhis2/analytics`.
+- [data-org-units.md](docs/data-org-units.md): the follow-up for org units: which places a data item covers.
 
 ## Working with the user
 
@@ -48,7 +50,7 @@ The design and the repo's history live in `docs/` ([index, terms and conventions
 
 - **`.d2/`** holds the generated app shell: `src/` is copied into `.d2/shell/` and wrapped with the DHIS2 providers (auth, data engine, config, alerts). **Never write or modify files in `.d2/`.** If the shell looks stale after a dependency upgrade, delete `.d2` and restart the dev server.
     - **Don't run `pnpm build` while `pnpm start` runs**: both regenerate `.d2/shell`, and the dev server then serves broken files (e.g. HTML for `manifest.json`). Restart the dev server if it happens.
-    - **While `pnpm start` runs, edit files with the Edit and Write tools, not `sed -i` or scripted rewrites.** A file replaced through a temporary file (an atomic save) crashes the dev server: d2-app-scripts' watcher copies `src` into `.d2/shell` without error handling, and an `ENOENT` kills it. Restart `pnpm start` if it happens.
+    - **Edits under `src` can crash `pnpm start`.** d2-app-scripts' watcher copies `src` into `.d2/shell` without error handling, so a file it can't find kills it with `ENOENT`: a file replaced through a temporary file (an atomic save, which the Edit tool and `sed -i` both do at times) or a deleted one. For a series of edits, stop the dev server and start it again afterwards; restart it if it dies.
 - **API types** in `src/types/dhis2-openapi-schemas/` (gitignored) are generated from the dev server's OpenAPI spec.
     - Import them from the `@types` alias, never directly (enforced by ESLint); re-export what you need in `src/types/index.ts`.
     - `pnpm generate-types` regenerates them from the server in `dhis2.env.json`, and keeps the existing types if anything fails. It also runs on install when they're missing, including in CI, so a fresh install needs the dev server to be reachable.
@@ -61,6 +63,7 @@ Never rely on training data for DHIS2 API specifics. Look them up against the de
 
 What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md). The rules that shape code:
 
+- **The plugin adapter** is `PluginView` (`src/components/plugins/`): it mounts whatever `PluginSourcesProvider` gives for a view type, with the contract's props (`src/modules/plugins/contract.ts`), sized to the view's body. Demo mode provides the fakes (`src/components/demo/`); the app provides nothing until plan step 4, so views keep their placeholders. A view's saved item is in its params (`object`).
 - **Embed with `Plugin`** from `@dhis2/app-runtime/experimental` (an iframe plus props passed over post-robot). It types only its own layout props, so re-type it for the props we send (see EV `src/plugin-host/plugin-host-app.tsx`). Give it a fixed `width` and `height`: without them some plugins render at 0×0.
 - **Plugin URL**: look the app up in `/api/apps` by key (`data-visualizer`, `maps`, `line-listing`) and use `pluginLaunchUrl`; fall back to `${baseUrl}/dhis-web-data-visualizer/plugin.html` or `${baseUrl}/dhis-web-maps/plugin.html`. Reference: dashboard-app `plugin.js` (`getPluginLaunchUrl`).
 - **Props**: pass what the dashboard passes (dashboard-app `IframePlugin.jsx`): `visualization`, `isVisualizationLoaded: true`, `forDashboard: true`, `displayProperty`, `onError`, `onInstallationStatusChange`, `cacheId`, `isParentCached`.
@@ -77,14 +80,16 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
 ## Plan
 
 1. **Tooling** (done): the EV setup: Vitest, strict TypeScript, path aliases, ESLint, Stylelint, ls-lint, Prettier, commitlint and git hooks, the RTK Query data layer, generated API types, CI.
-2. **Workspace grid with placeholders** (finishing): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md). What's left from the external review is listed in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review); only the small items are needed before merging.
-3. **Vision demo** (next; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
+2. **Workspace grid with placeholders** (done, #7): the dockview workspace, with view kinds (plugin, selector or text) and sizes per type. See [Workspace](#workspace) and [docs/workspace-grid.md](docs/workspace-grid.md); the reviews and their fixes are in [docs/history.md §4](docs/history.md#4-in-progress-fixes-from-an-external-review).
+3. **Vision demo** (in progress, branch `feat/demo-mode`; [docs/demo-mode.md §10](docs/demo-mode.md#10-where-it-fits-in-the-plan)): the first demos are for people who need to see where the app goes, as soon as possible. So demo mode comes before the real plugins:
     - synthetic data, and the **plugin adapter** mounting fake DV and Maps plugins with the proposed upstream contract (`onDataClick`, `highlight`, `onLoadingComplete`);
-    - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou` and `pe`, period and org unit selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), item 2);
-    - the `?demo` switch, a banner, and a preset workspace that one click loads or resets.
+    - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou`, `pe` and `dx`, period, org unit and data selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), items 2 and 7);
+    - the `?demo` switch, a banner, and a preset workspace that one click loads or resets;
+    - a public health story in the data, two guided tours (the story, and how it works), and a basemap ([docs/demo-mode.md §5 and §7](docs/demo-mode.md#5-synthetic-data)).
+    - All of this is built (http://localhost:3000/?demo; progress in [docs/history.md §5](docs/history.md#5-in-progress-demo-mode-plan-step-3)).
     - Once it runs, share the demo and the contract ([docs/interactions.md §6](docs/interactions.md#6-upstream-prs)) with the DV and Maps maintainers: the upstream PRs have the longest lead time.
 4. **Real plugins** (planned): the same adapter mounts the DV and Maps plugins, with a saved item picked through `OpenFileDialog`. Check performance with 4 at once first, including memory and main-thread cost on a deployed build: it can change how many plugins the app allows. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. Links reach them within the released plugins' limits (DV `onDrill`, Maps remounts). See [docs/plugins.md](docs/plugins.md). Place the new code as planned in [docs/code-structure.md §4](docs/code-structure.md#4-rules-for-new-code).
-5. **Interactions, complete** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): link mode and the link settings, the upstream PRs and click senders on the real plugins, play mode, `dx` channels, then LL and EV receivers.
+5. **Interactions, complete** (planned; [docs/interactions.md §7](docs/interactions.md#7-order-of-work)): link mode and the link settings, the upstream PRs and click senders on the real plugins, play mode, `dx` channels on the real plugins (with the compatibility check), then LL and EV receivers.
 6. **View settings** (planned; [docs/view-settings.md §7](docs/view-settings.md#7-order-of-work)): hand off to DV or Maps for full editing, then in-app editors for visualizations and map layers, with Save as, Save and Revert. The map editor's scope depends on [docs/map-layers.md](docs/map-layers.md). Can run alongside step 5.
 7. **Persistence** (planned): save workspaces, in the URL first, then the dataStore. The URL step can come as early as step 4, growing out of the demo's preset workspace. With sharing come a **layout lock** (a Workspace setting: views keep working, the layout can't change) and then a **presentation mode** built on it (no headers, no tools strip). Design in [docs/workspace-grid.md §11](docs/workspace-grid.md#11-later-lock-and-presentation).
 
@@ -94,7 +99,7 @@ The grid is `dockview-react`, one view per cell. Detail and reasons: [docs/works
 
 - **Code layout**: pure layout logic in `src/modules/workspace/` (no dockview, unit-tested); **every dockview call** in `src/components/workspace/controller/`, one file per topic, with `setup-workspace.ts` only wiring events to named handlers; components in `src/components/workspace/` (`tabs/`, `panels/`, `insert-zones/`). The file map is in [docs/workspace-grid.md §9](docs/workspace-grid.md#9-code-layout).
 - **dockview is the source of truth**; the `workspace` Redux slice mirrors it from dockview events. Share the api through `WorkspaceApiContext`, not Redux.
-- **Views**: at most 4 plugins (`MAX_PLUGIN_VIEWS`); each selector type is capped at the number of plugins + 1, and never more than 4 (`MAX_SELECTORS_PER_TYPE`). Text views have no cap and no settings tab (edited in place). Sizes come from the registry (`sizes.min`, and `sizes.preferred` for selectors and text). Selectors have **no maximum size**.
+- **Views**: at most 4 plugins (`MAX_PLUGIN_VIEWS`); each selector type is capped at the number of plugins + 1, and never more than 4 (`MAX_SELECTORS_PER_TYPE`). Text views have no cap and no settings tab (edited in place). Sizes come from the registry (`bodySizes.min`, and `bodySizes.preferred` for selectors and text; a selector's from its control, `CONTROL_BODY_SIZES`), with the header added unless view headers are hidden (`getViewTypeSizes`, `fitViewSizes`). Selectors have **no maximum size**.
 - **Sizes**: after every add, move or close, the controller restores the user's proportions (`computeLayoutSizes`), reading the layout in `onWillMutateLayout` (or `onWillDrop` for a tab dropped at the outer edge) and applying `group.api.setSize` in `onDidMutateLayout`, parents first. **Never read the grid while a view is maximized**: dockview re-applies stored sizes when it restores one.
 - **Palette drags**: never rely on the drag's custom formats alone. Some systems pass a drag on to the page without them, so the page keeps the dragged tile too (`controller/tile-drag.ts`), and Cypress tests tile drops with `losesData`.
 - **Plugin size**: size a plugin from its body element, not from dockview's content dimensions, which subtract the header even while it floats (headers on hover).

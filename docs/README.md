@@ -15,6 +15,8 @@ Design and research documents for the Linked Analytics app, for the team and for
 | [map-layers.md](map-layers.md)               | Options to limit layers per map in the first version                                         | Proposal, under discussion          |
 | [demo-mode.md](demo-mode.md)                 | Fake plugins on synthetic data                                                               | Proposal, decided where noted       |
 | [code-structure.md](code-structure.md)       | How `src/` is organized, and the rules and moves for new domains                             | Research (September 2026), proposal |
+| [data-period-types.md](data-period-types.md) | Which period types a data item can fill, and helpers for `@dhis2/analytics`                  | Research (September 2026), proposal |
+| [data-org-units.md](data-org-units.md)       | Which org units a data item covers: a follow-up to the period helpers                        | Research (September 2026), proposal |
 
 **Single sources**: plugin behavior lives in [plugins.md](plugins.md), and the grid's rules in [workspace-grid.md](workspace-grid.md). Other docs link to them rather than repeat them.
 

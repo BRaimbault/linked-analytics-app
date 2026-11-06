@@ -1,0 +1,84 @@
+/* A card like the zoom control: same edge, same corners. Its width is
+ * fixed, so it doesn't jump when the classes or the lock change */
+.legend {
+    position: absolute;
+    box-sizing: border-box;
+    inline-size: 156px;
+    inset-block-end: var(--spacers-dp8);
+    inset-inline-start: var(--spacers-dp8);
+    overflow: hidden;
+    border: 1px solid var(--colors-grey400);
+    border-radius: 3px;
+    background: var(--colors-white);
+    box-shadow: 0 1px 3px rgb(33 41 52 / 10%);
+}
+
+.entries {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    padding: var(--spacers-dp8);
+    list-style: none;
+}
+
+.entries li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    font-size: 12px;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+    color: var(--colors-grey800);
+}
+
+.swatch {
+    flex: none;
+    inline-size: 18px;
+    block-size: 12px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+/* The lock and refit, a row along the card's foot */
+.tools {
+    display: flex;
+    border-block-start: 1px solid var(--colors-grey300);
+    background: var(--colors-grey050);
+}
+
+.button {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--spacers-dp4);
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp8);
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--colors-grey700);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.button + .button {
+    border-inline-start: 1px solid var(--colors-grey300);
+}
+
+.button:hover {
+    background: var(--colors-grey200);
+    color: var(--colors-grey900);
+}
+
+.button[aria-pressed='true'] {
+    color: var(--colors-blue700);
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}

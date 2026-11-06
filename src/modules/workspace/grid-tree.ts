@@ -3,10 +3,17 @@ export type SplitAxis = 'horizontal' | 'vertical'
 
 export type Size = { width: number; height: number }
 
-/* What a view needs from its cell. A view with a preferred size (a
- * selector) gets that size when it has a line to itself, instead of a share
- * of the grid. */
-export type ViewSizes = { min: Size; preferred?: Size }
+/* What a view needs from its cell. A view with a preferred length along an
+ * axis (a selector) gets that length when it has a line to itself, instead
+ * of a share of the grid. One with none along an axis takes a share there,
+ * as an org unit tree does along its height. */
+export type ViewSizes = { min: Size; preferred?: Partial<Size> }
+
+export const getPreferredAlong = (
+    { preferred }: ViewSizes,
+    axis: SplitAxis
+): number | undefined =>
+    axis === 'horizontal' ? preferred?.width : preferred?.height
 
 /* dockview's tab header, at the top of every view */
 export const VIEW_HEADER_HEIGHT = 35
