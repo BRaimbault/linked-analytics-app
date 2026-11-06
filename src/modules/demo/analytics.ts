@@ -4,8 +4,18 @@ import type {
     VisualizationObject,
 } from '@modules/visualization/analytical-object'
 import { getTotal } from './aggregation'
-import { resolveDataItems } from './data-items'
-import { resolveOrgUnits } from './org-units'
+import {
+    getDataItem,
+    getLegendColor,
+    getLegendSet,
+    resolveDataItems,
+} from './data-items'
+import {
+    getHierarchyName,
+    getOrgUnit,
+    resolveOrgUnits,
+    type DemoOrgUnit,
+} from './org-units'
 import { checkPeriods, type PeriodNotice } from './period-check'
 import { getPeriodItemName, resolvePeriods } from './periods'
 
@@ -31,6 +41,9 @@ export type DemoTable = {
     /* What the filters hold, e.g. to show what a view is filtered by */
     filters: AxisItem[][]
     valueOf: (series: AxisItem, category: AxisItem) => number | null
+    /* A value's color from its legend set, when the object colors values */
+    legendColorOf: (series: AxisItem, category: AxisItem) => string | undefined
+    legendStyle: 'FILL' | 'TEXT' | null
     /* Why some or all of the values are missing for these periods */
     notices: PeriodNotice[]
 }
@@ -64,6 +77,17 @@ const resolve = ({ dimension, items }: Dimension): AxisItem[] => {
     }
 }
 
+/* Org units named with their ancestors, "South / Juniper". DV's "show
+ * hierarchy" starts from the country; the demo leaves its one country out,
+ * as it adds nothing to a made-up geography. */
+const withHierarchy = (item: AxisItem): AxisItem =>
+    item.dimension === 'ou'
+        ? {
+              ...item,
+              name: getHierarchyName(getOrgUnit(item.id) as DemoOrgUnit),
+          }
+        : item
+
 export const buildDemoTable = (object: VisualizationObject): DemoTable => {
     const dimensions = [
         ...object.columns,
@@ -79,18 +103,30 @@ export const buildDemoTable = (object: VisualizationObject): DemoTable => {
     const all = new Map(
         dimensions.map((entry) => [entry.dimension, resolve(entry)])
     )
-    const series = seriesDimension ? resolve(seriesDimension) : []
-    const categories = categoryDimension ? resolve(categoryDimension) : []
+    const axis = (entry: Dimension | undefined) => {
+        const items = entry ? resolve(entry) : []
+        return object.showHierarchy ? items.map(withHierarchy) : items
+    }
+    const series = axis(seriesDimension)
+    const categories = axis(categoryDimension)
+
+    /* A cell's item where the dimension is on an axis, else every item */
+    const idsAt = (
+        seriesItem: AxisItem,
+        category: AxisItem,
+        dimension: DemoDimension
+    ) => {
+        const onAxis = [seriesItem, category].find(
+            (item) => item.dimension === dimension
+        )
+        return onAxis
+            ? [onAxis.id]
+            : (all.get(dimension) ?? []).map(({ id }) => id)
+    }
 
     const valueOf = (seriesItem: AxisItem, category: AxisItem) => {
-        const idsOf = (dimension: DemoDimension) => {
-            const onAxis = [seriesItem, category].find(
-                (item) => item.dimension === dimension
-            )
-            return onAxis
-                ? [onAxis.id]
-                : (all.get(dimension) ?? []).map(({ id }) => id)
-        }
+        const idsOf = (dimension: DemoDimension) =>
+            idsAt(seriesItem, category, dimension)
         /* Several data items in a filter add up, as counts do */
         const totals = idsOf('dx').map((dataItemId) =>
             getTotal(dataItemId, idsOf('ou'), idsOf('pe'))
@@ -99,6 +135,28 @@ export const buildDemoTable = (object: VisualizationObject): DemoTable => {
             return null
         }
         return (totals as number[]).reduce((sum, total) => sum + total, 0)
+    }
+
+    /* By data item, a value added up from several items has no legend */
+    const legendSetOf = (seriesItem: AxisItem, category: AxisItem) => {
+        const { legend } = object
+        if (legend?.strategy === 'FIXED') {
+            return legend.set && getLegendSet(legend.set.id)
+        }
+        const dataItemIds = idsAt(seriesItem, category, 'dx')
+        const legendSetId =
+            legend && dataItemIds.length === 1
+                ? getDataItem(dataItemIds[0])?.legendSetId
+                : undefined
+        return legendSetId ? getLegendSet(legendSetId) : undefined
+    }
+
+    const legendColorOf = (seriesItem: AxisItem, category: AxisItem) => {
+        const legendSet = legendSetOf(seriesItem, category)
+        const value = legendSet ? valueOf(seriesItem, category) : null
+        return legendSet && value !== null
+            ? getLegendColor(legendSet, value)
+            : undefined
     }
 
     /* A relative period keeps its own name, as DHIS2 shows a filter */
@@ -119,7 +177,15 @@ export const buildDemoTable = (object: VisualizationObject): DemoTable => {
         (all.get(dimension) ?? []).map(({ id }) => id)
     const notices = checkPeriods(idsIn('dx'), idsIn('ou'), idsIn('pe'))
 
-    return { series, categories, filters, valueOf, notices }
+    return {
+        series,
+        categories,
+        filters,
+        valueOf,
+        legendColorOf,
+        legendStyle: object.legend?.style ?? null,
+        notices,
+    }
 }
 
 /* What a click on a point sends: the ids on its axes */

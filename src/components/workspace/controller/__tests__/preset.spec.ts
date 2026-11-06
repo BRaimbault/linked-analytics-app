@@ -11,11 +11,11 @@ describe('presets', () => {
         const fake = setup()
         const load = vi.fn()
 
-        loadPreset(fake.asApi, load)
-        expect(load).toHaveBeenCalledWith(fake.asApi)
+        loadPreset(fake.asApi, load, fake.dispatch)
+        expect(load).toHaveBeenCalledWith(fake.asApi, fake.dispatch)
 
         twoColumns(fake)
-        loadPreset(fake.asApi, load)
+        loadPreset(fake.asApi, load, fake.dispatch)
         expect(load).toHaveBeenCalledTimes(1)
     })
 
@@ -27,7 +27,7 @@ describe('presets', () => {
             expect(getViewPanels(fake.asApi)).toHaveLength(0)
         )
 
-        resetToPreset(fake.asApi, load)
+        resetToPreset(fake.asApi, load, fake.dispatch)
 
         expect(fake.api.exitMaximizedGroup).toHaveBeenCalled()
         expect(load).toHaveBeenCalledTimes(1)
@@ -36,7 +36,7 @@ describe('presets', () => {
     it('reset without leaving maximize when no view is maximized', () => {
         const fake = setup()
 
-        resetToPreset(fake.asApi, vi.fn())
+        resetToPreset(fake.asApi, vi.fn(), fake.dispatch)
 
         expect(fake.api.exitMaximizedGroup).not.toHaveBeenCalled()
     })

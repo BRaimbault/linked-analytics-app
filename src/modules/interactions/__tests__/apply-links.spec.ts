@@ -255,24 +255,15 @@ describe('applyLinks', () => {
             expect(ids(linked, 'dx')).toEqual([])
         })
 
-        it('shows one data item on a map layer, with its own legend set or automatic classes', () => {
+        it("shows one data item on a map layer, in the item's legend set wherever it has one", () => {
             const [, malariaMap] = DEMO_MAPS
             const layerOf = (map: MapObject) => map.mapViews[0]
-            const withLegend: MapObject = {
-                ...malariaMap,
-                mapViews: [
-                    { ...layerOf(malariaMap), legendSet: { id: 'Other' } },
-                ],
-            }
 
             /* Penta 3 coverage has a legend set; malaria cases have none */
             const toMalaria = layerOf(
                 applyLinks(pentaMap, { dx: [malaria, anc1] }, OPTIONS)
             )
             const toPenta = layerOf(
-                applyLinks(withLegend, { dx: [penta3] }, OPTIONS)
-            )
-            const automatic = layerOf(
                 applyLinks(malariaMap, { dx: [penta3] }, OPTIONS)
             )
             const same = layerOf(
@@ -284,7 +275,7 @@ describe('applyLinks', () => {
             ])
             expect(toMalaria).not.toHaveProperty('legendSet')
             expect(toPenta.legendSet).toEqual({ id: 'DemoLegCov1' })
-            expect(automatic).not.toHaveProperty('legendSet')
+            expect(toPenta.colorScale).toBe(layerOf(malariaMap).colorScale)
             expect(same.legendSet).toEqual(layerOf(pentaMap).legendSet)
         })
     })

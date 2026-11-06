@@ -44,7 +44,12 @@ export const ToolPanel: FC<{
     }, [isCollapsed])
 
     return (
-        <div ref={ref} className={classes.tool} data-test={dataTest}>
+        <div
+            ref={ref}
+            className={classes.tool}
+            data-test={dataTest}
+            data-tool-panel
+        >
             {children}
         </div>
     )

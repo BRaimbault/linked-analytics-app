@@ -3,8 +3,8 @@ import {
     axisOf,
     getLeafRects,
     getLeaves,
+    getPreferredAlong,
     getViewSizes,
-    along,
     lengthOf,
     orthogonal,
     startOf,
@@ -72,11 +72,13 @@ export const getKnownRects = (
     const placedLeaf = getLeaves(after.root).find(
         (leaf) => leaf.id === change.placedId
     )
-    const preferred = placedLeaf && getViewSizes(placedLeaf).preferred
+    const preferred =
+        placedLeaf && getPreferredAlong(getViewSizes(placedLeaf), axis)
     const cellLength = lengthOf(targetBefore, axis)
-    const placedLength = preferred
-        ? Math.min(along(preferred, axis), cellLength)
-        : cellLength / 2
+    const placedLength =
+        preferred === undefined
+            ? cellLength / 2
+            : Math.min(preferred, cellLength)
     const placedFirst = startOf(placed, axis) < startOf(target, axis)
     const [first, second] = cut(
         targetBefore,
@@ -115,21 +117,37 @@ const getKnownExtent = (
 export const getLineLengths = (
     children: GridNode[],
     orientation: GridOrientation,
-    { length, known }: { length: number; known: Map<string, Rect> }
+    {
+        length,
+        known,
+        headerChange = 0,
+    }: {
+        length: number
+        known: Map<string, Rect>
+        /* How much taller view headers got since the known layout */
+        headerChange?: number
+    }
 ): number[] => {
     const axis = axisOf(orientation)
     const childOrientation = orthogonal(orientation)
-    const extents = children.map((child) =>
-        getKnownExtent(
-            getLeaves(child).map((leaf) => leaf.id),
-            known,
-            axis
-        )
-    )
     const measure = { axis }
     const preferred = children.map((child) =>
         getPreferredLength(child, childOrientation, measure)
     )
+    /* A line of selectors alone fits their content: it follows a header
+     * change, once per view stacked along it */
+    const headerChangeOf = (child: GridNode, index: number) =>
+        axis === 'vertical' && preferred[index] !== null
+            ? headerChange * getLineCount(child, childOrientation, measure)
+            : 0
+    const extents = children.map((child, index) => {
+        const extent = getKnownExtent(
+            getLeaves(child).map((leaf) => leaf.id),
+            known,
+            axis
+        )
+        return extent === null ? null : extent + headerChangeOf(child, index)
+    })
     /* With no map or visualization in the branch, nothing takes the
      * rest of it, so its selector lines share it like any lines
      * (e.g. a bar of selectors across the top) */

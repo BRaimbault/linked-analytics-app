@@ -7,11 +7,11 @@
     color: var(--colors-grey900);
 }
 
-/* 56px, as HEADER_HEIGHT in fake-visualization.tsx */
+/* 60px, as HEADER_HEIGHT in fake-visualization.tsx */
 .header {
     box-sizing: border-box;
-    block-size: 56px;
-    padding-block: var(--spacers-dp4);
+    block-size: 60px;
+    padding-block: var(--spacers-dp8) var(--spacers-dp4);
     padding-inline: var(--spacers-dp8);
     overflow: hidden;
 }
@@ -110,6 +110,17 @@
 /* What highlight leaves out */
 .dimmed {
     opacity: 0.25;
+}
+
+/* A highlighted category on a line chart, as a dashed plot line */
+.categoryMark {
+    stroke: var(--colors-grey700);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 4;
+}
+
+.markedCategory {
+    font-weight: 600;
 }
 
 .tableScroller {

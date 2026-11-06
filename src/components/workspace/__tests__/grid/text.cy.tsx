@@ -20,7 +20,7 @@ describe('text views', () => {
         clickTile('text')
 
         cellSize('Text 1').its('height').should('be.closeTo', 120, 2)
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
         expectLayout({
             'Text 1': { y: 0, w: 100 },
             'Period 1': { w: 100 },

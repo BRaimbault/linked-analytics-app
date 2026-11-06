@@ -1,4 +1,5 @@
 import { addView } from '@components/workspace/controller/add-view'
+import { fitViewSizes } from '@components/workspace/controller/grid-layout'
 import {
     buildTree,
     column,
@@ -348,5 +349,110 @@ describe('sizes after a layout change', () => {
         fake.api.removePanel(fake.api.getPanel('vis-a') as never)
 
         expect(map.group.api.setSize).not.toHaveBeenCalled()
+    })
+})
+
+describe('sizes for view headers', () => {
+    /* A period selector over a map, as tall as its header and content */
+    const selectorOverMap = (barHeight: number) => {
+        const fake = setup()
+        const bar = fake.addLaidOutView(
+            'bar',
+            { left: 0, top: 0, width: 1200, height: barHeight },
+            { type: 'period-selector' }
+        )
+        const map = fake.addLaidOutView('map', {
+            left: 0,
+            top: barHeight,
+            width: 1200,
+            height: 800 - barHeight,
+        })
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                column(
+                    1,
+                    view(bar.group.id, barHeight),
+                    view(map.group.id, 800 - barHeight)
+                )
+            )
+        )
+        return { fake, bar, map }
+    }
+
+    it('fits a selector to its content when headers are hidden, and back when shown', () => {
+        const { fake, bar, map } = selectorOverMap(96)
+
+        fake.setHeadersHidden(true)
+        fitViewSizes(fake.asApi)
+
+        expect(bar.group.api.setConstraints).toHaveBeenLastCalledWith({
+            minimumWidth: 240,
+            minimumHeight: 61,
+        })
+        expect(map.group.api.setConstraints).toHaveBeenLastCalledWith({
+            minimumWidth: 240,
+            minimumHeight: 125,
+        })
+        expect(bar.group.api.setSize).toHaveBeenLastCalledWith({ height: 61 })
+
+        fake.setLayout(
+            buildTree(
+                1200,
+                800,
+                column(1, view(bar.group.id, 61), view(map.group.id, 739))
+            )
+        )
+        fake.setHeadersHidden(false)
+        fitViewSizes(fake.asApi)
+        expect(bar.group.api.setSize).toHaveBeenLastCalledWith({ height: 96 })
+    })
+
+    it('grows a selector by the header once, though dockview grows a cell to its new minimum at once', () => {
+        const { fake, bar, map } = selectorOverMap(61)
+        const layoutWithBar = (height: number) =>
+            buildTree(
+                1200,
+                800,
+                column(
+                    1,
+                    view(bar.group.id, height),
+                    view(map.group.id, 800 - height)
+                )
+            )
+        /* Sized for hidden headers, as a preset loaded while they are */
+        fake.setHeadersHidden(true)
+        fitViewSizes(fake.asApi)
+        bar.group.api.setConstraints.mockImplementation(({ minimumHeight }) =>
+            fake.setLayout(layoutWithBar(Math.max(61, minimumHeight)))
+        )
+
+        fake.setHeadersHidden(false)
+        fitViewSizes(fake.asApi)
+
+        expect(bar.group.api.setSize).toHaveBeenLastCalledWith({ height: 96 })
+    })
+
+    it('resizes nothing when the headers stay as they were', () => {
+        const { fake, bar } = selectorOverMap(96)
+
+        fitViewSizes(fake.asApi)
+
+        expect(bar.group.api.setConstraints).toHaveBeenCalled()
+        expect(bar.group.api.setSize).not.toHaveBeenCalled()
+    })
+
+    it('waits for a maximized view to be restored, and gives new cells their minimums', () => {
+        const { fake, bar } = selectorOverMap(96)
+
+        fake.setMaximized(true)
+        fake.setHeadersHidden(true)
+        fitViewSizes(fake.asApi)
+        expect(bar.group.api.setSize).not.toHaveBeenCalled()
+
+        /* Any layout change, as leaving maximize */
+        fake.mutate(() => fake.setMaximized(false))
+        expect(bar.group.api.setSize).toHaveBeenLastCalledWith({ height: 61 })
     })
 })

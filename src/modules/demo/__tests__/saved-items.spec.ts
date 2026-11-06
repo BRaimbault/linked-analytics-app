@@ -31,6 +31,8 @@ describe('demo saved items', () => {
             'LINE',
             'COLUMN',
             'PIVOT_TABLE',
+            'PIVOT_TABLE',
+            'LINE',
         ])
     })
 

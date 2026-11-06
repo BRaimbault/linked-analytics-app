@@ -2,6 +2,7 @@ import { getOrgUnitDepth } from '@modules/interactions/channels'
 import { configureStore } from '@reduxjs/toolkit'
 import {
     dataClicked,
+    highlightOnlyChanged,
     interactionsSlice,
     orgUnitDepthChanged,
     selectChannels,
@@ -260,6 +261,46 @@ describe('a view’s org unit depth', () => {
         store.dispatch(orgUnitDepthChanged({ viewId: 'map-1', depth: 0 }))
 
         expect(getOrgUnitDepth(store.channels(), 'map-1')).toBe(1)
+    })
+})
+
+describe('a view’s Highlight only', () => {
+    const isHighlightOnly = (
+        store: ReturnType<typeof setUpTwoChannels>,
+        viewId: string
+    ) =>
+        store.channels().find(({ members }) => Object.hasOwn(members, viewId))
+            ?.members[viewId].highlightOnly
+
+    it('is off until set, and stays with the view as it moves', () => {
+        const store = setUpTwoChannels()
+        expect(isHighlightOnly(store, 'map-1')).toBeUndefined()
+
+        store.dispatch(
+            highlightOnlyChanged({
+                viewId: 'map-1',
+                dimension: 'ou',
+                highlightOnly: true,
+            })
+        )
+        store.dispatch(move('map-1', { label: 'B' }))
+
+        expect(isHighlightOnly(store, 'map-1')).toBe(true)
+    })
+
+    it('can’t be set for a view in no channel of the dimension', () => {
+        const store = setUpTwoChannels()
+        store.dispatch(move('map-1', 'none'))
+
+        store.dispatch(
+            highlightOnlyChanged({
+                viewId: 'map-1',
+                dimension: 'ou',
+                highlightOnly: true,
+            })
+        )
+
+        expect(isHighlightOnly(store, 'map-1')).toBeUndefined()
     })
 })
 

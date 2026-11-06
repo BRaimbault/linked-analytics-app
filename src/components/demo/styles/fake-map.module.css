@@ -8,11 +8,11 @@
     color: var(--colors-grey900);
 }
 
-/* 44px, as HEADER_HEIGHT in fake-map.tsx */
+/* 48px, as HEADER_HEIGHT in fake-map.tsx */
 .header {
     box-sizing: border-box;
-    block-size: 44px;
-    padding-block: var(--spacers-dp4);
+    block-size: 48px;
+    padding-block: var(--spacers-dp8) var(--spacers-dp4);
     padding-inline: var(--spacers-dp8);
     overflow: hidden;
 }
@@ -32,19 +32,94 @@
     text-overflow: ellipsis;
 }
 
+/* The sea, the basemap's ground */
 .canvas {
     display: block;
     flex: none;
-    background: #dbe9f4;
+    background: #d4e4ee;
     cursor: grab;
     touch-action: none;
+}
+
+/* A unit's name over the data, dark on a light halo, as Maps draws it */
+.featureLabel {
+    fill: var(--colors-grey900);
+    stroke: rgb(255 255 255 / 85%);
+    paint-order: stroke;
+    font-family: Roboto, sans-serif;
+    font-weight: 500;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* A light basemap under the data: pale land, thin lines that keep their
+ * width as the map zooms, quiet gray names */
+.land {
+    fill: #f2efe9;
+    stroke: #cfc9bd;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+}
+
+.river {
+    fill: none;
+    stroke: #a9c8da;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.road {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 0 0.15px #b8b2a6);
+}
+
+.town {
+    fill: #8a8478;
+}
+
+.townLabel,
+.landLabel,
+.waterLabel {
+    font-family: Roboto, sans-serif;
+    pointer-events: none;
+    user-select: none;
+}
+
+.townLabel {
+    fill: #6f6a60;
+    font-size: 2.4px;
+}
+
+.landLabel {
+    fill: #9a9488;
+    font-size: 3.2px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.waterLabel {
+    fill: #7f9db0;
+    font-size: 3px;
+    font-style: italic;
+    text-anchor: middle;
 }
 
 .canvas:active {
     cursor: grabbing;
 }
 
+/* Maps draws a thematic layer at 90% opacity by default */
 .feature {
+    fill-opacity: 0.9;
     stroke: var(--colors-white);
     stroke-width: 0.3;
     cursor: pointer;

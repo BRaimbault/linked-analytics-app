@@ -234,6 +234,17 @@ export const setOrgUnitDepth = (
     }
 }
 
+export const setHighlightOnly = (
+    state: InteractionsState,
+    { viewId, dimension }: ViewLink,
+    highlightOnly: boolean
+) => {
+    const channel = findViewChannel(state.channels, viewId, dimension)
+    if (channel) {
+        channel.members[viewId].highlightOnly = highlightOnly
+    }
+}
+
 /* A selector drives one channel, and a channel has at most one selector.
  * The channel it leaves keeps its views, and goes if it has none. */
 export const moveSelectorToChannel = (

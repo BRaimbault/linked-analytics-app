@@ -1,5 +1,9 @@
 import { ChannelBadges } from '@components/interactions/channel-badges'
 import { LinksSection } from '@components/interactions/links-section'
+import {
+    NO_PLUGIN_SOURCES,
+    PluginSourcesProvider,
+} from '@components/plugins/plugin-sources'
 import { renderWithStore } from '@components/workspace/__tests__/render-with-store'
 import type { ViewType } from '@modules/workspace/view-types'
 import { selectChannels } from '@store/interactions-slice'
@@ -17,12 +21,16 @@ const VIEWS: { id: string; type: ViewType; number: number }[] = [
 
 /* A map, a visualization, and an org unit and a period selector: channels
  * A (org unit) and B (period), which both views joined */
-const renderLinks = (viewId: string, type: ViewType) => {
+const renderLinks = (
+    viewId: string,
+    type: ViewType,
+    sources = NO_PLUGIN_SOURCES
+) => {
     const view = renderWithStore(
-        <>
+        <PluginSourcesProvider sources={sources}>
             <LinksSection viewId={viewId} type={type} />
             <ChannelBadges viewId={viewId} />
-        </>
+        </PluginSourcesProvider>
     )
     act(() => {
         for (const added of VIEWS) {
@@ -118,17 +126,41 @@ describe('LinksSection', () => {
 
     it('sets what a view shows for a selected org unit, while it follows it', async () => {
         const { channels } = renderLinks('vis-1', 'visualization')
-        expect(screen.getByTestId('links-ou-depth')).toHaveTextContent(
+        expect(screen.getByTestId('links-ou-follow')).toHaveTextContent(
             'ShowSub-units'
         )
 
-        await pick('links-ou-depth', 'Selected org unit')
+        await pick('links-ou-follow', 'Selected org unit')
         expect(channels()[0].members['vis-1'].depth).toBe(0)
 
         await userEvent.click(checkbox('links-ou-receive'))
-        expect(screen.queryByTestId('links-ou-depth')).toBeNull()
-        /* Periods have no depth */
-        expect(within(row('pe')).queryByText('Selected org unit')).toBeNull()
+        expect(screen.queryByTestId('links-ou-follow')).toBeNull()
+        /* A period has nothing to choose from, with a plugin that can't
+         * highlight */
+        expect(screen.queryByTestId('links-pe-follow')).toBeNull()
+    })
+
+    it('follows with Highlight only, when the plugin can highlight, and back', async () => {
+        const { channels } = renderLinks('vis-1', 'visualization', {
+            ...NO_PLUGIN_SOURCES,
+            canHighlight: { visualization: true },
+        })
+        const memberOf = (index: number) => channels()[index].members['vis-1']
+
+        await pick('links-pe-follow', 'Highlight only')
+        expect(memberOf(1).highlightOnly).toBe(true)
+        expect(screen.getByTestId('links-pe-follow')).toHaveTextContent(
+            'Highlight only'
+        )
+        await pick('links-pe-follow', 'As picked')
+        expect(memberOf(1).highlightOnly).toBe(false)
+
+        await pick('links-ou-follow', 'Highlight only')
+        expect(memberOf(0).highlightOnly).toBe(true)
+        await pick('links-ou-follow', 'Sub-x2-units')
+        expect(memberOf(0)).toMatchObject({ highlightOnly: false, depth: 2 })
+        /* Data items are replaced: nothing to choose */
+        expect(within(row('ou')).queryByText('As picked')).toBeNull()
     })
 
     it('moves a view to a new channel, or to none', async () => {

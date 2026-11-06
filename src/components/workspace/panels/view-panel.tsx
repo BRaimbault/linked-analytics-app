@@ -23,7 +23,7 @@ export const ViewPanel: FC<IDockviewPanelProps<ViewPanelParams>> = (props) => {
     const isFramed = viewHeaders === 'hover' && selectedViewId === props.api.id
 
     const { renderers, selectorItems } = usePluginSources()
-    const { type, object } = props.params
+    const { type, object, control } = props.params
     const pluginType = isPluginViewType(type) && renderers[type] ? type : null
     const selectorDimension = SELECTOR_DIMENSIONS[type]
     const selectorList = selectorDimension && selectorItems[selectorDimension]
@@ -33,7 +33,13 @@ export const ViewPanel: FC<IDockviewPanelProps<ViewPanelParams>> = (props) => {
             return <TextViewPanel {...props} />
         }
         if (selectorList) {
-            return <SelectorPanel viewId={props.api.id} items={selectorList} />
+            return (
+                <SelectorPanel
+                    viewId={props.api.id}
+                    items={selectorList}
+                    control={control}
+                />
+            )
         }
         return pluginType && object ? (
             <PluginPanel

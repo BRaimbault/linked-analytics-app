@@ -5,14 +5,23 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2026-09-30T14:43:10.613Z\n"
-"PO-Revision-Date: 2026-09-30T14:43:10.616Z\n"
+"POT-Creation-Date: 2026-11-06T19:14:57.684Z\n"
+"PO-Revision-Date: 2026-11-06T19:14:57.685Z\n"
 
 msgid "Could not load the app"
 msgstr "Could not load the app"
 
 msgid "Demo data. Nothing here comes from the server."
 msgstr "Demo data. Nothing here comes from the server."
+
+msgid "Take a tour"
+msgstr "Take a tour"
+
+msgid "The story"
+msgstr "The story"
+
+msgid "How it works"
+msgstr "How it works"
 
 msgid "Demo"
 msgstr "Demo"
@@ -78,6 +87,304 @@ msgstr ""
 msgid "No {{asked}} values for {{item}}, which is collected {{collected}}."
 msgstr "No {{asked}} values for {{item}}, which is collected {{collected}}."
 
+msgid "How this workspace works"
+msgstr "How this workspace works"
+
+msgid ""
+"Six views. A map, a chart and a table show data, and three selectors set "
+"what they show. They are linked through channels. This tour follows one "
+"channel from start to end."
+msgstr ""
+"Six views. A map, a chart and a table show data, and three selectors set "
+"what they show. They are linked through channels. This tour follows one "
+"channel from start to end."
+
+msgid "View headers"
+msgstr "View headers"
+
+msgid ""
+"Every view has a header, with its name, its channels, and buttons to "
+"maximize or close it. The demo starts without them, for a first look. The "
+"Workspace tab shows them again."
+msgstr ""
+"Every view has a header, with its name, its channels, and buttons to "
+"maximize or close it. The demo starts without them, for a first look. The "
+"Workspace tab shows them again."
+
+msgid "Views come from here"
+msgstr "Views come from here"
+
+msgid ""
+"Up to 4 charts, maps or tables, and selectors and notes. Click a tile, or "
+"drag it where you want it. Every view also gets a settings tab here."
+msgstr ""
+"Up to 4 charts, maps or tables, and selectors and notes. Click a tile, or "
+"drag it where you want it. Every view also gets a settings tab here."
+
+msgid "A channel"
+msgstr "A channel"
+
+msgid ""
+"A channel carries one value of one dimension to every view in it. This "
+"selector sets the org unit of channel {{channel}}, named by its letter and "
+"color."
+msgstr ""
+"A channel carries one value of one dimension to every view in it. This "
+"selector sets the org unit of channel {{channel}}, named by its letter and "
+"color."
+
+msgid "Who's in it"
+msgstr "Who's in it"
+
+msgid ""
+"Each view's badges name its channels. The map's {{channel}} badge has an "
+"arrow out, it sets the value when clicked, and an arrow in, it follows the "
+"value. The chart and the table have the same badge."
+msgstr ""
+"Each view's badges name its channels. The map's {{channel}} badge has an "
+"arrow out, it sets the value when clicked, and an arrow in, it follows the "
+"value. The chart and the table have the same badge."
+
+msgid "Where that is set"
+msgstr "Where that is set"
+
+msgid ""
+"A view's settings tab has a Links section. For each dimension, it picks the "
+"view's channel, whether the view sets the value by clicking, and whether it "
+"follows it."
+msgstr ""
+"A view's settings tab has a Links section. For each dimension, it picks the "
+"view's channel, whether the view sets the value by clicking, and whether it "
+"follows it."
+
+msgid "Set the value"
+msgstr "Set the value"
+
+msgid ""
+"Click {{highest}} on the map, and the map sets the value of channel "
+"{{channel}}. Or press Next, and the demo clicks it for you."
+msgstr ""
+"Click {{highest}} on the map, and the map sets the value of channel "
+"{{channel}}. Or press Next, and the demo clicks it for you."
+
+msgid "The value travels"
+msgstr "The value travels"
+
+msgid ""
+"The tree shows {{highest}}, as it is in channel {{channel}} too, and opens "
+"its branch. Pick another org unit in it, and the map follows it in turn."
+msgstr ""
+"The tree shows {{highest}}, as it is in channel {{channel}} too, and opens "
+"its branch. Pick another org unit in it, and the map follows it in turn."
+
+msgid "Followers rewrite their own item"
+msgstr "Followers rewrite their own item"
+
+msgid ""
+"The chart follows channel {{channel}}. Its districts become {{highest}}'s "
+"chiefdoms, as its saved item asks for the units below the one it shows. The "
+"table narrows to them too. The map, which set the value, highlights it "
+"rather than redrawing."
+msgstr ""
+"The chart follows channel {{channel}}. Its districts become {{highest}}'s "
+"chiefdoms, as its saved item asks for the units below the one it shows. The "
+"table narrows to them too. The map, which set the value, highlights it "
+"rather than redrawing."
+
+msgid "Another channel"
+msgstr "Another channel"
+
+msgid ""
+"Channel {{channel}} carries a period the same way. Click a month on the "
+"chart, and the map shows that month, while the table marks the quarter "
+"holding it."
+msgstr ""
+"Channel {{channel}} carries a period the same way. Click a month on the "
+"chart, and the map shows that month, while the table marks the quarter "
+"holding it."
+
+msgid "Play"
+msgstr "Play"
+
+msgid ""
+"The timeline sets channel {{channel}} one month at a time. Press play, and "
+"the map steps through the months, each step waiting until it has drawn. The "
+"chart and the table follow with Highlight only, set in their Links. They "
+"keep their own periods, and mark each month."
+msgstr ""
+"The timeline sets channel {{channel}} one month at a time. Press play, and "
+"the map steps through the months, each step waiting until it has drawn. The "
+"chart and the table follow with Highlight only, set in their Links. They "
+"keep their own periods, and mark each month."
+
+msgid "Start again"
+msgstr "Start again"
+
+msgid "Reset the demo brings this layout back at any time."
+msgstr "Reset the demo brings this layout back at any time."
+
+msgid "Over to you"
+msgstr "Over to you"
+
+msgid ""
+"Add a view, link it in its settings, and click. The other tour, The story, "
+"shows what the links reveal in this data."
+msgstr ""
+"Add a view, link it in its settings, and click. The other tour, The story, "
+"shows what the links reveal in this data."
+
+msgid "{{current}} of {{total}}"
+msgstr "{{current}} of {{total}}"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "Done"
+msgstr "Done"
+
+msgid "A question for Demoland"
+msgstr "A question for Demoland"
+
+msgid ""
+"Malaria is endemic in Demoland, and it weighs far more in some places than "
+"in others. Where, when, and why there? Three linked views answer it in a "
+"few steps. The data is made up, but follows a pattern seen where malaria is "
+"endemic."
+msgstr ""
+"Malaria is endemic in Demoland, and it weighs far more in some places than "
+"in others. Where, when, and why there? Three linked views answer it in a "
+"few steps. The data is made up, but follows a pattern seen where malaria is "
+"endemic."
+
+msgid "Where"
+msgstr "Where"
+
+msgid ""
+"Confirmed malaria cases per 1,000 people a year. {{highest}} has "
+"{{highestValue}}, {{ratio}} times {{lowest}} ({{lowestValue}}). A rate "
+"compares places of different sizes, where case counts would mostly show "
+"where people live."
+msgstr ""
+"Confirmed malaria cases per 1,000 people a year. {{highest}} has "
+"{{highestValue}}, {{ratio}} times {{lowest}} ({{lowestValue}}). A rate "
+"compares places of different sizes, where case counts would mostly show "
+"where people live."
+
+msgid "When"
+msgstr "When"
+
+msgid ""
+"The same rate, month by month, a line per district. Malaria rises with the "
+"rains from May, but {{highest}} has the highest rate every month. Its "
+"problem is not the season."
+msgstr ""
+"The same rate, month by month, a line per district. Malaria rises with the "
+"rains from May, but {{highest}} has the highest rate every month. Its "
+"problem is not the season."
+
+msgid "Ask the map"
+msgstr "Ask the map"
+
+msgid ""
+"Click {{highest}} on the map, and every view answers for {{highest}}. Or "
+"press Next, and the demo clicks it for you."
+msgstr ""
+"Click {{highest}} on the map, and every view answers for {{highest}}. Or "
+"press Next, and the demo clicks it for you."
+
+msgid "One click"
+msgstr "One click"
+
+msgid ""
+"The map keeps every district and highlights {{highest}}, the value it set. "
+"Every other view now shows {{highest}}, with no filter to set in each."
+msgstr ""
+"The map keeps every district and highlights {{highest}}, the value it set. "
+"Every other view now shows {{highest}}, with no filter to set in each."
+
+msgid "Look closer"
+msgstr "Look closer"
+
+msgid ""
+"Right-click {{highest}} on the map, then Drill down into {{highest}}. Or "
+"press Next, and the demo drills down for you."
+msgstr ""
+"Right-click {{highest}} on the map, then Drill down into {{highest}}. Or "
+"press Next, and the demo drills down for you."
+
+msgid "The whole district"
+msgstr "The whole district"
+
+msgid ""
+"The map now shows {{highest}}'s {{count}} chiefdoms, on the classes it had "
+"for the districts. Every one is in the top class, as {{highest}} is."
+msgid_plural ""
+"The map now shows {{highest}}'s {{count}} chiefdoms, on the classes it had "
+"for the districts. Every one is in the top class, as {{highest}} is."
+msgstr[0] ""
+"The map now shows {{highest}}'s {{count}} chiefdoms, on the classes it had "
+"for the districts. Every one is in the top class, as {{highest}} is."
+msgstr[1] ""
+"The map now shows {{highest}}'s {{count}} chiefdoms, on the classes it had "
+"for the districts. Every one is in the top class, as {{highest}} is."
+
+msgid "Not one hotspot"
+msgstr "Not one hotspot"
+
+msgid ""
+"The chart now shows {{highest}}'s chiefdoms, month by month. Every one of "
+"them is above the country's rate, so the cause is shared across the "
+"district."
+msgstr ""
+"The chart now shows {{highest}}'s chiefdoms, month by month. Every one of "
+"them is above the country's rate, so the cause is shared across the "
+"district."
+
+msgid "Why"
+msgstr "Why"
+
+msgid ""
+"The table narrows to {{highest}}'s chiefdoms. In {{quarter}}, none of its "
+"{{count}} reaches the {{target}}% target for the malaria vaccine, nor for "
+"Penta 3, given at the same routine visits. Where malaria weighs most, "
+"prevention reaches the fewest children. Pick Penta 3 in the data selector "
+"after the tour, and the table shows it."
+msgid_plural ""
+"The table narrows to {{highest}}'s chiefdoms. In {{quarter}}, none of its "
+"{{count}} reaches the {{target}}% target for the malaria vaccine, nor for "
+"Penta 3, given at the same routine visits. Where malaria weighs most, "
+"prevention reaches the fewest children. Pick Penta 3 in the data selector "
+"after the tour, and the table shows it."
+msgstr[0] ""
+"The table narrows to {{highest}}'s chiefdoms. In {{quarter}}, none of its "
+"{{count}} reaches the {{target}}% target for the malaria vaccine, nor for "
+"Penta 3, given at the same routine visits. Where malaria weighs most, "
+"prevention reaches the fewest children. Pick Penta 3 in the data selector "
+"after the tour, and the table shows it."
+msgstr[1] ""
+"The table narrows to {{highest}}'s chiefdoms. In {{quarter}}, none of its "
+"{{count}} reaches the {{target}}% target for the malaria vaccine, nor for "
+"Penta 3, given at the same routine visits. Where malaria weighs most, "
+"prevention reaches the fewest children. Pick Penta 3 in the data selector "
+"after the tour, and the table shows it."
+
+msgid "From where to why, in one click"
+msgstr "From where to why, in one click"
+
+msgid ""
+"Without linked views, this takes three dashboards, the same filter set in "
+"each, and care that they all show the same place and period. Here every "
+"view stays on the same question. The other tour, How it works, shows how "
+"the views are linked."
+msgstr ""
+"Without linked views, this takes three dashboards, the same filter set in "
+"each, and care that they all show the same place and period. Here every "
+"view stays on the same question. The other tour, How it works, shows how "
+"the views are linked."
+
 msgid "Sets the value"
 msgstr "Sets the value"
 
@@ -117,6 +424,18 @@ msgstr "Sub-units"
 msgid "Sub-x2-units"
 msgstr "Sub-x2-units"
 
+msgid "As picked"
+msgstr "As picked"
+
+msgid "Highlight only"
+msgstr "Highlight only"
+
+msgid "When it follows"
+msgstr "When it follows"
+
+msgid "Show"
+msgstr "Show"
+
 msgid "A click on a map carries no period."
 msgstr "A click on a map carries no period."
 
@@ -128,12 +447,6 @@ msgstr "New channel"
 
 msgid "None"
 msgstr "None"
-
-msgid "Org units on an axis"
-msgstr "Org units on an axis"
-
-msgid "Show"
-msgstr "Show"
 
 msgid "Set the value by clicking"
 msgstr "Set the value by clicking"
@@ -165,6 +478,33 @@ msgstr "Drill up a level"
 msgid "Back to the saved item"
 msgstr "Back to the saved item"
 
+msgid "Previous period"
+msgstr "Previous period"
+
+msgid "Pause"
+msgstr "Pause"
+
+msgid "Next period"
+msgstr "Next period"
+
+msgid "Clear"
+msgstr "Clear"
+
+msgid "Drop-down"
+msgstr "Drop-down"
+
+msgid "Timeline"
+msgstr "Timeline"
+
+msgid "Tree"
+msgstr "Tree"
+
+msgid "Control"
+msgstr "Control"
+
+msgid "Each view shows its own"
+msgstr "Each view shows its own"
+
 msgid "{{title}} added"
 msgstr "{{title}} added"
 
@@ -195,12 +535,6 @@ msgstr "Saved item"
 msgid "Choose a saved item"
 msgstr "Choose a saved item"
 
-msgid "Clear"
-msgstr "Clear"
-
-msgid "Each view shows its own"
-msgstr "Each view shows its own"
-
 msgid "Choosing a saved map, or creating one with layers, will happen here."
 msgstr "Choosing a saved map, or creating one with layers, will happen here."
 
@@ -225,9 +559,6 @@ msgstr "Write a title or a note"
 
 msgid "Cancel"
 msgstr "Cancel"
-
-msgid "Done"
-msgstr "Done"
 
 msgid "No text yet"
 msgstr "No text yet"
@@ -265,6 +596,9 @@ msgstr "Even out view sizes"
 
 msgid "Layout"
 msgstr "Layout"
+
+msgid "Hide view headers"
+msgstr "Hide view headers"
 
 msgid "Show view headers only on hover"
 msgstr "Show view headers only on hover"

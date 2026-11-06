@@ -82,6 +82,41 @@ describe('channels', () => {
         expect(getHighlight(channels, 'vis-1')).toBeUndefined()
     })
 
+    it('highlights a value a view follows with Highlight only, instead of being rewritten with it', () => {
+        const channels = [
+            channel({
+                value: [north],
+                setBy: 'map-1',
+                members: { 'vis-1': { send: true, receive: true } },
+            }),
+            channel({
+                label: 'B',
+                dimension: 'pe',
+                value: [january],
+                members: {
+                    'vis-1': { send: true, receive: true, highlightOnly: true },
+                    /* Not following: no highlight, whatever the option */
+                    'vis-2': {
+                        send: true,
+                        receive: false,
+                        highlightOnly: true,
+                    },
+                },
+            }),
+            channel({
+                label: 'C',
+                dimension: 'dx',
+                members: {
+                    'vis-1': { send: true, receive: true, highlightOnly: true },
+                },
+            }),
+        ]
+
+        expect(getIncomingLinks(channels, 'vis-1')).toEqual({ ou: [north] })
+        expect(getHighlight(channels, 'vis-1')).toEqual({ pe: ['202601'] })
+        expect(getHighlight(channels, 'vis-2')).toBeUndefined()
+    })
+
     it('takes the org unit, period and data item of a click', () => {
         expect(
             getClickedItems({

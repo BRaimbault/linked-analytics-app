@@ -14,6 +14,15 @@ type LaidOut = {
 
 export type VisualizationType = 'COLUMN' | 'LINE' | 'PIVOT_TABLE'
 
+/* Values colored from a legend set: one set for every value, or each data
+ * item's own; as a cell's background or its text */
+export type VisualizationLegend = {
+    strategy: 'FIXED' | 'BY_DATA_ITEM'
+    style: 'FILL' | 'TEXT'
+    set?: { id: string }
+    showKey?: boolean
+}
+
 export type VisualizationObject = LaidOut & {
     id?: string
     name: string
@@ -22,6 +31,9 @@ export type VisualizationObject = LaidOut & {
      * subtitle from the filters */
     title?: string
     subtitle?: string
+    legend?: VisualizationLegend
+    /* Org units named with their ancestors, from the top of the hierarchy */
+    showHierarchy?: boolean
 }
 
 /* A map view is one layer; a thematic layer keeps dx in columns, ou in
@@ -35,6 +47,8 @@ export type MapView = LaidOut & {
     colorScale?: string
     classes?: number
     legendSet?: { id: string }
+    /* Names on the map */
+    labels?: boolean
 }
 
 export type MapObject = {

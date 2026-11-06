@@ -1,4 +1,5 @@
 import {
+    addView,
     mockContainerSize,
     renderWorkspace,
     toolsStrip,
@@ -24,11 +25,6 @@ const openItem = async (viewTitle: string, itemName: string) => {
         within(picker).getByTestId('dhis2-uicore-select-input')
     )
     await userEvent.click(await screen.findByText(itemName))
-}
-
-const addView = async (type: string) => {
-    await userEvent.click(toolsStrip().getByRole('tab', { name: 'Add views' }))
-    await userEvent.click(screen.getByTestId(`add-view-${type}`))
 }
 
 /* A map of malaria by district, and the ANC chart by month */
@@ -85,17 +81,17 @@ describe('drilling a view', () => {
 
         await waitFor(() =>
             expect(featureNames()).toEqual([
-                'Dawn Plains',
-                'Elm Ridge',
-                'Fern Lake',
-                'Granite Bay',
+                'East / Dawn Plains',
+                'East / Elm Ridge',
+                'East / Fern Lake',
+                'East / Granite Bay',
             ])
         )
         /* A drill counts as a click: the chart follows East */
         await waitFor(() => expect(chartFollows()).toBe('East'))
 
         /* The deepest level: up, or back */
-        fireEvent.contextMenu(feature('Elm Ridge'))
+        fireEvent.contextMenu(feature('East / Elm Ridge'))
         expect(menuItems()).toEqual([
             'Drill up to East',
             'Back to the saved item',
@@ -145,9 +141,9 @@ describe('drilling a view', () => {
         await choose('Drill down into North')
         await waitFor(() =>
             expect(featureNames()).toEqual([
-                'Amber Hills',
-                'Birch Valley',
-                'Cedar Coast',
+                'North / Amber Hills',
+                'North / Birch Valley',
+                'North / Cedar Coast',
             ])
         )
 

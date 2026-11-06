@@ -1,0 +1,29 @@
+/* The 19px header and 28px small buttons, 4px apart: within the control's
+ * body size (CONTROL_BODY_SIZES) */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp4);
+}
+
+.controls {
+    display: flex;
+    gap: var(--spacers-dp4);
+    align-items: center;
+}
+
+.track {
+    flex: 1;
+    min-inline-size: 0;
+    margin: 0;
+    accent-color: var(--channel-color);
+}
+
+/* Off the track: no marker where no period is */
+.track[data-off-track]::-webkit-slider-thumb {
+    opacity: 0;
+}
+
+.track[data-off-track]::-moz-range-thumb {
+    opacity: 0;
+}

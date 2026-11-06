@@ -81,7 +81,7 @@ describe('linked views', () => {
             .click({ scrollBehavior: false })
 
         cy.get('[data-test="fake-feature"]').should('have.length', 4)
-        mapFeature('Kestrel').should('exist')
+        mapFeature('West / Kestrel').should('exist')
         cy.get('[data-test="fake-point"]')
             .eq(0)
             .invoke('attr', 'class')
@@ -124,7 +124,7 @@ describe('linked views', () => {
         pickSelectorValue(0, 'West')
         pickSelectorValue(1, 'East')
 
-        mapFeature('Kestrel').should('exist')
+        mapFeature('West / Kestrel').should('exist')
         expectChartCategories([
             'Dawn Plains',
             'Elm Ridge',
@@ -154,29 +154,26 @@ describe('linked views', () => {
                 )
         const bothAnc = ['ANC 1st visit', 'ANC 4th or more visits']
 
-        /* The map takes the item, with automatic classes as before, fitted
-         * to the new item's values; the chart, which compares two others,
-         * stays as it is */
+        /* The map takes the item in its legend set, the colors the item
+         * has in every view, so there are no classes to lock; the chart,
+         * which compares two others, stays as it is */
+        pickSelectorValue(0, 'Penta 3 coverage <1y')
+        cy.get('[data-test="fake-map"]').should(
+            'contain.text',
+            'Penta 3 coverage <1y'
+        )
         cy.get('[data-test="fake-map-legend"] li')
             .first()
-            .invoke('text')
-            .then((malariaClasses) => {
-                pickSelectorValue(0, 'Penta 3 coverage <1y')
-                cy.get('[data-test="fake-map"]').should(
-                    'contain.text',
-                    'Penta 3 coverage <1y'
-                )
-                cy.get('[data-test="fake-map-legend"] li')
-                    .first()
-                    .should('not.have.text', malariaClasses)
-            })
-        cy.get('[data-test="fake-map-lock"]').should('exist')
+            .should('have.text', '≥ 90%')
+        cy.get('[data-test="fake-map-lock"]').should('not.exist')
         chartSeries().should('deep.equal', bothAnc)
 
-        /* One of the chart's two: it narrows to it */
+        /* One of the chart's two: it narrows to it. The map has automatic
+         * classes again, for an item without a legend set. */
         pickSelectorValue(0, 'ANC 1st visit')
         chartSeries().should('deep.equal', ['ANC 1st visit'])
         cy.get('[data-test="fake-map"]').should('contain.text', 'ANC 1st visit')
+        cy.get('[data-test="fake-map-lock"]').should('exist')
 
         /* An item it doesn't have: it shows its own two again */
         pickSelectorValue(0, 'Malaria cases confirmed')
@@ -201,10 +198,10 @@ describe('linked views', () => {
         ]
         expectChartCategories(westChiefdoms)
         cy.get('[data-test="fake-feature"]').should('have.length', 4)
-        mapFeature('Kestrel').should('exist')
+        mapFeature('West / Kestrel').should('exist')
 
         /* A click on the map shows in the selector */
-        clickFeature('Kestrel')
+        clickFeature('West / Kestrel')
         cy.get('[data-test="selector-view"]').should('contain.text', 'Kestrel')
     })
 
@@ -224,7 +221,7 @@ describe('linked views', () => {
             .click()
 
         cy.get('[data-test="fake-feature"]').should('have.length', 4)
-        mapFeature('Dawn Plains').should('exist')
+        mapFeature('East / Dawn Plains').should('exist')
         /* A drill counts as a click: the chart follows East */
         expectChartCategories([
             'Dawn Plains',
@@ -234,7 +231,7 @@ describe('linked views', () => {
         ])
 
         /* Up to East's level: the districts, East still the value */
-        clickFeature('Elm Ridge', 'rightclick')
+        clickFeature('East / Elm Ridge', 'rightclick')
         cy.get('[data-test="drill-menu"] [role="menuitem"]')
             .contains('Drill up to East')
             .click()

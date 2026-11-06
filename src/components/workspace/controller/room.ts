@@ -6,6 +6,7 @@ import {
 import {
     along,
     crossAxis,
+    getPreferredAlong,
     type GridTree,
     type SplitAxis,
     type ViewSizes,
@@ -27,7 +28,7 @@ export const hasRoomToSplit = (
         length: getCellLength(group, axis),
         targetMin: along(getPanelSizes(group.activePanel).min, axis),
         placedMin: along(placedSizes.min, axis),
-        halves: !placedSizes.preferred,
+        halves: getPreferredAlong(placedSizes, axis) === undefined,
         crossLength: getCellLength(group, crossAxis(axis)),
         placedCrossMin: along(placedSizes.min, crossAxis(axis)),
     })
@@ -40,7 +41,7 @@ const fitsCell = (view: IDockviewPanel, group: DockviewGroupPanel): boolean =>
     )
 
 /* A swap keeps both cells' sizes (sizing is paused while it runs), so each
- * view must fit the cell it gets: a map doesn't go in a selector's 120px
+ * view must fit the cell it gets: a map doesn't go in a selector's 96px
  * row */
 export const hasRoomToSwap = (
     first: IDockviewPanel,

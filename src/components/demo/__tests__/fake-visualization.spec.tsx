@@ -242,6 +242,46 @@ describe('FakeVisualization', () => {
         expect(dimmedPoints().slice(0, 4)).toEqual([false, true, true, true])
     })
 
+    it('fades the lines a highlight leaves out, and marks a highlighted month with a dashed line', () => {
+        const fadedLines = () =>
+            screen
+                .getAllByTestId('fake-series')
+                .map((series) =>
+                    Boolean(
+                        series
+                            .querySelector('polyline')
+                            ?.getAttribute('class')
+                            ?.includes('dimmed')
+                    )
+                )
+
+        const { unmount } = draw(ancByDistrict, {
+            highlight: { ou: ['DemoEast001'] },
+        })
+        expect(fadedLines()).toEqual([true, true, false, true])
+        expect(screen.queryByTestId('fake-category-mark')).toBeNull()
+        unmount()
+
+        draw(ancByDistrict, { highlight: { pe: ['202511'] } })
+        /* Every line has the month: none fades */
+        expect(fadedLines()).toEqual([false, false, false, false])
+        expect(screen.getAllByTestId('fake-category-mark')).toHaveLength(1)
+        expect(screen.getByText('November 2025').getAttribute('class')).toMatch(
+            /markedCategory/
+        )
+    })
+
+    it('marks the header of the quarter holding a highlighted month in a table', () => {
+        draw(pentaTable, { highlight: { pe: ['202511'] } })
+
+        const isMarked = (name: string) =>
+            /markedCategory/.test(
+                screen.getByText(name).getAttribute('class') ?? ''
+            )
+        expect(isMarked('October - December 2025')).toBe(true)
+        expect(isMarked('July - September 2025')).toBe(false)
+    })
+
     it('leaves a pivot cell empty where the demo has no value, and says why', () => {
         /* Malaria by week: the east and south report monthly */
         draw({
@@ -337,5 +377,23 @@ describe('FakeVisualization', () => {
         expect(niceMax(21000)).toBe(25000)
         expect(niceMax(95)).toBe(100)
         expect(niceMax(10)).toBe(10)
+    })
+
+    it("colors a table's cells from the legend, as their fill or their text", () => {
+        const { unmount } = draw(pentaTable)
+        const fills = screen
+            .getAllByTestId('fake-point')
+            .map((cell) => cell.style.backgroundColor)
+        unmount()
+        draw({
+            ...pentaTable,
+            legend: { strategy: 'BY_DATA_ITEM', style: 'TEXT' },
+        })
+        const texts = screen
+            .getAllByTestId('fake-point')
+            .map((cell) => cell.style.color)
+
+        expect(fills.every(Boolean)).toBe(true)
+        expect(texts).toEqual(fills)
     })
 })

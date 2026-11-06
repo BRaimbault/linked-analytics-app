@@ -1,9 +1,11 @@
 import { LinksSection } from '@components/interactions/links-section'
 import { usePluginSources } from '@components/plugins/plugin-sources'
+import { SelectorControlField } from '@components/selectors/selector-control-field'
 import type { ViewSettingsPanelParams } from '@components/workspace/controller/panels'
 import { ViewTypeIcon } from '@components/workspace/view-type-icon'
 import i18n from '@dhis2/d2-i18n'
 import { useAppSelector } from '@hooks'
+import { SELECTOR_DIMENSIONS } from '@modules/interactions/channels'
 import {
     getViewTitle,
     isPluginViewType,
@@ -52,6 +54,7 @@ export const SettingsPanel: FC<
     const items = isPluginViewType(view.type)
         ? (savedItems[view.type] ?? [])
         : []
+    const selectorDimension = SELECTOR_DIMENSIONS[view.type]
 
     return (
         <ToolPanel api={api} dataTest={`settings-panel-${view.id}`}>
@@ -59,6 +62,15 @@ export const SettingsPanel: FC<
                 <ViewTypeIcon type={view.type} />
                 {getViewTitle(view.type, view.number)}
             </p>
+            {selectorDimension && (
+                <div className={classes.settingsPicker}>
+                    <SelectorControlField
+                        api={containerApi}
+                        viewId={view.id}
+                        dimension={selectorDimension}
+                    />
+                </div>
+            )}
             {items.length ? (
                 <div
                     className={classes.settingsPicker}

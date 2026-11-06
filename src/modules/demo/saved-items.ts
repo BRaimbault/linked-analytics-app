@@ -4,6 +4,7 @@ import type {
     VisualizationObject,
 } from '@modules/visualization/analytical-object'
 import { DATA_ITEM_IDS, getDataItem } from './data-items'
+import { DEFAULT_COLOR_SCALE } from './map-layer'
 
 /* A few saved-looking visualizations and maps on the demo's data, so that
  * "Open a saved item" has something to open. Shaped as DHIS2 stores them,
@@ -69,6 +70,7 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         rows: [periods('LAST_4_QUARTERS')],
         filters: [orgUnits('USER_ORGUNIT')],
     },
+    /* Its cells take the coverage legend's colors, as the coverage map does */
     {
         id: 'DemoVisPen1',
         name: 'Penta 3 coverage by chiefdom, last 4 quarters',
@@ -76,6 +78,31 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         columns: [periods('LAST_4_QUARTERS')],
         rows: [orgUnits('USER_ORGUNIT', 'LEVEL-3')],
         filters: [data(DATA_ITEM_IDS.penta3)],
+        legend: { strategy: 'BY_DATA_ITEM', style: 'FILL', showKey: false },
+    },
+    /* The malaria vaccine is given at the routine visits, with Penta 3: one
+     * data item, so a pick in a data selector replaces it (Penta 3 shows how
+     * far those visits reach). Cells take the coverage legend's colors, as
+     * on a coverage map. */
+    {
+        id: 'DemoVisCov1',
+        name: 'Malaria vaccine 3 coverage by chiefdom, last 4 quarters',
+        type: 'PIVOT_TABLE',
+        columns: [periods('LAST_4_QUARTERS')],
+        rows: [orgUnits('USER_ORGUNIT', 'LEVEL-3')],
+        filters: [data(DATA_ITEM_IDS.malariaVaccine3)],
+        legend: { strategy: 'BY_DATA_ITEM', style: 'FILL', showKey: false },
+        showHierarchy: true,
+    },
+    /* A line per district: where malaria weighs most, and its season */
+    {
+        id: 'DemoVisInc1',
+        name: 'Malaria incidence by district, last 12 months',
+        type: 'LINE',
+        columns: [orgUnits('USER_ORGUNIT_CHILDREN')],
+        rows: [periods('LAST_12_MONTHS')],
+        filters: [data(DATA_ITEM_IDS.malariaIncidence)],
+        showHierarchy: true,
     },
 ]
 
@@ -104,8 +131,26 @@ export const DEMO_MAPS: MapObject[] = [
                 columns: [data(DATA_ITEM_IDS.malaria)],
                 rows: [orgUnits('USER_ORGUNIT', 'LEVEL-2')],
                 filters: [periods('LAST_3_MONTHS')],
-                colorScale: '#fee5d9,#fcae91,#fb6a4a,#de2d26,#a50f15',
+                colorScale: DEFAULT_COLOR_SCALE,
                 classes: 5,
+            },
+        ],
+    },
+    /* Cases per 1,000 people, so it shows where malaria weighs most rather
+     * than where most people live */
+    {
+        id: 'DemoMapInc1',
+        name: 'Malaria incidence by district',
+        mapViews: [
+            {
+                id: 'DemoMvInc01',
+                layer: 'thematic',
+                columns: [data(DATA_ITEM_IDS.malariaIncidence)],
+                rows: [orgUnits('USER_ORGUNIT', 'LEVEL-2')],
+                filters: [periods('LAST_12_MONTHS')],
+                colorScale: DEFAULT_COLOR_SCALE,
+                classes: 5,
+                labels: true,
             },
         ],
     },

@@ -1,7 +1,8 @@
 import i18n from '@dhis2/d2-i18n'
 import { IconAdd16, IconHome16, IconSubtract16 } from '@dhis2/ui'
-import { withRelatedOrgUnits } from '@modules/demo/highlight'
+import { withRelatedItems } from '@modules/demo/highlight'
 import type { MapFeature } from '@modules/demo/map-layer'
+import { getHierarchyName } from '@modules/demo/org-units'
 import type { Shape } from '@modules/demo/shapes'
 import {
     isHighlighted,
@@ -18,6 +19,7 @@ import {
     type MouseEvent,
 } from 'react'
 import { toClickOptions } from './click-options'
+import { FakeBasemap } from './fake-basemap'
 import { FakeMapLegend } from './fake-map-legend'
 import { PeriodNotices } from './period-notices'
 import classes from './styles/fake-map.module.css'
@@ -26,9 +28,12 @@ import { useMapView } from './use-map-view'
 
 /* The demo's shapes lie in a 0-100 plane; the map shows it all at first */
 const PLANE = 100
-const HEADER_HEIGHT = 44
+const HEADER_HEIGHT = 48
 /* Room around the whole map, which zooming out also ends at */
 const MARGIN = 16
+/* A label's size and halo, in pixels on screen */
+const LABEL_SIZE = 12
+const LABEL_HALO = 3
 
 const toPath = (shape: Shape) =>
     shape
@@ -68,7 +73,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
     const { layer, ...legendLock } = useLegendLock(thematic, visualization.id)
     const [hoveredId, setHoveredId] = useState<string | null>(null)
     const shownHighlight = useMemo(
-        () => withRelatedOrgUnits(highlight),
+        () => withRelatedItems(highlight),
         [highlight]
     )
 
@@ -113,9 +118,10 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
         : []
 
     /* Centred, then zoomed about the centre and panned */
+    const scale = fit * view.zoom
     const transform = [
         `translate(${width / 2} ${mapHeight / 2})`,
-        `scale(${fit * view.zoom})`,
+        `scale(${scale})`,
         `translate(${view.x - PLANE / 2} ${view.y - PLANE / 2})`,
     ].join(' ')
 
@@ -143,6 +149,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                 {...canvasHandlers}
             >
                 <g transform={transform} data-test="fake-map-plane">
+                    <FakeBasemap />
                     {layer.features.map((feature) => (
                         <path
                             key={feature.orgUnit.id}
@@ -167,7 +174,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             onPointerLeave={() => setHoveredId(null)}
                         >
                             <title>
-                                {`${feature.orgUnit.name}: ${
+                                {`${getHierarchyName(feature.orgUnit)}: ${
                                     feature.value?.toLocaleString('en') ??
                                     i18n.t('No value')
                                 }`}
@@ -196,6 +203,24 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                             className={classes.hover}
                             data-test="fake-feature-hover"
                         />
+                    )}
+                    {/* Names keep their size on screen as the map zooms,
+                     * as Maps' labels do */}
+                    {layer.features.map(
+                        ({ orgUnit, label, labelAt: [x, y] }) =>
+                            label && (
+                                <text
+                                    key={orgUnit.id}
+                                    x={x}
+                                    y={y}
+                                    fontSize={LABEL_SIZE / scale}
+                                    strokeWidth={LABEL_HALO / scale}
+                                    className={classes.featureLabel}
+                                    data-test="fake-feature-label"
+                                >
+                                    {label}
+                                </text>
+                            )
                     )}
                 </g>
             </svg>

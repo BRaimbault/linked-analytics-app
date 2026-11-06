@@ -1,11 +1,12 @@
 import type { MapView } from '@modules/visualization/analytical-object'
 import { getDimensionItemIds } from '@modules/visualization/analytical-object'
 import { getTotal } from './aggregation'
-import { getDataItem, getLegendSet } from './data-items'
+import { getDataItem, getLegendColor, getLegendSet } from './data-items'
+import type { Point } from './land-grid'
 import { getOrgUnit, resolveOrgUnits, type DemoOrgUnit } from './org-units'
 import { checkPeriods, type PeriodNotice } from './period-check'
 import { getPeriodItemName, resolvePeriods } from './periods'
-import type { Shape } from './shapes'
+import type { Ring, Shape } from './shapes'
 
 /* What a fake map draws for a thematic layer, worked out from its map
  * view as the Maps app reads one: dx in columns, ou in rows, pe in
@@ -16,6 +17,37 @@ export type MapFeature = {
     orgUnit: DemoOrgUnit
     value: number | null
     color: string
+    /* The feature's label when the layer shows labels, and where: its own
+     * name, as Maps' default label template ('{name}') gives */
+    label: string | null
+    labelAt: Point
+}
+
+const ringArea = (ring: Ring) =>
+    ring.reduce(
+        (sum, [x, y], index) =>
+            sum +
+            x * ring[(index + 1) % ring.length][1] -
+            ring[(index + 1) % ring.length][0] * y,
+        0
+    ) / 2
+
+/* The centroid of a shape's largest part, its mainland rather than an
+ * island, where its name reads best */
+export const getLabelPoint = (shape: Shape): Point => {
+    const ring = [...shape].sort(
+        (a, b) => Math.abs(ringArea(b)) - Math.abs(ringArea(a))
+    )[0]
+    const area = ringArea(ring)
+    const [sumX, sumY] = ring.reduce(
+        ([accX, accY], [x, y], index) => {
+            const [nextX, nextY] = ring[(index + 1) % ring.length]
+            const cross = x * nextY - nextX * y
+            return [accX + (x + nextX) * cross, accY + (y + nextY) * cross]
+        },
+        [0, 0]
+    )
+    return [sumX / (6 * area), sumY / (6 * area)]
 }
 
 export type LegendEntry = { color: string; label: string }
@@ -37,8 +69,9 @@ export type DemoMapLayer = {
     notices: PeriodNotice[]
 }
 
-const DEFAULT_COLOR_SCALE = '#ffffcc,#c2e699,#78c679,#31a354,#006837'
-const NO_DATA_COLOR = '#e0e0e0'
+/* Maps' defaults: ColorBrewer's YlOrBr in 5 classes, and its no data gray */
+export const DEFAULT_COLOR_SCALE = '#ffffd4,#fed98e,#fe9929,#d95f0e,#993404'
+export const NO_DATA_COLOR = '#cccccc'
 
 const format = (value: number) =>
     value.toLocaleString('en', { maximumFractionDigits: 1 })
@@ -94,12 +127,7 @@ export const buildDemoMapLayer = (
             return NO_DATA_COLOR
         }
         if (legendSet) {
-            return (
-                legendSet.legends.find(
-                    ({ startValue, endValue }) =>
-                        value >= startValue && value < endValue
-                )?.color ?? NO_DATA_COLOR
-            )
+            return getLegendColor(legendSet, value) ?? NO_DATA_COLOR
         }
         return intervals.colorOf(value)
     }
@@ -117,16 +145,20 @@ export const buildDemoMapLayer = (
             orgUnit,
             value: values[index],
             color: colorOf(values[index]),
+            label: view.labels ? orgUnit.name : null,
+            labelAt: getLabelPoint(orgUnit.shape),
         })),
         outlines: [...parentIds].map(
             (id) => (getOrgUnit(id) as DemoOrgUnit).shape
         ),
-        legend: legendSet
+        /* Highest class first, as Maps lists them */
+        legend: (legendSet
             ? legendSet.legends.map(({ color, name }) => ({
                   color,
                   label: name,
               }))
-            : intervals.entries,
+            : intervals.entries
+        ).toReversed(),
         dataRange: legendSet ? null : dataRange,
         notices: dataItem
             ? checkPeriods(

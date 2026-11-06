@@ -6,11 +6,17 @@ import {
     toolsStrip,
     viewsGrid,
 } from '@components/workspace/__tests__/render-workspace'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 mockContainerSize()
+
+/* The tour has its own spec; here it has been seen, so it stays closed.
+ * The setup clears the storage before each test. */
+beforeEach(() => {
+    localStorage.setItem('linked-analytics.demo-tour-seen', 'true')
+})
 
 /* jsdom lays nothing out, so a view's body has no size to give its plugin */
 vi.mock('@components/plugins/use-element-size', () => ({
@@ -22,6 +28,10 @@ const viewTitles = () =>
         .getAllByRole('tab')
         .map(({ textContent }) => textContent?.trim())
         .sort()
+
+/* The tree's value, as text: the tree itself names every unit */
+const orgUnitValue = () =>
+    within(screen.getByTestId('org-unit-tree')).getByTestId('selector-value')
 
 const PRESET_TITLES = [
     'Data 1',
@@ -52,22 +62,60 @@ describe('DemoWorkspace', () => {
             .getAllByTestId('fake-feature')
             .find(({ textContent }) => textContent?.startsWith('East:'))
         fireEvent.click(feature as Element)
-        await waitFor(() =>
-            expect(screen.getAllByTestId('selector-view')[1]).toHaveTextContent(
-                'East'
-            )
-        )
+        await waitFor(() => expect(orgUnitValue()).toHaveTextContent('East'))
         await userEvent.click(
             toolsStrip().getByRole('tab', { name: 'Workspace' })
         )
         await userEvent.click(screen.getByTestId('reset-to-preset'))
 
         await waitFor(() =>
-            expect(screen.getAllByTestId('selector-view')[1]).toHaveTextContent(
-                'Each view shows its own'
-            )
+            expect(orgUnitValue()).toHaveTextContent('Each view shows its own')
         )
         expect(viewTitles()).toEqual(PRESET_TITLES)
+    })
+
+    it('has every view show the data item picked in the data selector, each showing one', async () => {
+        renderWithStore(<DemoWorkspace />)
+        await waitFor(() => expect(viewTitles()).toEqual(PRESET_TITLES))
+        const [, , dataSelector] = screen.getAllByTestId('selector-view')
+
+        await userEvent.click(
+            within(dataSelector).getByTestId('dhis2-uicore-select-input')
+        )
+        await userEvent.click(
+            await screen.findByText('ANC 1st visit', {
+                selector: '[data-test="dhis2-uicore-singleselectoption"] *',
+            })
+        )
+
+        await waitFor(() =>
+            expect(
+                [
+                    screen.getByTestId('fake-map'),
+                    ...screen.getAllByTestId('fake-visualization'),
+                ].map((view) => view.textContent?.includes('ANC 1st visit'))
+            ).toEqual([true, true, true])
+        )
+    })
+
+    it('has the chart and the table follow the period with Highlight only, keeping their own', async () => {
+        const { store } = renderWithStore(<DemoWorkspace />)
+        await waitFor(() => expect(viewTitles()).toEqual(PRESET_TITLES))
+        const { channels } = store.getState().interactions
+        const periodMembers = channels.find(
+            ({ dimension }) => dimension === 'pe'
+        )?.members
+        const highlighting = Object.entries(periodMembers ?? {}).filter(
+            ([, { highlightOnly }]) => highlightOnly
+        )
+
+        const titles = highlighting.map(([viewId]) => {
+            const view = store
+                .getState()
+                .workspace.views.find(({ id }) => id === viewId)
+            return `${view?.type} ${view?.number}`
+        })
+        expect(titles).toEqual(['visualization 1', 'visualization 2'])
     })
 
     it('offers no reset without a preset', async () => {

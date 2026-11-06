@@ -159,6 +159,19 @@ export const getOrgUnit = (id: string): DemoOrgUnit | undefined => byId.get(id)
 export const getChildren = (id: string): DemoOrgUnit[] =>
     ORG_UNITS.filter((orgUnit) => orgUnit.parentId === id)
 
+/* A unit named with its ancestors below the country, "South / Harbor": in
+ * a made-up geography a chiefdom's name alone says nothing of where it is.
+ * The country keeps its own name. */
+export const getHierarchyName = (orgUnit: DemoOrgUnit): string =>
+    orgUnit.id === ROOT_ORG_UNIT_ID
+        ? orgUnit.name
+        : orgUnit.path
+              .split('/')
+              .filter(Boolean)
+              .slice(1)
+              .map((id) => (byId.get(id) as DemoOrgUnit).name)
+              .join(' / ')
+
 /* The chiefdoms under a unit, or the unit itself for a chiefdom: the
  * leaves values are made for */
 export const getLeafIds = (id: string): string[] => {

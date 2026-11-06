@@ -61,12 +61,57 @@ export const showSettingsForTarget = (
     return viewId && showViewSettings(api, viewId) ? viewId : null
 }
 
-/* Closing a view also removes its settings tab (see setupWorkspace) */
-export const openSettings = (api: DockviewApi, viewId: string): void => {
-    const settings = api.getPanel(getSettingsPanelId(viewId))
-    settings?.group.api.expand()
-    settings?.api.setActive()
+/* Shows a tools tab, expanding the tools strip when collapsed */
+export const openToolPanel = (api: DockviewApi, panelId: string): void => {
+    const panel = api.getPanel(panelId)
+    panel?.group.api.expand()
+    panel?.api.setActive()
 }
+
+/* At most this share of the workspace's height, so the views keep room */
+const MAX_TOOLS_SHARE = 0.6
+
+/* Grows the tools strip so a tools tab shows whole, as far as
+ * MAX_TOOLS_SHARE of the workspace. Returns the strip's height before, to
+ * give back. */
+export const fitToolsToPanel = (api: DockviewApi, panelId: string): number => {
+    const panel = api.getPanel(panelId) as IDockviewPanel
+    const { group } = panel
+    const before = group.api.height
+    const tabs = group.element.querySelector(
+        '.dv-tabs-and-actions-container'
+    ) as HTMLElement
+    /* The tool panel scrolls within the strip: its scroll height is all
+     * of its content */
+    const content = (
+        panel.view.content.element.querySelector(
+            '[data-tool-panel]'
+        ) as HTMLElement
+    ).scrollHeight
+    group.api.setSize({
+        height: Math.min(
+            tabs.offsetHeight + content,
+            api.height * MAX_TOOLS_SHARE
+        ),
+    })
+    return before
+}
+
+export const setToolsHeight = (api: DockviewApi, height: number): void =>
+    (api.getPanel(ADD_VIEWS_PANEL_ID) as IDockviewPanel).group.api.setSize({
+        height,
+    })
+
+/* Folds the tools strip to its tabs, the palette in front */
+export const collapseTools = (api: DockviewApi): void => {
+    const addViews = api.getPanel(ADD_VIEWS_PANEL_ID) as IDockviewPanel
+    addViews.group.model.openPanel(addViews, { skipSetGroupActive: true })
+    addViews.group.api.collapse()
+}
+
+/* Closing a view also removes its settings tab (see setupWorkspace) */
+export const openSettings = (api: DockviewApi, viewId: string): void =>
+    openToolPanel(api, getSettingsPanelId(viewId))
 
 export type ToolTitles = {
     workspace: string

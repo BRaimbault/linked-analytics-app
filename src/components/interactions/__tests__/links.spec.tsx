@@ -1,4 +1,5 @@
 import {
+    addView,
     mockContainerSize,
     renderWorkspace,
     toolsStrip,
@@ -24,11 +25,6 @@ const openItem = async (viewTitle: string, itemName: string) => {
         within(picker).getByTestId('dhis2-uicore-select-input')
     )
     await userEvent.click(await screen.findByText(itemName))
-}
-
-const addView = async (type: string) => {
-    await userEvent.click(toolsStrip().getByRole('tab', { name: 'Add views' }))
-    await userEvent.click(screen.getByTestId(`add-view-${type}`))
 }
 
 /* A map of malaria by district, and a chart of the same by district */
@@ -132,7 +128,12 @@ describe('linked views', () => {
         ]
         /* The map follows too: no view set the value */
         await waitFor(() => expect(chartCategories()).toEqual(westChiefdoms))
-        await waitFor(() => expect(featureNames()).toEqual(westChiefdoms))
+        /* The map names a chiefdom with its district */
+        await waitFor(() =>
+            expect(featureNames()).toEqual(
+                westChiefdoms.map((name) => `West / ${name}`)
+            )
+        )
         expect(badges()).toContain('Org unit A. West. Sets the value')
     })
 

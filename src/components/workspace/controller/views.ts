@@ -1,5 +1,7 @@
 import type { PluginObject } from '@modules/plugins/contract'
+import type { SelectorControl } from '@modules/selectors/controls'
 import type { DockviewApi } from 'dockview-react'
+import { fitViewSizes } from './grid-layout'
 import { getViewGroups, type ViewPanelParams } from './panels'
 
 /* The saved item a plugin view shows, kept in its params, which dockview
@@ -12,6 +14,24 @@ export const setViewObject = (
     const view = api.getPanel(viewId)
     view?.api.updateParameters({ ...view.params, object })
 }
+
+/* A selector's control, kept in its params like a saved item. Its cell
+ * takes the control's minimum size at once (a tree needs height). */
+export const setViewControl = (
+    api: DockviewApi,
+    viewId: string,
+    control: SelectorControl
+): void => {
+    const view = api.getPanel(viewId)
+    view?.api.updateParameters({ ...view.params, control })
+    fitViewSizes(api)
+}
+
+export const getViewControl = (
+    api: DockviewApi,
+    viewId: string
+): SelectorControl | undefined =>
+    (api.getPanel(viewId)?.params as ViewPanelParams | undefined)?.control
 
 export const getViewObject = (
     api: DockviewApi,

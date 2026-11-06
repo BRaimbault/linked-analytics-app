@@ -7,10 +7,6 @@ import {
 } from '@dhis2/ui'
 import { useAppDispatch, useAppSelector } from '@hooks'
 import {
-    DEFAULT_ORG_UNIT_DEPTH,
-    type OrgUnitDepth,
-} from '@modules/interactions/apply-links'
-import {
     LINK_DIMENSIONS,
     SELECTOR_DIMENSIONS,
     type LinkDimension,
@@ -22,7 +18,6 @@ import {
     type ViewType,
 } from '@modules/workspace/view-types'
 import {
-    orgUnitDepthChanged,
     selectChannels,
     selectorChannelChanged,
     viewChannelChanged,
@@ -30,6 +25,7 @@ import {
 } from '@store/interactions-slice'
 import type { FC, ReactElement } from 'react'
 import { getChannelOptionLabel, getDimensionName } from './channel-names'
+import { FollowOptionField } from './follow-option-field'
 import classes from './styles/links-section.module.css'
 
 /* Option values beside the channels' letters, which are single letters */
@@ -38,14 +34,6 @@ const NONE = 'none'
 
 const toChoice = (selected: string): ChannelChoice =>
     selected === NEW || selected === NONE ? selected : { label: selected }
-
-/* Named as in the org unit picker. In a filter, a view shows the selected
- * org unit whatever this says: its sub-units add up to the same. */
-const ORG_UNIT_DEPTHS: { depth: OrgUnitDepth; label: () => string }[] = [
-    { depth: 0, label: () => i18n.t('Selected org unit') },
-    { depth: 1, label: () => i18n.t('Sub-units') },
-    { depth: 2, label: () => i18n.t('Sub-x2-units') },
-]
 
 /* Why a view type's clicks can't set a dimension (see canSend) */
 const NOT_SENT_REASONS: Partial<Record<string, () => string>> = {
@@ -115,30 +103,13 @@ const ViewLinkRow: FC<{
                 <SingleSelectOption value={NEW} label={i18n.t('New channel')} />
                 <SingleSelectOption value={NONE} label={i18n.t('None')} />
             </SingleSelectField>
-            {dimension === 'ou' && member?.receive && (
-                <SingleSelectField
-                    dense
-                    label={i18n.t('Org units on an axis')}
-                    prefix={i18n.t('Show')}
-                    selected={String(member.depth ?? DEFAULT_ORG_UNIT_DEPTH)}
-                    dataTest="links-ou-depth"
-                    onChange={({ selected }) =>
-                        dispatch(
-                            orgUnitDepthChanged({
-                                viewId,
-                                depth: Number(selected) as OrgUnitDepth,
-                            })
-                        )
-                    }
-                >
-                    {ORG_UNIT_DEPTHS.map(({ depth, label }) => (
-                        <SingleSelectOption
-                            key={depth}
-                            value={String(depth)}
-                            label={label()}
-                        />
-                    ))}
-                </SingleSelectField>
+            {member?.receive && (
+                <FollowOptionField
+                    viewId={viewId}
+                    type={type}
+                    dimension={dimension}
+                    member={member}
+                />
             )}
             {member && (
                 <div className={classes.roles}>

@@ -159,16 +159,21 @@ const rewrite = <T extends LaidOut>(
     return result
 }
 
-/* A layer's legend set belongs to its data item: with another item, the
- * layer takes that item's legend set, or automatic classes without one */
+/* A data item with a legend set shows its colors in every view, as tables
+ * that color by data item do: the layer takes the new item's legend set,
+ * or automatic classes on its own color scale when the item has none */
 const withLegendOf = (
     view: MapView,
     dataItemId: string,
     { getLegendSetId }: ApplyLinksOptions
 ): MapView => {
-    const { legendSet, ...rest } = view
-    const legendSetId = legendSet && getLegendSetId(dataItemId)
-    return legendSetId ? { ...rest, legendSet: { id: legendSetId } } : rest
+    const legendSetId = getLegendSetId(dataItemId)
+    if (legendSetId) {
+        return { ...view, legendSet: { id: legendSetId } }
+    }
+    const automatic = { ...view }
+    delete automatic.legendSet
+    return automatic
 }
 
 /* A thematic layer shows one data item */

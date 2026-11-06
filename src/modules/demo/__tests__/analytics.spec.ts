@@ -159,4 +159,58 @@ describe('demo analytics', () => {
             },
         })
     })
+
+    it('names org units with their district when showing the hierarchy, without the country', () => {
+        const layout = {
+            columns: [dimension('dx', anc1)],
+            rows: [dimension('ou', 'DemoChS0103', 'DemoSouth01')],
+            filters: [dimension('pe', '2026Q2')],
+        }
+        const names = (showHierarchy: boolean) =>
+            buildDemoTable(
+                visualization({ ...layout, showHierarchy })
+            ).categories.map(({ name }) => name)
+
+        expect(names(true)).toEqual(['South / Juniper', 'South'])
+        expect(names(false)).toEqual(['Juniper', 'South'])
+    })
+
+    it("colors values from a fixed legend set, or each data item's own", () => {
+        const layout = {
+            columns: [dimension('dx', DATA_ITEM_IDS.penta3, anc1)],
+            rows: [dimension('ou', 'DemoChS0103')],
+            filters: [dimension('pe', '2026Q2')],
+        }
+        const byItem = buildDemoTable(
+            visualization({
+                ...layout,
+                legend: { strategy: 'BY_DATA_ITEM', style: 'FILL' },
+            })
+        )
+        const fixed = buildDemoTable(
+            visualization({
+                ...layout,
+                legend: {
+                    strategy: 'FIXED',
+                    style: 'TEXT',
+                    set: { id: 'DemoLegCov1' },
+                },
+            })
+        )
+        const plain = buildDemoTable(visualization(layout))
+        const [penta, anc] = byItem.series
+        const [juniper] = byItem.categories
+
+        /* Juniper's coverage sits in the 50 – 79% band */
+        expect(byItem.legendColorOf(penta, juniper)).toBe('#fee08b')
+        /* ANC visits have no legend set of their own */
+        expect(byItem.legendColorOf(anc, juniper)).toBeUndefined()
+        expect(byItem.legendStyle).toBe('FILL')
+        /* A fixed set colors every item, here counts beyond its last band */
+        expect(fixed.legendColorOf(penta, juniper)).toBe('#fee08b')
+        expect(fixed.legendColorOf(anc, juniper)).toBe('#91cf60')
+        expect(fixed.legendStyle).toBe('TEXT')
+        expect(plain.legendColorOf(penta, juniper)).toBeUndefined()
+        expect(plain.legendStyle).toBeNull()
+    })
 })

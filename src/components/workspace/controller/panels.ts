@@ -1,6 +1,7 @@
 import type { PluginObject } from '@modules/plugins/contract'
+import type { SelectorControl } from '@modules/selectors/controls'
 import type { SplitAxis, ViewSizes } from '@modules/workspace/grid-tree'
-import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
+import { PLUGIN_SIZES, VIEW_HEADER_HEIGHT } from '@modules/workspace/grid-tree'
 import {
     getViewKind,
     getViewTypeSizes,
@@ -49,6 +50,8 @@ export type ViewPanelParams = Pick<WorkspaceView, 'type' | 'number'> & {
     text?: string
     /* The saved item a plugin view shows, as the plugin receives it */
     object?: PluginObject
+    /* A selector's control, when not its default drop-down */
+    control?: SelectorControl
 }
 
 export type ViewSettingsPanelParams = { viewId: string }
@@ -95,10 +98,27 @@ export const getPanelKind = (panel: IDockviewPanel | undefined): ViewKind =>
         ? getViewKind(getViewParams(panel).type)
         : 'plugin'
 
-export const getPanelSizes = (panel: IDockviewPanel | undefined): ViewSizes =>
-    panel && isViewPanel(panel)
-        ? getViewTypeSizes(getViewParams(panel).type)
-        : PLUGIN_SIZES
+/* The room a view's header takes in a cell: none while the workspace hides
+ * view headers (its data-view-headers, which its CSS hides them by) */
+const getHeaderHeight = (cell: Element | undefined): number =>
+    cell?.closest('[data-view-headers="hidden"]') ? 0 : VIEW_HEADER_HEIGHT
+
+export const getWorkspaceHeaderHeight = (api: DockviewApi): number =>
+    getHeaderHeight(api.groups[0]?.element)
+
+/* The sizes of a view about to be placed in the workspace */
+export const getWorkspaceViewSizes = (
+    api: DockviewApi,
+    type: ViewType
+): ViewSizes => getViewTypeSizes(type, getWorkspaceHeaderHeight(api))
+
+export const getPanelSizes = (panel: IDockviewPanel | undefined): ViewSizes => {
+    if (!panel || !isViewPanel(panel)) {
+        return PLUGIN_SIZES
+    }
+    const { type, control } = getViewParams(panel)
+    return getViewTypeSizes(type, getHeaderHeight(panel.group.element), control)
+}
 
 export const getViewGroups = (api: DockviewApi): DockviewGroupPanel[] => [
     ...new Set(getViewPanels(api).map((panel) => panel.group)),

@@ -1,6 +1,6 @@
 import i18n from '@dhis2/d2-i18n'
 import { buildDemoTable, toDataClick } from '@modules/demo/analytics'
-import { withRelatedOrgUnits } from '@modules/demo/highlight'
+import { isMarkedBy, withRelatedItems } from '@modules/demo/highlight'
 import { isHighlighted, type PluginProps } from '@modules/plugins/contract'
 import type { VisualizationObject } from '@modules/visualization/analytical-object'
 import { useEffect, useMemo, useRef, type FC } from 'react'
@@ -12,7 +12,7 @@ import classes from './styles/fake-visualization.module.css'
 
 /* The header above the chart: the name, what it's filtered by, and the
  * series' legend */
-const HEADER_HEIGHT = 56
+const HEADER_HEIGHT = 60
 /* A notice's line above the chart, as in period-notices.module.css */
 const NOTICE_HEIGHT = 20
 
@@ -31,7 +31,7 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
     const table = useMemo(() => buildDemoTable(visualization), [visualization])
     const rootRef = useRef<HTMLDivElement>(null)
     const shownHighlight = useMemo(
-        () => withRelatedOrgUnits(highlight),
+        () => withRelatedItems(highlight),
         [highlight]
     )
 
@@ -52,6 +52,7 @@ export const FakeVisualization: FC<PluginProps<VisualizationObject>> = ({
             ),
         isDimmed: (item, category) =>
             !isHighlighted(shownHighlight, toDataClick(item, category)),
+        isMarked: (item) => isMarkedBy(highlight, item),
     }
     const hasValues = table.series.some((item) =>
         table.categories.some(

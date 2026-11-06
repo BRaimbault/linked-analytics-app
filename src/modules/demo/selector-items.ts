@@ -4,7 +4,7 @@ import {
     getOrgUnit,
     ROOT_ORG_UNIT_ID,
 } from '@modules/demo/org-units'
-import { PERIODS } from '@modules/demo/periods'
+import { PERIODS, resolvePeriods } from '@modules/demo/periods'
 import type { LinkItem } from '@modules/interactions/apply-links'
 import type { LinkDimension } from '@modules/interactions/channels'
 
@@ -24,6 +24,13 @@ const periodItems = PERIODS.filter(
 )
     .map(({ id, name }) => ({ id, name }))
     .reverse()
+
+/* A timeline steps through the months the preset's views show */
+export const DEMO_TIMELINE_PERIODS: LinkItem[] = resolvePeriods([
+    'LAST_12_MONTHS',
+]).map(({ id, name }) => ({ id, name }))
+
+export const DEMO_TREE_ROOTS: LinkItem[] = [orgUnitItem(ROOT_ORG_UNIT_ID)]
 
 export const DEMO_SELECTOR_ITEMS: Record<LinkDimension, LinkItem[]> = {
     ou: [

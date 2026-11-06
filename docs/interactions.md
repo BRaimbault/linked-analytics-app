@@ -46,11 +46,11 @@ Aggregate analytics share one dimensional model: `dx` (data), `pe` (period), `ou
 
 - A received fixed period replaces the view's periods, relative ones included.
 - Analytics aggregates to any **longer** period type, never a shorter one: monthly data asked by week is empty, except averaged data, which repeats. An element can also be collected at several types. So a received period can leave a view empty or short. The helpers proposed for `@dhis2/analytics` tell before the request and explain an empty result after: [data-period-types.md](data-period-types.md).
-- **Rule per receiving view** (the follow option _The period_, [§5.7](#57-follow-options)):
-    - `pe` only as a filter → the selected period;
-    - `pe` on an axis → the periods of the axis's own type that fall within the selection (a year → its 12 months);
-    - if the selection is shorter than the axis type (a month into a yearly axis), the period that contains it.
-- A view with relative periods on an axis can instead keep its span and move it to end at the selection (_Up to the period_), so a trend stays a trend. How other tools handle periods across views: Grafana and Kibana share a range and let each panel keep its grouping; Tableau anchors relative dates to a chosen date; Power BI and Tableau filter rows, which DHIS2's period items can't.
+- **Rule per receiving view**, by its follow option ([§5.7](#57-follow-options)):
+    - **As picked** (the default): the selected period itself, in its own type, on an axis as in a filter. A month picked shows that month, on a quarterly table too.
+    - **In the view's own periods**: the selection translated into the type of the view's periods, on an axis or in a filter. A selection longer than that type gives the periods within it (a year → its 12 months on a monthly axis); a shorter one gives the period that contains it (a month → its year on a yearly map). This keeps a view's detail, and a map's scale.
+    - As built, the demo does the second, for monthly, quarterly and yearly periods only.
+- A trend view can instead keep its own periods and highlight the selection (_Highlight only_, [§5.7](#57-follow-options)), so a trend stays a trend. Moving a view's window to end at the selection is left for later ([§5.10](#510-later)). How other tools handle periods across views: Grafana and Kibana share a range and let each panel keep its grouping; Tableau anchors relative dates to a chosen date; Power BI and Tableau filter rows, which DHIS2's period items can't.
 
     This needs a period helper, e.g. from `@dhis2/multi-calendar-dates`, as `@dhis2/analytics` uses.
 
@@ -89,7 +89,7 @@ A `dx` link means "show this data item instead". Unlike `ou` and `pe`, the data 
     - Value type: text and boolean items can't be shown on a thematic map or aggregated in a chart.
     - This needs the new item's metadata (`dimensionItemType`, `valueType`, `categoryCombo`, `legendSet`). Look up the exact endpoints with the `dhis2-api-lookup` skill when implementing.
 - **Settings tied to the old item must be reset:**
-    - Map thematic layer: `legendSet`. Use the new item's legend set when the layer used "legend from data item", otherwise automatic classes. The demo takes a layer with a legend set as using its item's, and looks the new item's up through the plugin sources (`getLegendSetId`); the real app gets it with the item's metadata, which the compatibility check needs anyway. The legend lock starts again for the new item, on its own classes.
+    - Map thematic layer: `legendSet`. Use the new item's legend set whenever it has one, so an item has the same colors on a map as in a table that colors by data item; without one, automatic classes on the layer's own color scale. The demo looks the new item's legend set up through the plugin sources (`getLegendSetId`); the real app gets it with the item's metadata, which the compatibility check needs anyway. The legend lock starts again for the new item, on its own classes.
     - DV: per-series options (the `series` option keyed by `dx` id: axis, chart type), `targetLineValue`, `baseLineValue`, fixed axis ranges, and the visualization's legend set.
     - Titles: see [Titles after a rewrite](#titles-after-a-rewrite-all-dimensions).
 - **The data selector is a short list, not the full picker.** In the selector's settings tab, the author chooses candidate items with `DataDimension` (e.g. ANC 1, ANC 4, Penta 3). The selector then shows them as a simple select: a "parameter" in Tableau's sense.
@@ -343,6 +343,7 @@ What this gives up: a list of every channel, including those without a selector.
     - each step waits until every receiver has finished loading, then a set delay (e.g. 1.5 s), so a slow view doesn't fall behind and the refetches (every receiver, every step) are spread out;
     - **receivers report loading through `onLoadingComplete` once the upstream PRs add it** (DV's wrapper must forward it, and Maps adds it, [§6](#6-upstream-prs)). Until then no plugin reports loading, and play mode steps on a fixed delay ([plugins.md §4](plugins.md#4-what-this-means-for-the-app));
     - playing pauses while link mode is on or a view is being dragged.
+    - **As built in the demo** (November 2026): a period selector's Control can be a **Timeline** (`PeriodTimeline`), over the periods its source gives (the demo's last 12 months). ▶ starts from the marked period, or from the first; each step waits for every view that follows the channel to report `onLoadingComplete` (the fakes do; `PluginLoads`), at most 4 s, and shows at least 1.2 s. It stops at the last period. A step by hand, Clear, or a value set elsewhere (a month clicked on the chart) pauses it. The range and step picker and the pauses for link mode and drags are still to build.
 
 ### 5.6 Drilling the view you click
 
@@ -359,18 +360,20 @@ A sender isn't rewritten by its own clicks, but you may still want to drill it. 
 
 ### 5.7 Follow options
 
-A view that follows a value can follow it in several ways, one choice per dimension, in its Links section under "Follow the value". The org unit depth ("Org units on an axis") is one such choice, and filter or highlight ([Filter vs highlight](#filter-vs-highlight)) another; follow options gather them. Designed on 30 September 2026, not built.
+A view that follows a value can follow it in several ways, one choice per dimension, in its Links section under "Follow the value". The org unit depth is one such choice, and filter or highlight ([Filter vs highlight](#filter-vs-highlight)) another; follow options gather them. Designed on 30 September 2026.
 
-| Dimension | Option                                                 | What the view shows for the value received                                                                                                                         | Offered when                    |
-| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
-| Period    | **Up to the period**                                   | Its own relative span, ending at the period: "Last 12 months", receiving March 2026, shows April 2025 to March 2026, with March highlighted (`relativePeriodDate`) | Its periods are relative        |
-|           | **The period**                                         | The period, in the view's own type: its months for a quarter, the containing quarter for a month ([§2](#period-pe))                                                | Always                          |
-|           | **Highlight only**                                     | Its own periods, with the period highlighted                                                                                                                       | The plugin supports `highlight` |
-| Org unit  | **Selected org unit**, **Sub-units**, **Sub-x2-units** | As built: the unit, or the levels below it ([§2](#org-unit-ou))                                                                                                    | Always                          |
-|           | **Highlight only**                                     | Its own org units, with the unit highlighted                                                                                                                       | The plugin supports `highlight` |
-| Data      | **Replace** (as built)                                 | The item, or its own items narrowed to it ([Data](#data-dx))                                                                                                       | Always                          |
+**As built** (November 2026): a field beside the channel, "When it follows" (shown while "Follow the value" is ticked), offers, for org units, _Selected org unit_, _Sub-units_ and _Sub-x2-units_, and for periods _As picked_; both add **_Highlight only_** when the view's plugin takes `highlight` (`canHighlight` in the plugin sources: the demo's fakes; DV and Maps after the upstream PRs). A view following with Highlight only is left as it is for that dimension (`getIncomingLinks` skips it) and gets the value as its highlight (`getHighlight`), as a view that set the value does; play doesn't wait for it, as it doesn't draw again. The choice stays with the view when it moves to another channel. In the demo, the chart and the table follow the period this way. The chart keeps its 12 months, and marks the one picked with a dashed line, as a Highcharts x-axis plot line does; a series a highlight leaves out fades, its line too. The table keeps its 4 quarters: the one holding the month keeps its colors, its header in bold. A drawn item marks a highlight when it is highlighted or holds one that is (`isMarkedBy`). _In the view's own periods_, the marks and the checks (§5.8, §5.9) are still to build.
 
-- **Defaults**: _Up to the period_ for relative periods on an axis, so trends stay trends; _The period_ for fixed periods and for periods in a filter (as built); _Sub-units_ for org units on an axis (as built). _Highlight only_ is never a default.
+| Dimension | Option                                                 | What the view shows for the value received                                                                                | Offered when                    |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Period    | **As picked**                                          | The period itself, in its own type: March shows March, on an axis or in a filter ([§2](#period-pe))                       | Always                          |
+|           | **In the view's own periods**                          | The period translated into the view's type: a year → its 12 months on a monthly chart; a month → its year on a yearly map | Always                          |
+|           | **Highlight only**                                     | Its own periods, with the period highlighted: a trend keeps its months and marks March                                    | The plugin supports `highlight` |
+| Org unit  | **Selected org unit**, **Sub-units**, **Sub-x2-units** | As built: the unit, or the levels below it ([§2](#org-unit-ou))                                                           | Always                          |
+|           | **Highlight only**                                     | Its own org units, with the unit highlighted                                                                              | The plugin supports `highlight` |
+| Data      | **Replace** (as built)                                 | The item, or its own items narrowed to it ([Data](#data-dx))                                                              | Always                          |
+
+- **Defaults**: _As picked_ for periods, so a linked view shows what was picked; _Sub-units_ for org units on an axis, as built. _In the view's own periods_ is the choice for a view that should keep its detail (a monthly chart given a year) or its scale (a yearly map, whose colors fit yearly values). _Highlight only_ is never a default; it's the choice for a view that should keep its own periods or places, such as a trend.
 - **Finer than the data**: a period shorter than the view's data can fill (weeks sent to monthly data) is lifted to the containing period of the data's type, with the received part highlighted, and the Links row says so ("Collected monthly: shows January for week 3"). A unit below where the data is entered works the same way, with its parent.
 - **Options that can't work** for the view's data are disabled, with the reason in a tooltip, like the Links checkboxes; options that would leave it partial are marked. Both come from the checks ([§5.9](#59-how-the-checks-are-used)).
 - A view doesn't switch options on its own: when a value leaves it empty or short, it keeps its option and shows why, in a badge on its header.
@@ -389,9 +392,9 @@ In a selector's settings tab, where its list is chosen ([§5.5](#55-selectors-li
 
 ### 5.9 How the checks are used
 
-The checks are the four capabilities of [data-period-types.md](data-period-types.md) (and [data-org-units.md](data-org-units.md) for places): an item's collection profile, whether a value suits it, and, after an empty result, whether the value is the cause and what the data really holds.
+The checks are the capabilities of [data-period-types.md](data-period-types.md) (and [data-org-units.md](data-org-units.md) for places): an item's profile, whether a value suits it, and, after an empty result, whether the value is the cause and where the data really is.
 
-- **One function, three uses.** "Can this view show this value?" is answered from the view's cached collection profile by a pure check. The follow options call it for the value a view receives (§5.7); a selector calls it for each follower and each option (§5.8); the empty-result explanation calls the after-query capabilities. The profile's requests are paid once per view, when its saved item is opened.
+- **One function, three uses.** "Can this view show this value?" is answered from the view's cached data item profile by a pure check. The follow options call it for the value a view receives (§5.7); a selector calls it for each follower and each option (§5.8); the empty-result explanation calls the after-query capabilities. The profile's requests are paid once per view, when its saved item is opened.
 - **Where it comes from**: the `@dhis2/analytics` pure functions and request builders, once they exist, with our own RTK Query endpoints (`api/data-items.ts`), not the library's hooks, since they fetch with `useDataQuery`, which this app restricts. Demo mode gets the profile from the plugin sources, built from the demo's metadata in the library's shape; the demo's `modules/demo/period-check.ts` stands in until then.
 - **Where it goes**: the option and marking decisions in `modules/interactions/` (pure), the profile source in the plugin sources, the badge and the Links texts in `components/interactions/`.
 - **Limits:**
@@ -405,6 +408,7 @@ The checks are the four capabilities of [data-period-types.md](data-period-types
 - **Drag to connect**, Figma-style: drag a badge onto a view to add it to that channel. This competes with dockview's drag and drop.
 - **Templates**, e.g. "compare two org units": two channels and a 2×2 layout in one go.
 - **A channel default**, if views should start aligned: with nothing selected, a channel holds a default value (set in its selector's settings, from the same short list), and each view chooses, per dimension, to show that default or its own saved item's. Clearing goes back to the default. Periods would be fixed ones (years, quarters), which convert to any axis. Discussed on 29 September 2026 and left out: with nothing selected, each view shows its own saved item, as on a dashboard.
+- **Moving a view's window to the selection** (research, not in the first version): a trend keeps its length and ends at the selected period. "Last 12 months", receiving March 2026, would show April 2025 to March 2026, with March highlighted. It isn't only for relative periods: someone who picked six fixed months, for want of a relative period that fits, may want those six months moved too. Relative periods could use `relativePeriodDate`, as EV does; fixed ones need their window shifted. Left out on 30 September 2026: a linked view shows what was picked, and _Highlight only_ keeps a trend's context more simply ([§5.7](#57-follow-options)).
 
 ## 6. Upstream PRs
 
@@ -516,7 +520,7 @@ In the browser, with the plugins served locally:
     - a channel's color comes from its letter (a fixed palette), so the state holds no color;
     - the state keeps who set the value (`setBy`): that view isn't rewritten, and highlights the value;
     - the badge menu that clears a value, the outline of a channel's members on hover, and the pulse and announcement on a change are not built yet.
-    - **Next on the fakes: follow options and selector marking** ([§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)): _Up to the period_ and _Highlight only_ first, with the demo's check as the stand-in; then the selector marking. They switch to the `@dhis2/analytics` checks once those exist.
+    - **Next on the fakes: follow options and selector marking** ([§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)): _Highlight only_ first, with the demo's check as the stand-in; then the selector marking. They switch to the `@dhis2/analytics` checks once those exist.
 3. **On the real plugins** (plan step 4): `ou` and `pe` receivers in DV and Maps, DV `onDrill` as the interim `ou` sender, and Maps remounts for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
 4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.
 5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
@@ -536,7 +540,7 @@ In the browser, with the plugins served locally:
 - **No separate Interactions tab** ([§5.4](#54-where-the-wiring-is-set-no-separate-tab)).
 - **A map keeps its zoom and pan** when a link or a drill rewrites it, as the contract asks; it doesn't zoom to its new features (29 September 2026).
 - **No Shift-click ranges** for now: Ctrl/Cmd-click adds or removes points one at a time (29 September 2026).
-- **Follow options**, one choice per dimension of how a view follows a value, with _Up to the period_ as the default for relative periods on an axis; **selectors mark their options** from their followers' checks, and never hide them; **one check, three uses** (follow options, selector options, empty results), from a collection profile cached per view (30 September 2026, [§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)).
+- **Follow options**, one choice per dimension of how a view follows a value: the period or place picked by default, or _Highlight only_ to keep the view's own; moving a view's window to the selection is research for later ([§5.10](#510-later)); **selectors mark their options** from their followers' checks, and never hide them; **one check, three uses** (follow options, selector options, empty results), from a data item profile cached per view (30 September 2026, [§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)).
 
 **Open:**
 

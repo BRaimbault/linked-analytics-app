@@ -1,11 +1,13 @@
 import {
     fromSerializedGrid,
+    VIEW_HEADER_HEIGHT,
     withViewInfo,
     type GridTree,
     type SerializedGrid,
 } from '@modules/workspace/grid-tree'
 import {
     computeEvenSizes,
+    computeHeaderChangeSizes,
     computeLayoutSizes,
     type SizeRequest,
 } from '@modules/workspace/layout-sizing'
@@ -16,6 +18,7 @@ import {
     getPanelKind,
     getPanelSizes,
     getViewGroups,
+    getWorkspaceHeaderHeight,
 } from './panels'
 
 /* A plain copy of the grid's layout. dockview reports hidden sizes while
@@ -127,6 +130,45 @@ export const restoreProportions = (
     }
     const change = expected && toLayoutChange(api, expected.change)
     applySizeRequests(api, computeLayoutSizes(before, after, change))
+}
+
+/* Each cell's minimum follows its view's. dockview takes a view's minimum
+ * when the view is added, which a header change, or the new cell of a
+ * moved view, would miss. */
+const applyMinimumSizes = (api: DockviewApi): void => {
+    for (const group of getViewGroups(api)) {
+        const { min } = getPanelSizes(group.activePanel)
+        group.api.setConstraints({
+            minimumWidth: min.width,
+            minimumHeight: min.height,
+        })
+    }
+}
+
+/* The header height the grid was last sized for */
+const sizedHeaderHeights = new WeakMap<DockviewApi, number>()
+
+/* Sizes the grid for its views as they are now: cells get their views'
+ * minimums (after a layout, header or control change), and lines of
+ * selectors alone keep fitting their content when the workspace shows or
+ * hides headers. The layout is read first: dockview grows a cell to a
+ * higher minimum at once. A maximized view hides the grid: a header
+ * change waits until the grid is back. */
+export const fitViewSizes = (api: DockviewApi): void => {
+    const tree = readGridTree(api)
+    applyMinimumSizes(api)
+    if (!tree) {
+        return
+    }
+    const headerHeight = getWorkspaceHeaderHeight(api)
+    const sizedFor = sizedHeaderHeights.get(api) ?? VIEW_HEADER_HEIGHT
+    sizedHeaderHeights.set(api, headerHeight)
+    if (headerHeight !== sizedFor) {
+        applySizeRequests(
+            api,
+            computeHeaderChangeSizes(tree, headerHeight - sizedFor)
+        )
+    }
 }
 
 /* Gives the views even sizes (computeEvenSizes). A maximized view hides

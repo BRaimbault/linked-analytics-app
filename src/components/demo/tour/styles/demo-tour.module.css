@@ -1,0 +1,107 @@
+/* driver.js's popover, in DHIS2 UI's type, colors and buttons */
+.popover {
+    max-inline-size: 360px;
+    padding: var(--spacers-dp16);
+    border-radius: 4px;
+    box-shadow: var(--elevations-e300);
+    color: var(--colors-grey900);
+    font-family: Roboto, sans-serif;
+}
+
+.popover :global(.driver-popover-title) {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
+}
+
+.popover :global(.driver-popover-description) {
+    margin-block-start: var(--spacers-dp8);
+    color: var(--colors-grey800);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.popover :global(.driver-popover-footer) {
+    margin-block-start: var(--spacers-dp16);
+}
+
+.popover :global(.driver-popover-progress-text) {
+    color: var(--colors-grey700);
+    font-size: 13px;
+}
+
+.popover :global(.driver-popover-navigation-btns) button {
+    padding-block: 0;
+    padding-inline: var(--spacers-dp12);
+    block-size: 32px;
+    border: 1px solid var(--colors-grey500);
+    border-radius: 4px;
+    background: var(--colors-white);
+    color: var(--colors-grey900);
+    font-family: inherit;
+    font-size: 14px;
+    text-shadow: none;
+}
+
+.popover :global(.driver-popover-navigation-btns) button:hover {
+    background: var(--colors-grey200);
+}
+
+.popover :global(.driver-popover-navigation-btns .driver-popover-next-btn) {
+    border-color: var(--colors-blue800);
+    background: var(--colors-blue700);
+    color: var(--colors-white);
+}
+
+.popover
+    :global(.driver-popover-navigation-btns .driver-popover-next-btn):hover {
+    background: var(--colors-blue800);
+}
+
+.popover :global(.driver-popover-close-btn) {
+    color: var(--colors-grey700);
+}
+
+/* driver.js lets only the highlighted element take clicks, under its
+ * overlay. A select or menu opened from it renders in a DHIS2 layer
+ * elsewhere on the page, which must take clicks too, above the overlay. */
+:global(.driver-active [data-test='dhis2-uicore-layer']) {
+    z-index: 10002 !important;
+}
+
+:global(.driver-active [data-test='dhis2-uicore-layer']),
+:global(.driver-active [data-test='dhis2-uicore-layer'] *) {
+    pointer-events: auto;
+}
+
+/* Where the tour clicks: a ring that closes in on the spot, twice, above
+ * driver.js's overlay */
+.clickRing {
+    position: fixed;
+    z-index: 10001;
+    inline-size: 44px;
+    block-size: 44px;
+    margin-block-start: -22px;
+    margin-inline-start: -22px;
+    border: 3px solid var(--colors-blue600);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: click-ring 700ms ease-out 2;
+}
+
+@keyframes click-ring {
+    from {
+        opacity: 0.2;
+        transform: scale(1.6);
+    }
+
+    70% {
+        opacity: 1;
+        transform: scale(0.6);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+}

@@ -52,19 +52,38 @@ export const DATA_ITEM_IDS = {
     anc4: 'DemoAnc4th1',
     penta3: 'DemoPenta31',
     penta3Doses: 'DemoPentaD1',
+    malariaVaccine3: 'DemoMalVC31',
+    malariaVaccine3Doses: 'DemoMalVD31',
     populationUnder1: 'DemoPopU1y1',
     malaria: 'DemoMalar01',
+    malariaIncidence: 'DemoMalInc1',
+    population: 'DemoPopTot1',
     actStock: 'DemoActStk1',
 } as const
 
+/* The bands WHO AFRO reports immunization coverage in, around the targets
+ * of 80% in every district and 90% nationally. Colors from the middle of
+ * ColorBrewer's RdYlGn, a scale Maps offers: light enough to fill a table
+ * cell under dark text. */
 export const LEGEND_SETS: DemoLegendSet[] = [
     {
         id: 'DemoLegCov1',
         name: 'Coverage',
         legends: [
-            { startValue: 0, endValue: 50, color: '#d7301f', name: 'Low' },
-            { startValue: 50, endValue: 80, color: '#fdae61', name: 'Medium' },
-            { startValue: 80, endValue: 1000, color: '#1a9850', name: 'High' },
+            { startValue: 0, endValue: 50, color: '#fc8d59', name: '< 50%' },
+            {
+                startValue: 50,
+                endValue: 80,
+                color: '#fee08b',
+                name: '50 – 79%',
+            },
+            {
+                startValue: 80,
+                endValue: 90,
+                color: '#d9ef8b',
+                name: '80 – 89%',
+            },
+            { startValue: 90, endValue: 1000, color: '#91cf60', name: '≥ 90%' },
         ],
     },
 ]
@@ -94,6 +113,25 @@ export const DATA_ITEMS: DemoDataItem[] = [
         annualized: true,
         legendSetId: 'DemoLegCov1',
     },
+    /* Given at the same routine visits as Penta, since 2024, so it reaches
+     * the children Penta reaches, a little fewer as it's newer */
+    {
+        id: DATA_ITEM_IDS.malariaVaccine3,
+        name: 'Malaria vaccine 3 coverage <1y',
+        dimensionItemType: 'INDICATOR',
+        numeratorId: DATA_ITEM_IDS.malariaVaccine3Doses,
+        denominatorId: DATA_ITEM_IDS.populationUnder1,
+        factor: 100,
+        annualized: true,
+        legendSetId: 'DemoLegCov1',
+    },
+    {
+        id: DATA_ITEM_IDS.malariaVaccine3Doses,
+        name: 'Malaria vaccine 3rd doses given',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'SUM',
+        collectedIn: 'MONTHLY',
+    },
     {
         id: DATA_ITEM_IDS.penta3Doses,
         name: 'Penta 3 doses given',
@@ -121,6 +159,24 @@ export const DATA_ITEMS: DemoDataItem[] = [
             DemoSouth01: 'MONTHLY',
         },
     },
+    /* Cases per 1,000 people a year, so places of different sizes compare:
+     * a map of counts would mostly show where people live */
+    {
+        id: DATA_ITEM_IDS.malariaIncidence,
+        name: 'Malaria incidence per 1,000',
+        dimensionItemType: 'INDICATOR',
+        numeratorId: DATA_ITEM_IDS.malaria,
+        denominatorId: DATA_ITEM_IDS.population,
+        factor: 1000,
+        annualized: true,
+    },
+    {
+        id: DATA_ITEM_IDS.population,
+        name: 'Total population',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'AVERAGE_SUM_ORG_UNIT',
+        collectedIn: 'YEARLY',
+    },
     {
         id: DATA_ITEM_IDS.actStock,
         name: 'Antimalarial (ACT) stock on hand',
@@ -142,6 +198,15 @@ export const resolveDataItems = (items: string[]): DemoDataItem[] =>
 
 export const getLegendSet = (id: string): DemoLegendSet | undefined =>
     LEGEND_SETS.find((legendSet) => legendSet.id === id)
+
+/* A legend includes its start value but not its end value, as in DHIS2 */
+export const getLegendColor = (
+    legendSet: DemoLegendSet,
+    value: number
+): string | undefined =>
+    legendSet.legends.find(
+        ({ startValue, endValue }) => value >= startValue && value < endValue
+    )?.color
 
 /* The period type a data element is collected in, in a district */
 export const collectionTypeOf = (

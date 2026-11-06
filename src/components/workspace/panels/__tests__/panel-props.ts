@@ -55,7 +55,8 @@ export const createFakePanel = <T extends object>(params: T, id = 'map-a') => {
     const props = {
         params,
         api,
-        containerApi: {} as DockviewApi,
+        /* A workspace whose views these tests don't reach */
+        containerApi: { getPanel: () => undefined } as unknown as DockviewApi,
     } as unknown as IDockviewPanelProps<T>
     return {
         props,

@@ -28,11 +28,11 @@ describe('FakeMap', () => {
             screen.getByText('Penta 3 coverage <1y · Last 12 months')
         ).toBeInTheDocument()
         expect(screen.getByTestId('fake-map-legend')).toHaveTextContent(
-            'LowMediumHigh'
+            '≥ 90%80 – 89%50 – 79%< 50%'
         )
         expect(
             screen.getAllByTestId('fake-feature')[0].querySelector('title')
-        ).toHaveTextContent(/^Amber Hills: [\d.]+$/)
+        ).toHaveTextContent(/^North \/ Amber Hills: [\d.]+$/)
     })
 
     it('sends a clicked feature’s org unit and the layer’s data item, additive with Ctrl or Cmd', () => {
@@ -107,9 +107,9 @@ describe('FakeMap', () => {
         draw(malariaMap)
         const svg = screen.getByRole('img')
         const whole = scaleOf()
-        /* The whole map keeps 16px around it: 400 high, less the 44px
+        /* The whole map keeps 16px around it: 400 high, less the 48px
          * header, less 32, for the 100-unit plane */
-        expect(whole).toBeCloseTo((400 - 44 - 32) / 100)
+        expect(whole).toBeCloseTo((400 - 48 - 32) / 100)
 
         /* The wheel zooms instead of scrolling the page */
         expect(fireEvent.wheel(svg, { deltaY: -100 })).toBe(false)
@@ -295,5 +295,22 @@ describe('FakeMap', () => {
         fireEvent.click(screen.getAllByTestId('fake-feature')[0])
 
         expect(onDataClick.mock.lastCall?.[0]).not.toHaveProperty('dx')
+    })
+
+    it('draws a label per unit when the layer shows labels, and none otherwise', () => {
+        const labelled = {
+            ...malariaMap,
+            mapViews: [{ ...malariaMap.mapViews[0], labels: true }],
+        }
+        const { unmount } = draw(labelled)
+
+        expect(
+            screen
+                .getAllByTestId('fake-feature-label')
+                .map(({ textContent }) => textContent)
+        ).toEqual(['North', 'West', 'East', 'South'])
+        unmount()
+        draw(malariaMap)
+        expect(screen.queryByTestId('fake-feature-label')).toBeNull()
     })
 })

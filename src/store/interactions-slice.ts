@@ -20,6 +20,7 @@ import {
     moveViewToChannel,
     removeView,
     setMemberRoles,
+    setHighlightOnly,
     setOrgUnitDepth,
     type ChannelChoice,
     type InteractionsState,
@@ -104,6 +105,13 @@ export const interactionsSlice = createSlice({
         ) {
             setOrgUnitDepth(state, action.payload.viewId, action.payload.depth)
         },
+        highlightOnlyChanged(
+            state,
+            action: PayloadAction<ViewLink & { highlightOnly: boolean }>
+        ) {
+            const { highlightOnly, ...link } = action.payload
+            setHighlightOnly(state, link, highlightOnly)
+        },
         selectorChannelChanged(
             state,
             action: PayloadAction<{
@@ -153,6 +161,7 @@ export const {
     viewChannelChanged,
     viewRolesChanged,
     orgUnitDepthChanged,
+    highlightOnlyChanged,
     selectorChannelChanged,
     viewDrilledDown,
     viewDrilledUpTo,

@@ -1,6 +1,10 @@
 import { getTotal } from '@modules/demo/aggregation'
 import { DATA_ITEM_IDS } from '@modules/demo/data-items'
-import { buildDemoMapLayer } from '@modules/demo/map-layer'
+import {
+    buildDemoMapLayer,
+    getLabelPoint,
+    NO_DATA_COLOR,
+} from '@modules/demo/map-layer'
 import { DEMO_MAPS } from '@modules/demo/saved-items'
 import type { MapView } from '@modules/visualization/analytical-object'
 import { describe, expect, it } from 'vitest'
@@ -44,7 +48,10 @@ describe('demo map layer', () => {
 
         expect(byValue[0].color).toBe(colors[0])
         expect(byValue.at(-1)?.color).toBe(colors.at(-1))
-        expect(layer.legend.map(({ color }) => color)).toEqual(colors)
+        /* Listed highest first, as Maps does */
+        expect(layer.legend.map(({ color }) => color)).toEqual(
+            colors.toReversed()
+        )
         expect(layer.legend[0].label).toMatch(/^[\d,.]+ – [\d,.]+$/)
     })
 
@@ -59,7 +66,7 @@ describe('demo map layer', () => {
             max: min + 2,
         })
 
-        expect(wide.legend[0].label).toBe(
+        expect(wide.legend.at(-1)?.label).toBe(
             `0 – ${(max * 2).toLocaleString('en')}`
         )
         /* Every district in the first of five classes */
@@ -79,18 +86,16 @@ describe('demo map layer', () => {
 
         expect(layer.features).toHaveLength(14)
         expect(layer.legend.map(({ label }) => label)).toEqual([
-            'Low',
-            'Medium',
-            'High',
+            '≥ 90%',
+            '80 – 89%',
+            '50 – 79%',
+            '< 50%',
         ])
+        const colors = layer.legend.map(({ color }) => color).toReversed()
+        const bandOf = (value: number) =>
+            [50, 80, 90].filter((start) => value >= start).length
         for (const { value, color } of layer.features) {
-            const expected =
-                (value as number) < 50
-                    ? '#d7301f'
-                    : (value as number) < 80
-                      ? '#fdae61'
-                      : '#1a9850'
-            expect(color).toBe(expected)
+            expect(color).toBe(colors[bandOf(value as number)])
         }
         /* Chiefdoms lie in the 4 districts */
         expect(layer.outlines).toHaveLength(4)
@@ -120,12 +125,12 @@ describe('demo map layer', () => {
         )
 
         expect(noData.dataItem).toBeNull()
-        expect(noData.features.every(({ color }) => color === '#e0e0e0')).toBe(
-            true
-        )
+        expect(
+            noData.features.every(({ color }) => color === NO_DATA_COLOR)
+        ).toBe(true)
         /* Malaria counts run far beyond the coverage legend's 1000 */
         expect(
-            outOfLegend.features.some(({ color }) => color === '#e0e0e0')
+            outOfLegend.features.some(({ color }) => color === NO_DATA_COLOR)
         ).toBe(true)
     })
 
@@ -155,5 +160,36 @@ describe('demo map layer', () => {
         ).toEqual(['Last month'])
         expect(empty.features).toEqual([])
         expect(empty.periodNames).toEqual([])
+    })
+
+    it("labels each unit with its own name when the layer shows labels, on its mainland's centre", () => {
+        const labelled = buildDemoMapLayer(view({ labels: true }))
+        const plain = buildDemoMapLayer(malariaMap)
+
+        expect(labelled.features.map(({ label }) => label)).toEqual([
+            'North',
+            'West',
+            'East',
+            'South',
+        ])
+        expect(plain.features.every(({ label }) => label === null)).toBe(true)
+        /* A square and a small island: the square's centre */
+        expect(
+            getLabelPoint([
+                [
+                    [0, 0],
+                    [10, 0],
+                    [10, 10],
+                    [0, 10],
+                    [0, 0],
+                ],
+                [
+                    [50, 50],
+                    [51, 50],
+                    [51, 51],
+                    [50, 50],
+                ],
+            ])
+        ).toEqual([5, 5])
     })
 })

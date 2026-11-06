@@ -22,6 +22,9 @@ export type ChannelMember = {
     receive: boolean
     /* Org unit channels only: what the view shows for the selection */
     depth?: OrgUnitDepth
+    /* "Highlight only": the view keeps its own periods or places, and
+     * highlights the value instead of being rewritten with it */
+    highlightOnly?: boolean
 }
 
 export type Channel = {
@@ -112,7 +115,10 @@ export const getIncomingLinks = (
 ): IncomingLinks =>
     Object.fromEntries(
         channels
-            .filter((channel) => channel.members[viewId]?.receive)
+            .filter(
+                ({ members }) =>
+                    members[viewId]?.receive && !members[viewId].highlightOnly
+            )
             .map((channel) => [
                 channel.dimension,
                 channel.setBy === viewId ? channel.before : channel.value,
@@ -120,15 +126,21 @@ export const getIncomingLinks = (
             .filter(([, value]) => value.length > 0)
     )
 
-/* What a view emphasizes: the values it set with its own clicks */
+/* What a view emphasizes: the values it set with its own clicks, and
+ * those it follows with "Highlight only" */
 export const getHighlight = (
     channels: Channel[],
     viewId: string
 ): Highlight | undefined => {
-    const own = channels.filter((channel) => channel.setBy === viewId)
-    return own.length
+    const shown = channels.filter(({ setBy, members, value }) => {
+        const member = members[viewId]
+        const isHighlighting =
+            member?.receive && member.highlightOnly && value.length > 0
+        return setBy === viewId || isHighlighting
+    })
+    return shown.length
         ? Object.fromEntries(
-              own.map((channel) => [
+              shown.map((channel) => [
                   channel.dimension,
                   channel.value.map(({ id }) => id),
               ])

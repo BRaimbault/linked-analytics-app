@@ -2,12 +2,28 @@ import type { AxisItem, DemoTable } from '@modules/demo/analytics'
 import type { FC, MouseEvent } from 'react'
 import classes from './styles/fake-visualization.module.css'
 
+/* DV's default color set (`colorSets` in @dhis2/analytics), copied: that
+ * module imports Highcharts, which the demo doesn't need */
 export const SERIES_COLORS = [
-    '#2d9cdb',
     '#a8bf24',
-    '#f2994a',
-    '#9b51e0',
-    '#27ae60',
+    '#518cc3',
+    '#d74554',
+    '#ff9e21',
+    '#968f8f',
+    '#ba3ba1',
+    '#ffda54',
+    '#45beae',
+    '#b98037',
+    '#676767',
+    '#6b2dd4',
+    '#47792c',
+    '#fcbdbd',
+    '#830000',
+    '#a5ffc0',
+    '#000078',
+    '#817c00',
+    '#bdf023',
+    '#fffac4',
 ]
 
 const MARGIN = { top: 8, right: 12, left: 52 }
@@ -42,10 +58,15 @@ export type PointHandlers = {
     ) => void
     onLabelClick: (item: AxisItem, event: MouseEvent) => void
     isDimmed: (series: AxisItem, category: AxisItem) => boolean
+    /* A category the highlight names itself, such as a month */
+    isMarked: (category: AxisItem) => boolean
 }
 
 /* A column or line chart in plain SVG: plainly not DV, so a demo can't be
- * mistaken for the real app */
+ * mistaken for the real app. With a highlight, what it leaves out fades: a
+ * line chart fades the whole line of a series left out, and marks a
+ * highlighted category with a dashed line across the plot, as a Highcharts
+ * plot line does. */
 export const FakeChart: FC<
     PointHandlers & {
         table: DemoTable
@@ -53,7 +74,16 @@ export const FakeChart: FC<
         width: number
         height: number
     }
-> = ({ table, kind, width, height, onPointClick, onLabelClick, isDimmed }) => {
+> = ({
+    table,
+    kind,
+    width,
+    height,
+    onPointClick,
+    onLabelClick,
+    isDimmed,
+    isMarked,
+}) => {
     const { series, categories, valueOf } = table
     const turned = categories.length > UPRIGHT_LABELS
     const bottom = turned ? BOTTOM.turned : BOTTOM.upright
@@ -99,10 +129,29 @@ export const FakeChart: FC<
                     </g>
                 )
             })}
+            {kind === 'LINE' &&
+                categories.map(
+                    (category, index) =>
+                        isMarked(category) && (
+                            <line
+                                key={category.id}
+                                className={classes.categoryMark}
+                                x1={bandLeft(index) + band / 2}
+                                x2={bandLeft(index) + band / 2}
+                                y1={MARGIN.top}
+                                y2={MARGIN.top + plotHeight}
+                                data-test="fake-category-mark"
+                            />
+                        )
+                )}
             {categories.map((category, index) => (
                 <text
                     key={category.id}
-                    className={classes.category}
+                    className={
+                        isMarked(category)
+                            ? `${classes.category} ${classes.markedCategory}`
+                            : classes.category
+                    }
                     transform={`translate(${bandLeft(index) + band / 2}, ${
                         MARGIN.top + plotHeight + 14
                     })${turned ? ' rotate(-35)' : ''}`}
@@ -138,12 +187,19 @@ export const FakeChart: FC<
                             [[]]
                         )
                         .filter((run) => run.length)
+                    const isLeftOut =
+                        known.length > 0 &&
+                        known.every(({ category }) => isDimmed(item, category))
                     return (
                         <g key={item.id} data-test="fake-series">
                             {runs.map((run) => (
                                 <polyline
                                     key={run[0].category.id}
-                                    className={classes.line}
+                                    className={
+                                        isLeftOut
+                                            ? `${classes.line} ${classes.dimmed}`
+                                            : classes.line
+                                    }
                                     stroke={color}
                                     points={run
                                         .map(

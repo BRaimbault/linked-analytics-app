@@ -2,7 +2,11 @@ import type { PluginSources } from '@components/plugins/plugin-sources'
 import { getDataItem } from '@modules/demo/data-items'
 import { getOrgUnit, ORG_UNIT_LEVELS } from '@modules/demo/org-units'
 import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
-import { DEMO_SELECTOR_ITEMS } from '@modules/demo/selector-items'
+import {
+    DEMO_SELECTOR_ITEMS,
+    DEMO_TIMELINE_PERIODS,
+    DEMO_TREE_ROOTS,
+} from '@modules/demo/selector-items'
 import type { PluginProps } from '@modules/plugins/contract'
 import type { ComponentType } from 'react'
 import { FakeMap } from './fake-map'
@@ -20,7 +24,10 @@ export const DEMO_PLUGIN_SOURCES: PluginSources = {
         map: DEMO_MAPS,
     },
     selectorItems: DEMO_SELECTOR_ITEMS,
+    timelinePeriods: DEMO_TIMELINE_PERIODS,
+    orgUnitTreeRoots: DEMO_TREE_ROOTS,
     orgUnitLevelCount: ORG_UNIT_LEVELS.length,
     getOrgUnitName: (id) => getOrgUnit(id)?.name,
     getLegendSetId: (id) => getDataItem(id)?.legendSetId,
+    canHighlight: { visualization: true, map: true },
 }

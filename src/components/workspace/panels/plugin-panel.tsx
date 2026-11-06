@@ -1,5 +1,6 @@
 import { DrillMenu } from '@components/interactions/drill-menu'
 import { useViewLinks } from '@components/interactions/use-view-links'
+import { usePluginLoads } from '@components/plugins/plugin-loads'
 import { usePluginSources } from '@components/plugins/plugin-sources'
 import { PluginView } from '@components/plugins/plugin-view'
 import { applyLinks, type LinkItem } from '@modules/interactions/apply-links'
@@ -51,6 +52,11 @@ export const PluginPanel: FC<{
         [onDataClick]
     )
     const closeContextMenu = useCallback(() => setContextMenu(null), [])
+    const { reportLoaded } = usePluginLoads()
+    const onLoadingComplete = useCallback(
+        () => reportLoaded(viewId),
+        [reportLoaded, viewId]
+    )
 
     return (
         <div className={classes.pluginBody} data-view-id={viewId}>
@@ -59,6 +65,7 @@ export const PluginPanel: FC<{
                 object={linkedObject}
                 highlight={highlight}
                 onDataClick={onClick}
+                onLoadingComplete={onLoadingComplete}
             />
             {contextMenu && (
                 <DrillMenu

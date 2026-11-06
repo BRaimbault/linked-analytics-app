@@ -18,6 +18,10 @@ export type PluginSources = {
     renderers: Partial<Record<PluginViewType, ComponentType<PluginProps>>>
     savedItems: Partial<Record<PluginViewType, PluginObject[]>>
     selectorItems: Partial<Record<LinkDimension, LinkItem[]>>
+    /* The periods a timeline selector steps through, oldest first */
+    timelinePeriods: LinkItem[]
+    /* The units at the top of an org unit tree selector, with their paths */
+    orgUnitTreeRoots: LinkItem[]
     /* The deepest org unit level, where a linked unit has no children */
     orgUnitLevelCount: number
     /* An org unit's name from its id, for one a click only names in its
@@ -25,15 +29,21 @@ export type PluginSources = {
     getOrgUnitName: (id: string) => string | undefined
     /* A data item's own legend set, which a map layer takes with it */
     getLegendSetId: (dataItemId: string) => string | undefined
+    /* The plugins that take the contract's `highlight`, so a view can
+     * follow a value with "Highlight only" */
+    canHighlight: Partial<Record<PluginViewType, boolean>>
 }
 
 export const NO_PLUGIN_SOURCES: PluginSources = {
     renderers: {},
     savedItems: {},
     selectorItems: {},
+    timelinePeriods: [],
+    orgUnitTreeRoots: [],
     orgUnitLevelCount: 0,
     getOrgUnitName: () => undefined,
     getLegendSetId: () => undefined,
+    canHighlight: {},
 }
 
 const PluginSourcesContext = createContext<PluginSources>(NO_PLUGIN_SOURCES)

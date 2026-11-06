@@ -37,29 +37,9 @@ const coastShare = (angle: number) =>
     0.28 * bump(angle, 2.75, 0.18) +
     0.15 * bump(angle, -0.9, 0.15)
 
-/* Straight land borders with neighbouring countries, each from one point
- * to another, the land on their right as one walks them (y down) */
-const LAND_BORDERS: [Point, Point][] = [
-    [
-        [16, 44],
-        [42, 22],
-    ],
-    [
-        [86, 16],
-        [84, 64],
-    ],
-]
-
-const isWithinLandBorders = ([x, y]: Point) =>
-    LAND_BORDERS.every(
-        ([[fromX, fromY], [toX, toY]]) =>
-            (toX - fromX) * (y - fromY) - (toY - fromY) * (x - fromX) > 0
-    )
-
+/* Demoland is an island: sea all round, a continent across a strait (see
+ * basemap.ts) */
 const isLand = ([x, y]: Point) => {
-    if (!isWithinLandBorders([x, y])) {
-        return false
-    }
     const [dx, dy] = [x - CENTRE, y - CENTRE]
     const along = (dx * Math.cos(TILT) + dy * Math.sin(TILT)) / HALF_LENGTH
     const across = (dy * Math.cos(TILT) - dx * Math.sin(TILT)) / HALF_WIDTH

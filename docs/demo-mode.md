@@ -82,16 +82,24 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **Periods**: ISO weeks, months, quarters and years for the two years before a fixed demo date, each a range of days (`modules/demo/calendar.ts`, `periods.ts`). Relative periods (weeks included) are resolved against that date, so demos don't change with the real date.
 - **Data items**, collected and aggregated as DHIS2 does it, so the demo shows what linking periods runs into (`data-items.ts`):
 
-    | Item                             | Collected                                               | Aggregation            |
-    | -------------------------------- | ------------------------------------------------------- | ---------------------- |
-    | ANC 1st visit, ANC 4th visit     | monthly                                                 | `SUM`                  |
-    | Malaria cases confirmed          | weekly in North and West, monthly in East, South        | `SUM`                  |
-    | Penta 3 doses given              | monthly                                                 | `SUM`                  |
-    | Population under 1 year          | yearly                                                  | `AVERAGE_SUM_ORG_UNIT` |
-    | Antimalarial (ACT) stock on hand | monthly                                                 | `LAST`                 |
-    | Penta 3 coverage <1y (indicator) | doses ÷ population × 100, annualized, with a legend set | —                      |
+    | Item                                                              | Collected                                                                  | Aggregation            |
+    | ----------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------- |
+    | ANC 1st visit, ANC 4th visit                                      | monthly                                                                    | `SUM`                  |
+    | Malaria cases confirmed                                           | weekly in North and West, monthly in East, South                           | `SUM`                  |
+    | Penta 3 doses given                                               | monthly                                                                    | `SUM`                  |
+    | Malaria vaccine 3rd doses given                                   | monthly                                                                    | `SUM`                  |
+    | Population under 1 year, total population                         | yearly                                                                     | `AVERAGE_SUM_ORG_UNIT` |
+    | Antimalarial (ACT) stock on hand                                  | monthly                                                                    | `LAST`                 |
+    | Penta 3 coverage <1y, malaria vaccine 3 coverage <1y (indicators) | doses ÷ population under 1 × 100, annualized, with the coverage legend set | —                      |
+    | Malaria incidence per 1,000 (indicator)                           | cases ÷ total population × 1,000, annualized                               | —                      |
 
 - **Values**: a seeded formula per data element, chiefdom and period it's collected in (`values.ts`): a base per district, a season, a slow trend, and noise from the ids.
+- **A public health story** the values tell together, checked against published figures for a coastal West African country where malaria is endemic all year: malaria weighs most where routine services reach fewest children.
+    - Malaria incidence is about 300 per 1,000 a year nationally, from about 150 in North to about 520 in South; it rises by about a fifth with the rains from May and peaks in June.
+    - Penta 3 coverage meets the 80% target in North and West and falls short in every chiefdom of East and South. The malaria vaccine, given at the same routine visits, follows it a few points lower.
+    - Antimalarial stock is kept at about 3 months of cases and runs down after the peak, to under a month in South in July.
+    - `modules/demo/story.ts` works out the facts the tour states, and its test checks them.
+- **Colors**, only what DV and Maps draw, so an item looks the same in every view: DV's default color set for series; Maps' YlOrBr scale (5 classes), no-data gray `#cccccc` and 90% opacity for thematic layers; a coverage legend set in WHO AFRO's bands (< 50, 50 – 79, 80 – 89, ≥ 90%), which colors the coverage cells of tables (DV's `legend`, by data item) and coverage maps.
 - **Aggregation**, following what tests on 2.43 and 2.44 servers showed (`aggregation.ts`):
     - a period takes the stored values whose period has its middle day in it, and is no longer than it: a week counts in the month holding most of its days, and **a monthly value is never split into weeks**;
     - `SUM` adds up; `LAST` takes the latest; `AVERAGE_SUM_ORG_UNIT` weighs by days, so **the yearly population repeats into every shorter period**;
@@ -101,7 +109,7 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 
 ## 6. Running without a server
 
-- **First version: no fake data engine.** The fake plugins read the synthetic data directly from `src/modules/demo/`, and the demo's selectors offer a short fixed list from it. The fake data engine below comes when the real pickers run in demo mode.
+- **First version: a small fake data engine.** The fake plugins read the synthetic data directly from `src/modules/demo/`, and the demo's drop-down selectors offer a short fixed list from it. `DemoDataProvider` answers only what the org unit tree asks for (`organisationUnits/{id}`, `answerOrgUnitRequest`); the full data engine below comes when the real pickers run in demo mode.
 - **Data engine**: demo mode wraps the workspace in app-runtime's `CustomDataProvider`. Each resource the app and the pickers ask for is a function over the synthetic data:
     - for the pickers: `dataItems`, `indicators`, `indicatorGroups`, `dataElements`, `dataElementGroups`, `organisationUnits`, `organisationUnitLevels`, `organisationUnitGroups`, `dimensions`, `configuration/dataOutputPeriodTypes`, `userSettings`, and the `systemSettings/*` keys `PeriodDimension` reads;
     - for the app: `me`, `apps`, `visualizations`, `maps`, and `analytics` for any view that asks.
@@ -116,7 +124,12 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - The demo providers wrap the workspace inside the app shell. The shell and its header stay real (the user is logged in), but everything below them talks to the fake engine.
 - **A banner stays visible** while it's on ("Demo data. Nothing here comes from the server."), so a screenshot can't pass for real data.
 - **A preset workspace** loads with the flag: a map, a chart, a pivot table, and a period, an org unit and a data selector, already linked. "Reset the demo" in the Workspace tab brings it back, so a demo never starts with a minute of dragging views around.
-    - As built (`components/demo/demo-preset.ts`): the views are added as clicks add them, so they take the same places and sizes. The chart (ANC visits by month) and the map (malaria by district) sit side by side, the table (Penta 3 by chiefdom and quarter) goes under the chart, and the selectors form a bar across the top. A district clicked on the map filters the chart and the table; a month clicked on the chart sets the map's period and the table's quarter. A data item picked in the data selector shows on the map and in the table, and narrows the chart when it's one of the chart's two.
+    - As built (`components/demo/demo-preset.ts`): the views are placed in the order the story reads, then sized evenly once the tools strip is folded. The selectors in a column on the left (the period as a timeline at the top, the org unit tree taking the rest, the data drop-down at the bottom), then the map (malaria incidence by district), the chart (malaria incidence by district and month) on the right, and the table (malaria vaccine 3 coverage by chiefdom over the last 4 quarters: one data item, so a pick in the data selector replaces it) under the chart. The chart and the table name chiefdoms with their district ("South / Juniper"), and so does the map; the incidence map labels each unit with its own name. The preset hides view headers, for less on screen. A district clicked on the map shows its chiefdoms in the chart and the table; a month clicked on the chart sets the map's period. The chart and the table follow the period with _Highlight only_: a month from the timeline or play is marked on the chart's 12 months with a dashed line, and in the table the quarter holding it keeps its colors while the others fade, its header in bold. Neither is cut to one period. A data item picked in the data selector shows on the map, in the table and in the chart.
+- **Two guided tours** (`components/demo/tour/`, with driver.js in the demo's lazy code), from "Take a tour" in the banner, links in the banner's own color:
+    - **The story** (10 steps): where, when and why malaria weighs most, with numbers from the data, ending on what linked views save. A click on South makes every view answer for it; a drill down on the map then shows South's chiefdoms on the districts' classes, all in the top one, before the chart and the table show why. It starts by itself on a browser's first demo visit.
+    - **How it works** (13 steps): the view headers (shown again early, hidden again at the end), the views and the tools, what a channel is, the org unit channel followed from the tree and the map to the chart and the table, the period channel in passing, play on the timeline, and Reset.
+    - Both start from the preset (they reset the demo first). At the steps that ask for a click on South, or for a drill down into it, the user's own click moves the tour on, or Next does it for them: a ring shows where the tour clicks before the click lands. A step's highlighted view takes the clicks its text invites (a pick in the org unit selector, a month on the chart, the map's drill menu), except Reset. A step that shows a tools tab grows the tools strip to fit it, up to 60% of the workspace. Every scroll stays as it was, so the workspace never slides under its headers. Closing or ending a tour clears its selection and folds the tools strip again.
+- **A basemap** under the data (`modules/demo/basemap.ts`, `components/demo/fake-basemap.tsx`): Demoland is an island, with a continent (Ostland) across a strait to the north and east, seas, rivers, roads and towns, in the pale colors of a light basemap. The island's own land is drawn too, so a map of some units only still shows the rest of the island.
     - The workspace takes a preset as a prop (`WorkspacePreset`): it loads into an empty grid once the grid has its size, and the Workspace tab offers the reset under the preset's name. Resetting closes every view, which clears the channels too.
 - **The demo code loads on demand**, with a dynamic `import()` only when the flag is set, so the normal app doesn't download it.
 - **Nothing is saved**: demo workspaces never go to the dataStore. At most the browser's own storage keeps the current one.
@@ -172,5 +185,10 @@ Small and deterministic, so the same click gives the same numbers in every demo 
 - **Opening an item**: in demo mode a view's settings tab has a "Saved item" select over the demo's items; the real app gets `OpenFileDialog` in plan step 4.
 - **Demo mode comes before the real plugins**, since the first demos show the vision ([§10](#10-where-it-fits-in-the-plan)).
 - **The first fakes read synthetic data directly**, without a fake data engine ([§6](#6-running-without-a-server)).
+- **The data tells one public health story** (2026-11-06), checked against published figures, so the views make sense together and the tour can tell it ([§5](#5-synthetic-data)).
+- **Colors only from what DV and Maps draw** (2026-11-06), so the real plugins will look like the demo, and an item keeps its colors across views through its legend set.
+- **Guided tours with driver.js** (2026-11-06): MIT, no dependencies, about 9 KB gzipped, framework-free so it works on dockview's views. intro.js and Shepherd are AGPL-3.0; react-joyride is heavier; @reactour had no release since May 2025. Two tours: one that sells (the story), one that explains (how it works).
+- **Demoland is an island** (2026-11-06), with a made-up continent across a strait, so the basemap can show it whole.
+- **Org units named with their hierarchy in the table**, through DV's `showHierarchy`, but without the country (2026-11-06): "South / Juniper". DV starts from the top ("Sierra Leone / Kenema / Gorama Mende"); the demo's one made-up country adds nothing there.
 
 **Open**: none.

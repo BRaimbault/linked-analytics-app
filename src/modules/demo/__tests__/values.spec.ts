@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 const { anc1, anc4, malaria, actStock, populationUnder1 } = DATA_ITEM_IDS
 const period = (id: string) => getPeriod(id) as DemoPeriod
 const KESTREL = 'DemoChW0101'
+const JUNIPER = 'DemoChS0103'
 
 describe('demo values', () => {
     it('draws noise that is always the same for the same text, and differs at the end', () => {
@@ -35,12 +36,18 @@ describe('demo values', () => {
         expect(getLeafValue(anc4, KESTREL, period('202503'))).toBeLessThan(
             getLeafValue(anc1, KESTREL, period('202503'))
         )
-        /* Malaria peaks with the rains, and the stock runs lowest then */
-        expect(
-            getLeafValue(malaria, KESTREL, period('202508'))
-        ).toBeGreaterThan(2 * getLeafValue(malaria, KESTREL, period('202502')))
-        expect(getLeafValue(actStock, KESTREL, period('202508'))).toBeLessThan(
+        /* Malaria rises with the rains, by a fifth rather than a multiple,
+         * and the stock runs lowest just after */
+        const june = getLeafValue(malaria, KESTREL, period('202506'))
+        const february = getLeafValue(malaria, KESTREL, period('202502'))
+        expect(june).toBeGreaterThan(february)
+        expect(june).toBeLessThan(2 * february)
+        expect(getLeafValue(actStock, KESTREL, period('202507'))).toBeLessThan(
             getLeafValue(actStock, KESTREL, period('202502'))
+        )
+        /* In the south, July's stock covers less than a month of cases */
+        expect(getLeafValue(actStock, JUNIPER, period('202507'))).toBeLessThan(
+            getLeafValue(malaria, JUNIPER, period('202507'))
         )
         /* The population grows a little from one year to the next */
         expect(

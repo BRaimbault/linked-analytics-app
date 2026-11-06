@@ -196,7 +196,7 @@ describe('sizing', () => {
             'Map 1': { w: 50 },
             'Visualization 1': { w: 50 },
         })
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
     })
 
     it(
@@ -211,7 +211,7 @@ describe('sizing', () => {
             cy.get('.dv-edge-group .dv-tab').contains('Workspace').click()
             cy.get('[data-test="even-out-sizes"]').click()
 
-            cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+            cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
             expectLayout({
                 'Period 1': { w: 100 },
                 'Map 1': { w: 50 },

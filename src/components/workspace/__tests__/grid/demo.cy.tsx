@@ -9,19 +9,23 @@ import {
 } from './grid-helpers'
 
 describe('demo plugins', () => {
-    it('starts from the preset: selectors in a bar, a chart over a table beside a map', () => {
+    it('starts from the preset: selectors in a column, a map beside a chart over a table', () => {
         mountWorkspace({ demo: true, preset: true })
 
+        /* The column takes the timeline's preferred width, 340px of 1280;
+         * the map and the charts share the rest */
         expectLayout({
-            'Period 1': { x: 0, y: 0, w: 33.3 },
-            'Org unit 1': { x: 33.3, y: 0, w: 33.3 },
-            'Data 1': { x: 66.7, y: 0, w: 33.3 },
-            'Visualization 1': { x: 0, w: 50 },
-            'Visualization 2': { x: 0, w: 50 },
-            'Map 1': { x: 50, w: 50 },
+            'Period 1': { x: 0, y: 0, w: 26.6 },
+            'Org unit 1': { x: 0, w: 26.6 },
+            'Data 1': { x: 0, w: 26.6 },
+            'Map 1': { x: 26.6, y: 0, w: 36.7 },
+            'Visualization 1': { x: 63.3, y: 0, w: 36.7 },
+            'Visualization 2': { x: 63.3, w: 36.7 },
         })
-        /* The bar keeps its preferred height; the rest is shared evenly */
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 1)
+        /* The timeline and the drop-down fit their content, the demo hiding
+         * view headers; the tree takes the rest of the column */
+        cellSize('Period 1').its('height').should('be.closeTo', 63, 1)
+        cellSize('Data 1').its('height').should('be.closeTo', 61, 1)
         cellSize('Visualization 1')
             .its('height')
             .then((chartHeight) =>

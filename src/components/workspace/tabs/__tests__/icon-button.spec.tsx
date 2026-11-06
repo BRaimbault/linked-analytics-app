@@ -26,5 +26,10 @@ describe('IconButton', () => {
 
         await userEvent.click(screen.getByTestId('maximize'))
         expect(onClick).toHaveBeenCalled()
+        /* A click hovers and focuses, and @dhis2/ui 10.20's Tooltip starts
+         * an open timer for each without clearing the first, which then
+         * outlives its unmount. Let it fire while the page exists; remove
+         * once Tooltip clears a running timer before starting another. */
+        await new Promise((resolve) => setTimeout(resolve, 250))
     })
 })

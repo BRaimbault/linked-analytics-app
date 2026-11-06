@@ -1,0 +1,21 @@
+/* One 19px line, as a DHIS2 field's label */
+.header {
+    display: flex;
+    flex: none;
+    gap: var(--spacers-dp8);
+    justify-content: space-between;
+    font-size: 14px;
+    line-height: 19px;
+}
+
+.label {
+    flex: none;
+    color: var(--colors-grey900);
+}
+
+.value {
+    overflow: hidden;
+    color: var(--colors-grey700);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
