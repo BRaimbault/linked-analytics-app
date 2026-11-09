@@ -142,7 +142,7 @@ describe('the demo tours', () => {
                 })
             }
             if (step === HOW_IT_WORKS.pickStep) {
-                /* "Pick another org unit in it": the tree takes the user's
+                /* "Select another org unit in it": the tree takes the user's
                  * clicks */
                 cy.contains(
                     '.driver-active-element [data-test$="-node-label"] span',

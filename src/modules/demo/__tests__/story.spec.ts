@@ -35,6 +35,7 @@ describe('demo story', () => {
         expect(story.highestChiefdoms.belowTarget).toBe(
             story.highestChiefdoms.count
         )
+        expect(story.highestHasLowestCoverage).toBe(true)
         expect(story.malariaVaccineLowerEverywhere).toBe(true)
     })
 

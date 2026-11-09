@@ -20,9 +20,9 @@ export type TourViews = {
  * and a tools tab open */
 export type TourStep = {
     element?: () => Element
-    /* side: where the popover goes, when it would cover what the step
-     * invites the user to click */
-    popover: Pick<Popover, 'title' | 'description' | 'side'>
+    /* side and align: where the popover goes, when it would cover what the
+     * step invites the user to click or look at */
+    popover: Pick<Popover, 'title' | 'description' | 'side' | 'align'>
     district: boolean
     /* The user's own click on the district moves the tour on */
     advancesOnDistrictClick?: boolean

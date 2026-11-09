@@ -30,7 +30,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('How this workspace works'),
                 description: i18n.t(
-                    'Six views. A map, a chart and a table show data, and three selectors set what they show. They are linked through channels. This tour follows one channel from start to end.'
+                    'This workspace holds six <strong>views</strong>, arranged in a grid. A map, a chart and a table show data, and three <strong>selectors</strong> set the period, org unit and data item they show. Views are linked through <strong>channels</strong>. This tour follows one channel from start to end.'
                 ),
             },
         },
@@ -45,7 +45,7 @@ export const getHowItWorksSteps = ({
                 side: 'right',
                 title: i18n.t('View headers'),
                 description: i18n.t(
-                    'Every view has a header, with its name, its channels, and buttons to maximize or close it. The demo starts without them, for a first look. The Workspace tab shows them again.'
+                    'Each view has a header with its name, its <strong>channel badges</strong>, and buttons to maximize or close it. The demo starts with headers hidden, for a cleaner first look. The <strong>Hide view headers</strong> option in the <strong>Workspace</strong> tab turns them off again.'
                 ),
             },
         },
@@ -54,9 +54,9 @@ export const getHowItWorksSteps = ({
             district: false,
             toolPanelId: ADD_VIEWS_PANEL_ID,
             popover: {
-                title: i18n.t('Views come from here'),
+                title: i18n.t('Adding views'),
                 description: i18n.t(
-                    'Up to 4 charts, maps or tables, and selectors and notes. Click a tile, or drag it where you want it. Every view also gets a settings tab here.'
+                    'The <strong>Add views</strong> tab offers up to 4 maps and visualizations, as well as selectors and text. Click a tile, or drag it to where you want it. Each view also gets its own <strong>settings tab</strong> in this strip.'
                 ),
             },
         },
@@ -64,9 +64,9 @@ export const getHowItWorksSteps = ({
             element: () => panelCell(api, views.orgUnitSelector),
             district: false,
             popover: {
-                title: i18n.t('A channel'),
+                title: i18n.t('Channels'),
                 description: i18n.t(
-                    'A channel carries one value of one dimension to every view in it. This selector sets the org unit of channel {{channel}}, named by its letter and color.',
+                    'A <strong>channel</strong> shares one value, here an org unit, between the views linked to it. When one view sets it, the others follow. Each channel has a letter and a color. This selector sets channel {{channel}}, shown as <strong>Org unit {{channel}}</strong> above the tree.',
                     { channel: orgUnit }
                 ),
             },
@@ -78,9 +78,9 @@ export const getHowItWorksSteps = ({
                 ) as Element,
             district: false,
             popover: {
-                title: i18n.t("Who's in it"),
+                title: i18n.t('Channel badges'),
                 description: i18n.t(
-                    "Each view's badges name its channels. The map's {{channel}} badge has an arrow out, it sets the value when clicked, and an arrow in, it follows the value. The chart and the table have the same badge.",
+                    "A view's <strong>badges</strong> show the channels it belongs to. The map's <strong>{{channel}}→←</strong> badge means it <strong>sets</strong> the value when clicked (→) and <strong>follows</strong> it (←). The chart and the table carry the same badge. Hover over a badge to see its value, or click it to clear the value or leave the channel.",
                     { channel: orgUnit }
                 ),
             },
@@ -94,9 +94,9 @@ export const getHowItWorksSteps = ({
             district: false,
             toolPanelId: getSettingsPanelId(views.map),
             popover: {
-                title: i18n.t('Where that is set'),
+                title: i18n.t('Link settings'),
                 description: i18n.t(
-                    "A view's settings tab has a Links section. For each dimension, it picks the view's channel, whether the view sets the value by clicking, whether it follows it, and how. Highlight only keeps the view's own periods or places, and marks the value."
+                    "Each view's settings tab has a <strong>Links</strong> section, with one row per dimension. <strong>Channel</strong> selects the view's channel. <strong>Set the value by clicking</strong> and <strong>Follow the value</strong> define its role in it. <strong>When it follows</strong> defines what it shows, for example Sub-units, or <strong>Highlight only</strong>, which keeps the view's own periods or org units and marks the value."
                 ),
             },
         },
@@ -107,7 +107,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Set the value'),
                 description: i18n.t(
-                    'Click {{highest}} on the map, and the map sets the value of channel {{channel}}. Or press Next, and the demo clicks it for you.',
+                    '<strong>Click {{highest}} on the map</strong>, and the map sets the value of channel {{channel}}. Or press <strong>Next</strong>, and the demo clicks it for you.',
                     { highest: highest.name, channel: orgUnit }
                 ),
             },
@@ -120,7 +120,7 @@ export const getHowItWorksSteps = ({
                 side: 'right',
                 title: i18n.t('The value travels'),
                 description: i18n.t(
-                    'The tree selects {{highest}}, as it is in channel {{channel}} too. Pick another org unit in it, and the map follows it in turn.',
+                    'The org unit tree is linked to channel {{channel}} too, so it <strong>selects {{highest}}</strong>. Select another org unit in it, and the map follows in turn.',
                     { highest: highest.name, channel: orgUnit }
                 ),
             },
@@ -129,9 +129,9 @@ export const getHowItWorksSteps = ({
             element: () => panelCell(api, views.chart),
             district: true,
             popover: {
-                title: i18n.t('Followers rewrite their own item'),
+                title: i18n.t('Each view follows in its own way'),
                 description: i18n.t(
-                    "The chart follows channel {{channel}}. Its districts become {{highest}}'s chiefdoms, as its saved item asks for the units below the one it shows. The table narrows to them too. The map, which set the value, highlights it rather than redrawing.",
+                    "The chart follows channel {{channel}} with <strong>Sub-units</strong>, set under When it follows. Its districts become <strong>{{highest}}'s chiefdoms</strong>. The table narrows to them too. The map, which set the value, <strong>highlights</strong> it rather than redrawing.",
                     { highest: highest.name, channel: orgUnit }
                 ),
             },
@@ -140,9 +140,9 @@ export const getHowItWorksSteps = ({
             element: () => viewBody(views.chart),
             district: true,
             popover: {
-                title: i18n.t('Another channel'),
+                title: i18n.t('A second channel'),
                 description: i18n.t(
-                    "Channel {{channel}} carries a period the same way. Click a month's name under the chart, and the map shows that month, while the table marks the quarter holding it. A point carries its district too.",
+                    "Channel {{channel}} carries a period in the same way. <strong>Click a month's name</strong> under the chart. The map shows that month, and the table marks the quarter that contains it. Clicking a data point sets <strong>both its month and its org unit</strong>.",
                     { channel: channels.period }
                 ),
             },
@@ -151,9 +151,9 @@ export const getHowItWorksSteps = ({
             element: () => viewBody(views.periodSelector),
             district: true,
             popover: {
-                title: i18n.t('Play'),
+                title: i18n.t('Play through time'),
                 description: i18n.t(
-                    'The timeline sets channel {{channel}} one month at a time. Press play, and the map steps through the months, each step waiting until it has drawn. The chart and the table follow with Highlight only, set in their Links. They keep their own periods, and mark each month.',
+                    'The <strong>timeline</strong> sets channel {{channel}} one month at a time. Press <strong>Play</strong>, and the map steps through the months, each step waiting until the map has loaded. The chart and the table follow with <strong>Highlight only</strong>. They keep their own periods, and mark the current month, or the quarter that contains it.',
                     { channel: channels.period }
                 ),
             },
@@ -167,7 +167,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Start again'),
                 description: i18n.t(
-                    'Reset the demo brings this layout back at any time.'
+                    '<strong>Reset the demo</strong> restores this layout at any time.'
                 ),
             },
         },
@@ -176,7 +176,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Over to you'),
                 description: i18n.t(
-                    'Add a view, link it in its settings, and click. The other tour, The story, shows what the links reveal in this data.'
+                    'Add a view, link it in its settings tab, and click to explore. The other tour, <strong>The story</strong>, shows what these links reveal in the data.'
                 ),
             },
         },

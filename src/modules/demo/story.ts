@@ -31,6 +31,9 @@ export type DemoStory = {
     /* The highest district's chiefdoms, and how many are under the target
      * for both vaccines */
     highestChiefdoms: { count: number; belowTarget: number }
+    /* Whether the highest district has the lowest malaria vaccine coverage
+     * in that quarter: where the burden is highest, coverage is lowest */
+    highestHasLowestCoverage: boolean
     /* Whether the malaria vaccine, given at the same visits, reaches fewer
      * children than Penta 3 in every district */
     malariaVaccineLowerEverywhere: boolean
@@ -120,6 +123,11 @@ export const getDemoStory = (): DemoStory => {
             count: highestChiefdoms.length,
             belowTarget: highestChiefdoms.filter(isBelowForBoth).length,
         },
+        highestHasLowestCoverage: districts.every(
+            ({ id }) =>
+                coverage(DATA_ITEM_IDS.malariaVaccine3, id) >=
+                coverage(DATA_ITEM_IDS.malariaVaccine3, highest.id)
+        ),
         highestChiefdomsAboveCountry: months.every((month) =>
             highestChiefdoms.every(
                 ({ id }) => incidence(id, [month]) > incidence(ROOT_ORG_UNIT_ID)

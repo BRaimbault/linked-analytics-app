@@ -8,6 +8,11 @@ import {
     type TourStep,
 } from './tour-steps'
 
+/* The steps on the map stay in one place, low beside it: clear of the
+ * district and its drill menu, and below the chart and the table that
+ * change with it */
+const BESIDE_MAP = { side: 'right', align: 'end' } as const
+
 /* The story the data hides, told as a question and its answer: where
  * malaria weighs most, when, and why there. One click takes the views from
  * where to why, which is what the app is for, and a drill down shows the
@@ -25,9 +30,9 @@ export const getStorySteps = ({
         {
             district: false,
             popover: {
-                title: i18n.t('A question for Demoland'),
+                title: i18n.t('Malaria in Demoland'),
                 description: i18n.t(
-                    'Malaria is endemic in Demoland, and it weighs far more in some places than in others. Where, when, and why there? Three linked views answer it in a few steps. The data is made up, but follows a pattern seen where malaria is endemic.'
+                    'Malaria is endemic in Demoland, and its burden varies widely between districts. <strong>Where is it highest, when, and why there?</strong> Three <strong>linked views</strong>, a map, a chart and a table, answer it in a few steps. A click in one updates the others. The data is synthetic, but follows a pattern typical of endemic settings.'
                 ),
             },
         },
@@ -37,7 +42,7 @@ export const getStorySteps = ({
             popover: {
                 title: i18n.t('Where'),
                 description: i18n.t(
-                    'Confirmed malaria cases per 1,000 people a year. {{highest}} has {{highestValue}}, {{ratio}} times {{lowest}} ({{lowestValue}}). A rate compares places of different sizes, where case counts would mostly show where people live.',
+                    'Malaria incidence, confirmed cases per 1,000 population per year. <strong>{{highest}}</strong> has {{highestValue}}, <strong>{{ratio}} times</strong> {{lowest}} ({{lowestValue}}). Incidence compares districts of different population sizes, where case counts would mostly reflect population.',
                     {
                         highest: highest.name,
                         highestValue: format(highest.incidence),
@@ -54,7 +59,7 @@ export const getStorySteps = ({
             popover: {
                 title: i18n.t('When'),
                 description: i18n.t(
-                    'The same rate, month by month, a line per district. Malaria rises with the rains from May, but {{highest}} has the highest rate every month. Its problem is not the season.',
+                    'The same incidence by month, one line per district. Incidence rises with the rainy season from May, but <strong>{{highest}} has the highest rate every month</strong>. Seasonality alone does not explain its burden.',
                     { highest: highest.name }
                 ),
             },
@@ -64,9 +69,10 @@ export const getStorySteps = ({
             district: false,
             advancesOnDistrictClick: true,
             popover: {
-                title: i18n.t('Ask the map'),
+                ...BESIDE_MAP,
+                title: i18n.t('Select a district'),
                 description: i18n.t(
-                    'Click {{highest}} on the map, and every view answers for {{highest}}. Or press Next, and the demo clicks it for you.',
+                    '<strong>Click {{highest}} on the map</strong>, and the other views update to {{highest}}. Or press <strong>Next</strong>, and the demo clicks it for you.',
                     { highest: highest.name }
                 ),
             },
@@ -75,9 +81,10 @@ export const getStorySteps = ({
             element: () => panelCell(api, views.map),
             district: true,
             popover: {
+                ...BESIDE_MAP,
                 title: i18n.t('One click'),
                 description: i18n.t(
-                    'The map keeps every district and highlights {{highest}}, the value it set. Every other view now shows {{highest}}, with no filter to set in each.',
+                    "The map keeps every district in view and highlights {{highest}}. <strong>The chart and the table now show {{highest}}'s chiefdoms</strong>, and the org unit tree selects {{highest}}, without setting a filter in each view.",
                     { highest: highest.name }
                 ),
             },
@@ -87,11 +94,10 @@ export const getStorySteps = ({
             district: true,
             advancesOnMapDrill: true,
             popover: {
-                /* Beside the map: the drill menu opens at the pointer */
-                side: 'right',
-                title: i18n.t('Look closer'),
+                ...BESIDE_MAP,
+                title: i18n.t('Drill down'),
                 description: i18n.t(
-                    'Right-click {{highest}} on the map, then Drill down into {{highest}}. Or press Next, and the demo drills down for you.',
+                    '<strong>Right-click {{highest}}</strong> on the map, then choose <strong>Drill down into {{highest}}</strong>. Or press <strong>Next</strong>, and the demo drills down for you.',
                     { highest: highest.name }
                 ),
             },
@@ -101,9 +107,10 @@ export const getStorySteps = ({
             district: true,
             mapDrilled: true,
             popover: {
-                title: i18n.t('The whole district'),
+                ...BESIDE_MAP,
+                title: i18n.t('District-wide'),
                 description: i18n.t(
-                    "The map now shows {{highest}}'s {{count}} chiefdoms, on the classes it had for the districts. Every one is in the top class, as {{highest}} is.",
+                    "The map now shows {{highest}}'s <strong>{{count}} chiefdoms</strong>, with the legend classes used for the districts. <strong>All of them fall in the highest class</strong>, as {{highest}} does.",
                     {
                         highest: highest.name,
                         count: story.highestChiefdoms.count,
@@ -116,9 +123,9 @@ export const getStorySteps = ({
             district: true,
             mapDrilled: true,
             popover: {
-                title: i18n.t('Not one hotspot'),
+                title: i18n.t('Not a single hotspot'),
                 description: i18n.t(
-                    "The chart now shows {{highest}}'s chiefdoms, month by month. Every one of them stays above {{rate}}, the country's rate for the year, so the cause is shared across the district.",
+                    "The chart has shown {{highest}}'s chiefdoms since the click. <strong>Each stays above {{rate}} every month</strong>, the national rate for the year. This points to a district-wide driver rather than a localized outbreak.",
                     {
                         highest: highest.name,
                         rate: format(story.country.incidence),
@@ -133,7 +140,7 @@ export const getStorySteps = ({
             popover: {
                 title: i18n.t('Why'),
                 description: i18n.t(
-                    "The table narrows to {{highest}}'s chiefdoms. In {{quarter}}, none of its {{count}} reaches the {{target}}% target for the malaria vaccine, nor for Penta 3, given at the same routine visits. Where malaria weighs most, prevention reaches the fewest children. Pick Penta 3 in the data selector after the tour, and the table shows it.",
+                    "The table has narrowed to {{highest}}'s chiefdoms too. In {{quarter}}, none of its {{count}} reaches the {{target}}% coverage target for the third dose of the malaria vaccine. <strong>Where the malaria burden is highest, vaccine coverage is lowest.</strong>",
                     {
                         highest: highest.name,
                         quarter: story.coverageQuarter,
@@ -148,7 +155,8 @@ export const getStorySteps = ({
             popover: {
                 title: i18n.t('From where to why, in two clicks'),
                 description: i18n.t(
-                    'Without linked views, this takes three dashboards, the same filter set in each, and care that they all show the same place and period. Here every view stays on the same question. The other tour, How it works, shows how the views are linked.'
+                    "A dashboard filter changes every item the same way. Here the views follow the analyst's questions. <strong>One click moved every view to {{highest}}</strong>, and each kept its role, from context to trend to coverage. With channels, <strong>two districts or two periods can be compared side by side</strong>, which one dashboard filter cannot do. The other tour, <strong>How it works</strong>, explains the links.",
+                    { highest: highest.name }
                 ),
             },
         },

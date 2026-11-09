@@ -45,8 +45,11 @@ const HOW_IT_WORKS = { count: 13, clickStep: 6 }
 const config = () => fake.config as Config
 const steps = () => config().steps as DriveStep[]
 const hookOpts = (index: number) => ({ index }) as HookOpts
+/* The text as read, without the tags that put key words in bold */
 const descriptions = () =>
-    steps().map(({ popover }) => popover?.description ?? '')
+    steps().map(({ popover }) =>
+        (popover?.description ?? '').replaceAll(/<\/?strong>/g, '')
+    )
 
 const next = async (index: number) => {
     config().onNextClick?.(undefined, steps()[index], hookOpts(index))
@@ -195,7 +198,7 @@ describe('the demo tours', () => {
             `${story.highest.name}'s ${story.highestChiefdoms.count} chiefdoms`
         )
         expect(descriptions()[STORY.drillStep + 2]).toContain(
-            `stays above ${Math.round(story.country.incidence)}, the country's rate`
+            `stays above ${Math.round(story.country.incidence)} every month, the national rate`
         )
         expect(descriptions()[STORY.drillStep + 3]).toContain(
             `In ${story.coverageQuarter}, none of its ${story.highestChiefdoms.count}`
@@ -316,19 +319,27 @@ describe('the demo tours', () => {
     })
 
     describe('the drill down', () => {
-        /* The map shows the district's chiefdoms once drilled down */
+        /* The map shows the district's chiefdoms once drilled down: two
+         * clicks shown in turn, the right-click and the menu's */
         const expectMapDrilled = (drilled: boolean) =>
-            waitFor(() =>
-                expect(
-                    screen
-                        .getAllByTestId('fake-feature')
-                        .some(({ textContent }) =>
-                            textContent?.startsWith(`${story.highest.name} / `)
-                        )
-                ).toBe(drilled)
+            waitFor(
+                () =>
+                    expect(
+                        screen
+                            .getAllByTestId('fake-feature')
+                            .some(({ textContent }) =>
+                                textContent?.startsWith(
+                                    `${story.highest.name} / `
+                                )
+                            )
+                    ).toBe(drilled),
+                { timeout: 3000 }
             )
 
-        it('drills the map down into the district where it shows it, and undoes it on Back and when closed', async () => {
+        const findDrillMenu = () =>
+            screen.findByTestId('drill-menu', undefined, { timeout: 2000 })
+
+        it('drills the map down into the district through its menu, and undoes it on Back and when closed', async () => {
             await startStory()
             await nextUpTo(STORY.drillStep)
             await expectDistrict(story.highest.name)
@@ -337,7 +348,11 @@ describe('the demo tours', () => {
             expect(
                 document.querySelector('[data-test="tour-click-ring"]')
             ).not.toBeNull()
+            expect(await findDrillMenu()).toHaveTextContent(
+                `Drill down into ${story.highest.name}`
+            )
             await expectMapDrilled(true)
+            expect(screen.queryByTestId('drill-menu')).toBeNull()
             /* The drill counts as the map's click: the district stays */
             expect(orgUnitSelector()).toHaveTextContent(story.highest.name)
 
@@ -386,6 +401,44 @@ describe('the demo tours', () => {
 
             await expectMapDrilled(true)
             await expectDistrict(story.highest.name)
+        })
+
+        it('closes the menu it opened when going back before the drill lands', async () => {
+            await startStory()
+            await nextUpTo(STORY.drillStep)
+            await expectDistrict(story.highest.name)
+            await next(STORY.drillStep)
+            await findDrillMenu()
+
+            await back(STORY.drillStep + 1)
+
+            await waitFor(() =>
+                expect(screen.queryByTestId('drill-menu')).toBeNull()
+            )
+            await new Promise((resolve) => setTimeout(resolve, 900))
+            await expectMapDrilled(false)
+            expect(fake.destroy).not.toHaveBeenCalled()
+        })
+
+        it('drills down all the same when the map opens no menu', async () => {
+            await startStory()
+            await nextUpTo(STORY.drillStep)
+            await expectDistrict(story.highest.name)
+            const dispatch = EventTarget.prototype.dispatchEvent
+            const rightClicks = vi
+                .spyOn(EventTarget.prototype, 'dispatchEvent')
+                .mockImplementation(function (this: EventTarget, event: Event) {
+                    return (
+                        event.type === 'contextmenu' ||
+                        dispatch.call(this, event)
+                    )
+                })
+
+            await next(STORY.drillStep)
+
+            await expectMapDrilled(true)
+            expect(screen.queryByTestId('drill-menu')).toBeNull()
+            rightClicks.mockRestore()
         })
     })
 

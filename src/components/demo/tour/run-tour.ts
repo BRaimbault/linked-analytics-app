@@ -15,8 +15,8 @@ import type { StepContext, TourKind, TourStep, TourViews } from './tour-steps'
 
 export type DemoTourHandle = { close: () => void; closeQuietly: () => void }
 
-/* What the tour clicks for the user: the district, its drill, or "Hide
- * view headers" */
+/* What the tour clicks for the user: the district, its drill (the
+ * right-click, then the menu item), or "Hide view headers" */
 type PendingKind = 'district' | 'drill' | 'headers'
 
 /* What a step needs done on the map: a drill sets the district too */
@@ -63,6 +63,36 @@ const findDistrict = (mapId: string, name: string): Element =>
             `[data-view-id="${mapId}"] [data-test="fake-feature"]`
         ),
     ].find((path) => path.textContent?.startsWith(`${name}:`)) as Element
+
+const DRILL_MENU = '[data-test="drill-menu"] [data-test="dhis2-uicore-menu"]'
+
+/* The drill menu's popover places itself a render after it opens */
+const MENU_DELAY = 100
+
+/* A DHIS2 menu item takes clicks on its link, not its list item */
+const findDrillDownItem = (): HTMLElement | null =>
+    document.querySelector(
+        `${DRILL_MENU} [data-test="drill-down"] [role="menuitem"]`
+    )
+
+/* Escape sent to the menu itself: bubbling up, it would close the tour */
+const closeDrillMenu = () =>
+    document
+        .querySelector(DRILL_MENU)
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+/* A right-click at the shape's centre, where the map opens its menu */
+const rightClick = (element: Element) => {
+    const { left, top, width, height } = element.getBoundingClientRect()
+    element.dispatchEvent(
+        new MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: left + width / 2,
+            clientY: top + height / 2,
+        })
+    )
+}
 
 type TourContext = {
     kind: TourKind
@@ -133,7 +163,21 @@ export const startDemoTour = ({
     const cancelPending = () => {
         if (pending !== null) {
             clearTimeout(pending.timer)
+            if (pending.kind === 'drill') {
+                closeDrillMenu()
+            }
             pending = null
+        }
+    }
+
+    const runLater = (kind: PendingKind, delay: number, click: () => void) => {
+        pending = {
+            kind,
+            click,
+            timer: setTimeout(() => {
+                pending = null
+                click()
+            }, delay),
         }
     }
 
@@ -144,14 +188,7 @@ export const startDemoTour = ({
         click: () => void
     ) => {
         showClickAt(element)
-        pending = {
-            kind,
-            click,
-            timer: setTimeout(() => {
-                pending = null
-                click()
-            }, CLICK_DELAY),
-        }
+        runLater(kind, CLICK_DELAY, click)
     }
 
     /* Found again when the click lands: the map may have drawn new shapes
@@ -166,12 +203,21 @@ export const startDemoTour = ({
                 )
         )
 
-    /* As the drill menu's "Drill down into" would, which a right-click on
-     * the district opens */
+    /* As the user would: a right-click on the district opens the map's
+     * drill menu, then "Drill down into" */
     const drillMap = () =>
-        clickLater('drill', findDistrict(views.map, story.highest.name), () =>
-            mapDrill.drillInto(story.highest.id)
-        )
+        clickLater('drill', findDistrict(views.map, story.highest.name), () => {
+            rightClick(findDistrict(views.map, story.highest.name))
+            runLater('drill', MENU_DELAY, () => {
+                const item = findDrillDownItem()
+                if (item) {
+                    clickLater('drill', item, () => item.click())
+                } else {
+                    /* The map drew new shapes meanwhile, and opened no menu */
+                    mapDrill.drillInto(story.highest.id)
+                }
+            })
+        })
 
     /* A step that shows its tools tab ticks or unticks "Hide view headers"
      * in front of the user; elsewhere, as when going back, it just sets it */
