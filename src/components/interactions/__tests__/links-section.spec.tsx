@@ -3,13 +3,17 @@ import { LinksSection } from '@components/interactions/links-section'
 import {
     NO_PLUGIN_SOURCES,
     PluginSourcesProvider,
+    type PluginSources,
 } from '@components/plugins/plugin-sources'
 import { renderWithStore } from '@components/workspace/__tests__/render-with-store'
+import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
+import type { PluginObject } from '@modules/plugins/contract'
 import type { ViewType } from '@modules/workspace/view-types'
 import { selectChannels } from '@store/interactions-slice'
 import { viewAdded } from '@store/workspace-slice'
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { DockviewApi } from 'dockview-react'
 import { describe, expect, it } from 'vitest'
 
 const VIEWS: { id: string; type: ViewType; number: number }[] = [
@@ -24,13 +28,25 @@ const VIEWS: { id: string; type: ViewType; number: number }[] = [
 const renderLinks = (
     viewId: string,
     type: ViewType,
-    sources = NO_PLUGIN_SOURCES
+    {
+        sources = NO_PLUGIN_SOURCES,
+        object,
+    }: { sources?: PluginSources; object?: PluginObject } = {}
 ) => {
+    /* A workspace whose view shows the saved item given */
+    const api = {
+        getPanel: () =>
+            object && {
+                params: { object },
+                api: { onDidParametersChange: () => ({ dispose: () => {} }) },
+            },
+    } as unknown as DockviewApi
     const view = renderWithStore(
         <PluginSourcesProvider sources={sources}>
             <LinksSection viewId={viewId} type={type} />
             <ChannelBadges viewId={viewId} />
-        </PluginSourcesProvider>
+        </PluginSourcesProvider>,
+        { api }
     )
     act(() => {
         for (const added of VIEWS) {
@@ -44,6 +60,20 @@ const renderLinks = (
 }
 
 const row = (dimension: string) => screen.getByTestId(`links-${dimension}`)
+
+const HIGHLIGHTING: PluginSources = {
+    ...NO_PLUGIN_SOURCES,
+    canHighlight: { visualization: true, map: true },
+}
+
+/* A chart with periods and org units on its axes, and a map whose period
+ * is a filter */
+const incidenceByDistrict = DEMO_VISUALIZATIONS.find(
+    ({ id }) => id === 'DemoVisInc1'
+) as PluginObject
+const incidenceMap = DEMO_MAPS.find(
+    ({ id }) => id === 'DemoMapInc1'
+) as PluginObject
 
 const pick = async (testId: string, option: string) => {
     await userEvent.click(
@@ -142,8 +172,8 @@ describe('LinksSection', () => {
 
     it('follows with Highlight only, when the plugin can highlight, and back', async () => {
         const { channels } = renderLinks('vis-1', 'visualization', {
-            ...NO_PLUGIN_SOURCES,
-            canHighlight: { visualization: true },
+            sources: HIGHLIGHTING,
+            object: incidenceByDistrict,
         })
         const memberOf = (index: number) => channels()[index].members['vis-1']
 
@@ -161,6 +191,19 @@ describe('LinksSection', () => {
         expect(memberOf(0)).toMatchObject({ highlightOnly: false, depth: 2 })
         /* Data items are replaced: nothing to choose */
         expect(within(row('ou')).queryByText('As picked')).toBeNull()
+    })
+
+    it('offers Highlight only where the saved item has the dimension on an axis: not a map’s period, a filter', () => {
+        renderLinks('map-1', 'map', {
+            sources: HIGHLIGHTING,
+            object: incidenceMap,
+        })
+
+        expect(
+            within(row('ou')).getByTestId('links-ou-follow')
+        ).toBeInTheDocument()
+        /* As picked alone: nothing to choose */
+        expect(screen.queryByTestId('links-pe-follow')).toBeNull()
     })
 
     it('moves a view to a new channel, or to none', async () => {

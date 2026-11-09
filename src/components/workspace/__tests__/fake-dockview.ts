@@ -89,6 +89,7 @@ type EventName =
     | 'onDidDrop'
     | 'onWillMutateLayout'
     | 'onDidMutateLayout'
+    | 'onDidLayoutChange'
 
 const toSerializedNode = (node: GridNode): SerializedGridNode =>
     node.type === 'leaf'
@@ -385,6 +386,7 @@ export const createFakeDockview = () => {
         onDidDrop: on('onDidDrop'),
         onWillMutateLayout: on('onWillMutateLayout'),
         onDidMutateLayout: on('onDidMutateLayout'),
+        onDidLayoutChange: on('onDidLayoutChange'),
     }
 
     /* A view already laid out in its own grid cell, without firing events */

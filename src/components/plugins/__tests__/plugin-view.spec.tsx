@@ -76,7 +76,7 @@ describe('PluginView', () => {
         expect(screen.getByTestId('renderer')).toHaveTextContent('500×300')
     })
 
-    it('keeps the plugin as it is for the same size, and drops it without one', () => {
+    it('keeps the plugin as it is for the same size, and while its view is hidden', () => {
         render(
             <PluginSourcesProvider sources={sources}>
                 <PluginView type="visualization" object={object} />
@@ -88,9 +88,11 @@ describe('PluginView', () => {
         resizeTo(400, 300)
         expect(Renderer).toHaveBeenCalledTimes(renders)
 
-        /* A hidden view has no size */
+        /* Another view maximized: this one has no size, and its plugin
+         * stays, at its last size, with its own state */
         resizeTo(0, 0)
-        expect(screen.queryByTestId('renderer')).toBeNull()
+        expect(screen.getByTestId('renderer')).toHaveTextContent('400×300')
+        expect(Renderer).toHaveBeenCalledTimes(renders)
     })
 
     it('passes clicks on, a right-click’s position turned into the page’s', () => {

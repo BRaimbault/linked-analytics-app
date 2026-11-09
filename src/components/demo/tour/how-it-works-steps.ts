@@ -41,6 +41,8 @@ export const getHowItWorksSteps = ({
             toolPanelId: WORKSPACE_PANEL_ID,
             showsViewHeaders: true,
             popover: {
+                /* Beside it: the setting below comes back with the headers */
+                side: 'right',
                 title: i18n.t('View headers'),
                 description: i18n.t(
                     'Every view has a header, with its name, its channels, and buttons to maximize or close it. The demo starts without them, for a first look. The Workspace tab shows them again.'
@@ -94,7 +96,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Where that is set'),
                 description: i18n.t(
-                    "A view's settings tab has a Links section. For each dimension, it picks the view's channel, whether the view sets the value by clicking, and whether it follows it."
+                    "A view's settings tab has a Links section. For each dimension, it picks the view's channel, whether the view sets the value by clicking, whether it follows it, and how. Highlight only keeps the view's own periods or places, and marks the value."
                 ),
             },
         },
@@ -118,7 +120,7 @@ export const getHowItWorksSteps = ({
                 side: 'right',
                 title: i18n.t('The value travels'),
                 description: i18n.t(
-                    'The tree shows {{highest}}, as it is in channel {{channel}} too, and opens its branch. Pick another org unit in it, and the map follows it in turn.',
+                    'The tree selects {{highest}}, as it is in channel {{channel}} too. Pick another org unit in it, and the map follows it in turn.',
                     { highest: highest.name, channel: orgUnit }
                 ),
             },
@@ -140,7 +142,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Another channel'),
                 description: i18n.t(
-                    'Channel {{channel}} carries a period the same way. Click a month on the chart, and the map shows that month, while the table marks the quarter holding it.',
+                    "Channel {{channel}} carries a period the same way. Click a month's name under the chart, and the map shows that month, while the table marks the quarter holding it. A point carries its district too.",
                     { channel: channels.period }
                 ),
             },

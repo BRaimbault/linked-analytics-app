@@ -1,5 +1,8 @@
 import { addView } from '@components/workspace/controller/add-view'
-import { fitViewSizes } from '@components/workspace/controller/grid-layout'
+import {
+    fitViewSizes,
+    withoutSizing,
+} from '@components/workspace/controller/grid-layout'
 import {
     buildTree,
     column,
@@ -454,5 +457,72 @@ describe('sizes for view headers', () => {
         /* Any layout change, as leaving maximize */
         fake.mutate(() => fake.setMaximized(false))
         expect(bar.group.api.setSize).toHaveBeenLastCalledWith({ height: 61 })
+    })
+
+    describe('when the grid changes size', () => {
+        /* The grid 100px shorter, spread by dockview over both lines */
+        const shrink = (
+            fake: ReturnType<typeof selectorOverMap>['fake'],
+            ids: { bar: string; map: string }
+        ) =>
+            fake.setLayout(
+                buildTree(
+                    1200,
+                    700,
+                    column(1, view(ids.bar, 84), view(ids.map, 616))
+                )
+            )
+
+        it('keeps a bar of selectors at its length, the map taking the change', () => {
+            const { fake, bar, map } = selectorOverMap(96)
+            fake.emit('onDidLayoutChange', {})
+
+            shrink(fake, { bar: bar.group.id, map: map.group.id })
+            fake.emit('onDidLayoutChange', {})
+
+            expect(bar.group.api.setSize).toHaveBeenLastCalledWith({
+                height: 96,
+            })
+        })
+
+        it('leaves a line the user resized, and a change of views, as they are', () => {
+            const { fake, bar, map } = selectorOverMap(96)
+            fake.emit('onDidLayoutChange', {})
+
+            /* A sash dragged: the grid keeps its size */
+            fake.setLayout(
+                buildTree(
+                    1200,
+                    800,
+                    column(1, view(bar.group.id, 150), view(map.group.id, 650))
+                )
+            )
+            fake.emit('onDidLayoutChange', {})
+            /* Another view in the grid: sized as a layout change */
+            fake.setLayout(
+                buildTree(
+                    1200,
+                    700,
+                    column(1, view(bar.group.id, 84), view('other', 616))
+                )
+            )
+            fake.emit('onDidLayoutChange', {})
+
+            expect(bar.group.api.setSize).not.toHaveBeenCalled()
+        })
+
+        it('waits while sizing is paused, and while a view is maximized', () => {
+            const { fake, bar, map } = selectorOverMap(96)
+            fake.emit('onDidLayoutChange', {})
+
+            withoutSizing(fake.asApi, () => {
+                shrink(fake, { bar: bar.group.id, map: map.group.id })
+                fake.emit('onDidLayoutChange', {})
+            })
+            fake.setMaximized(true)
+            fake.emit('onDidLayoutChange', {})
+
+            expect(bar.group.api.setSize).not.toHaveBeenCalled()
+        })
     })
 })

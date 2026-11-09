@@ -82,7 +82,7 @@ export const OrgUnitTree: FC<{
                         setExpanded([...expanded, path])
                     }}
                     handleCollapse={({ path }: { path: string }) => {
-                        autoExpand.stop()
+                        autoExpand.onUserClose()
                         setExpanded(expanded.filter((open) => open !== path))
                     }}
                     onChildrenLoaded={autoExpand.onChildrenLoaded}

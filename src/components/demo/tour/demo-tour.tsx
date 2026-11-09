@@ -1,5 +1,9 @@
 import { ADD_VIEWS_PANEL_ID } from '@components/workspace/controller/panels'
-import { resetToPreset } from '@components/workspace/controller/preset'
+import {
+    hasChangedSincePreset,
+    markPresetLoaded,
+    resetToPreset,
+} from '@components/workspace/controller/preset'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import {
     applyPresetSettings,
@@ -22,8 +26,9 @@ import {
 } from '@store/workspace-settings-slice'
 import { selectViews, type WorkspaceView } from '@store/workspace-slice'
 import type { DockviewApi } from 'dockview-react'
-import { useEffect, useRef, useState, type FC } from 'react'
+import { useCallback, useEffect, useRef, useState, type FC } from 'react'
 import { afterLayout, startDemoTour, type DemoTourHandle } from './run-tour'
+import { TourResetConfirm } from './tour-reset-confirm'
 import type { TourViews } from './tour-steps'
 import type { TourRequest } from './use-tour-request'
 
@@ -56,6 +61,17 @@ export const DemoTour: FC<{
         api: DockviewApi
         request: TourRequest
     } | null>(null)
+    const [confirming, setConfirming] = useState<TourRequest | null>(null)
+
+    const startFromPreset = useCallback(
+        (workspaceApi: DockviewApi, tourRequest: TourRequest) => {
+            applyPresetSettings(dispatch, preset)
+            resetToPreset(workspaceApi, preset.load, dispatch)
+            markPresetLoaded(workspaceApi, store.getState())
+            setWaiting({ api: workspaceApi, request: tourRequest })
+        },
+        [dispatch, preset, store]
+    )
 
     /* A child's effects run before the workspace's own, which connect
      * dockview to the store and load the preset: wait for its tools, and
@@ -69,11 +85,14 @@ export const DemoTour: FC<{
             return
         }
         handledId.current = request.id
+        /* A running tour leaves the demo as it found it */
         tourRef.current?.close()
-        resetToPreset(api, preset.load, dispatch)
-        applyPresetSettings(dispatch, preset)
-        setWaiting({ api, request })
-    }, [api, preset, request, views, dispatch])
+        if (hasChangedSincePreset(api, store.getState())) {
+            setConfirming(request)
+            return
+        }
+        startFromPreset(api, request)
+    }, [api, request, views, store, startFromPreset])
 
     useEffect(() => {
         const tourViews = findTourViews(views)
@@ -151,5 +170,13 @@ export const DemoTour: FC<{
 
     useEffect(() => () => tourRef.current?.closeQuietly(), [])
 
-    return null
+    return confirming && api ? (
+        <TourResetConfirm
+            onStart={() => {
+                setConfirming(null)
+                startFromPreset(api, confirming)
+            }}
+            onCancel={() => setConfirming(null)}
+        />
+    ) : null
 }

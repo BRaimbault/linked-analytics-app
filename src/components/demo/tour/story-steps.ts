@@ -118,8 +118,11 @@ export const getStorySteps = ({
             popover: {
                 title: i18n.t('Not one hotspot'),
                 description: i18n.t(
-                    "The chart now shows {{highest}}'s chiefdoms, month by month. Every one of them is above the country's rate, so the cause is shared across the district.",
-                    { highest: highest.name }
+                    "The chart now shows {{highest}}'s chiefdoms, month by month. Every one of them stays above {{rate}}, the country's rate for the year, so the cause is shared across the district.",
+                    {
+                        highest: highest.name,
+                        rate: format(story.country.incidence),
+                    }
                 ),
             },
         },
@@ -143,7 +146,7 @@ export const getStorySteps = ({
         {
             district: false,
             popover: {
-                title: i18n.t('From where to why, in one click'),
+                title: i18n.t('From where to why, in two clicks'),
                 description: i18n.t(
                     'Without linked views, this takes three dashboards, the same filter set in each, and care that they all show the same place and period. Here every view stays on the same question. The other tour, How it works, shows how the views are linked.'
                 ),

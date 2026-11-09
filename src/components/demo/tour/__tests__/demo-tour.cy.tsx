@@ -161,14 +161,16 @@ describe('the demo tours', () => {
                 )
             }
             if (step === HOW_IT_WORKS.monthStep) {
-                /* "Click a month on the chart": the chart takes it */
-                cy.get('.driver-active-element [data-test="fake-point"]')
+                /* "Click a month's name under the chart": it sets the
+                 * period alone, the district stays */
+                cy.get('.driver-active-element [data-test="fake-label"]')
                     .first()
                     .click()
                 periodSelector().should(
                     'not.contain.text',
                     'Each view shows its own'
                 )
+                orgUnitSelector().should('have.text', 'South')
             }
             next()
         }

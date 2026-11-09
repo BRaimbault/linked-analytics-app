@@ -107,6 +107,23 @@ describe('PeriodTimeline', () => {
         expect(value()).toEqual(['202601'])
     })
 
+    it('steps by arrow key from off the track as its buttons do, and leaves other keys to the track', () => {
+        const { value } = renderTimeline()
+        const track = screen.getByTestId('timeline-track')
+
+        fireEvent.keyDown(track, { key: 'ArrowRight' })
+        expect(value()).toEqual(['202601'])
+
+        /* On the track, the range input steps by itself */
+        expect(fireEvent.keyDown(track, { key: 'ArrowRight' })).toBe(true)
+        expect(value()).toEqual(['202601'])
+
+        fireEvent.click(button('Clear'))
+        expect(fireEvent.keyDown(track, { key: 'End' })).toBe(true)
+        fireEvent.keyDown(track, { key: 'ArrowDown' })
+        expect(value()).toEqual(['202603'])
+    })
+
     it('clears its period, pausing play, for each view to show its own again', async () => {
         vi.useFakeTimers()
         const { value } = renderTimeline()
@@ -118,6 +135,8 @@ describe('PeriodTimeline', () => {
         expect(value()).toEqual([])
         expect(shown()).toBe('Each view shows its own')
         expect(screen.queryByTestId('timeline-clear')).toBeNull()
+        /* The button goes with the value, so focus moves to the track */
+        expect(screen.getByTestId('timeline-track')).toHaveFocus()
         await act(() => vi.advanceTimersByTimeAsync(LOAD_TIMEOUT))
         expect(value()).toEqual([])
         vi.useRealTimers()

@@ -293,7 +293,7 @@ Three layers. Most users never go past the first.
 
 - **Header badges**: the channel's color **and letter** (never color alone), with → for send and ← for receive.
     - Hovering or focusing a badge outlines every member of the channel and shows the value ("Org unit: Bo, from Map 1").
-    - The badge menu can clear the value.
+    - The badge menu can clear the value, and take the view out of the channel.
 - **A selector's border** has its channel color, so it reads as a group with the views it drives.
 - **Feedback**: receivers' badges pulse when the value changes. The live region announces the channel and the value, through `getWorkspaceAnnouncement`.
 
@@ -519,7 +519,7 @@ In the browser, with the plugins served locally:
     - the defaults are fixed: the workspace settings of §5.1 and the `settings` part of the state come with link mode. The Links section of §5.4 came first, though ([history.md §5](history.md#5-in-progress-demo-mode-plan-step-3), item 6): a view's channel per dimension, "Set the value by clicking" and "Follow the value"; a selector's channel. A view taken out of a dimension is remembered (`detached`), so the defaults leave it out;
     - a channel's color comes from its letter (a fixed palette), so the state holds no color;
     - the state keeps who set the value (`setBy`): that view isn't rewritten, and highlights the value;
-    - the badge menu that clears a value, the outline of a channel's members on hover, and the pulse and announcement on a change are not built yet.
+    - the badge menu is built: a badge with something to do is a button whose menu offers "Clear the value" while the channel holds one, and "Leave the channel" to a view that is a member (a selector stays with its own channel). Badges show only with view headers, which the demo's preset hides. The outline of a channel's members on hover, and the pulse and announcement on a change, are not built yet.
     - **Next on the fakes: follow options and selector marking** ([§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)): _Highlight only_ first, with the demo's check as the stand-in; then the selector marking. They switch to the `@dhis2/analytics` checks once those exist.
 3. **On the real plugins** (plan step 4): `ou` and `pe` receivers in DV and Maps, DV `onDrill` as the interim `ou` sender, and Maps remounts for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
 4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.

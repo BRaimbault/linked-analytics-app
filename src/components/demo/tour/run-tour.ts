@@ -1,8 +1,6 @@
 import {
     collapseTools,
-    fitToolsToPanel,
     openToolPanel,
-    setToolsHeight,
 } from '@components/workspace/controller/settings'
 import i18n from '@dhis2/d2-i18n'
 import { getDemoStory } from '@modules/demo/story'
@@ -114,21 +112,15 @@ export const startDemoTour = ({
         timer: ReturnType<typeof setTimeout>
         click: () => void
     } | null = null
-    /* The tools strip's height before a step grew it */
-    let toolsHeight: number | null = null
+    /* Whether a step opened the tools strip */
+    let toolsShown = false
 
-    /* Gives the strip its height back, folded as the demo starts */
+    /* Folds the strip again, as the demo starts */
     const foldTools = () => {
-        if (toolsHeight !== null) {
-            setToolsHeight(api, toolsHeight)
-            toolsHeight = null
+        if (toolsShown) {
+            toolsShown = false
             collapseTools(api)
         }
-    }
-
-    const showTools = (panelId: string) => {
-        const before = fitToolsToPanel(api, panelId)
-        toolsHeight ??= before
     }
 
     const isDistrictSelected = () => {
@@ -162,12 +154,17 @@ export const startDemoTour = ({
         }
     }
 
-    const clickDistrict = () => {
-        const district = findDistrict(views.map, story.highest.name)
-        clickLater('district', district, () =>
-            district.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    /* Found again when the click lands: the map may have drawn new shapes
+     * meanwhile (another period), and the old one takes no clicks */
+    const clickDistrict = () =>
+        clickLater(
+            'district',
+            findDistrict(views.map, story.highest.name),
+            () =>
+                findDistrict(views.map, story.highest.name)?.dispatchEvent(
+                    new MouseEvent('click', { bubbles: true })
+                )
         )
-    }
 
     /* As the drill menu's "Drill down into" would, which a right-click on
      * the district opens */
@@ -224,6 +221,7 @@ export const startDemoTour = ({
         }
         if (step.toolPanelId) {
             openToolPanel(api, step.toolPanelId)
+            toolsShown = true
         } else {
             foldTools()
         }
@@ -295,11 +293,6 @@ export const startDemoTour = ({
         afterLayout(() => {
             if (!isOpen) {
                 return
-            }
-            /* Once the tab is in front, its content can be measured, and
-             * its checkbox clicked */
-            if (step.toolPanelId) {
-                showTools(step.toolPanelId)
             }
             if (!pending && step.mapDrilled && !isMapDrilled()) {
                 drillMap()

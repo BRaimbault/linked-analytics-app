@@ -1,5 +1,6 @@
 import {
     fromSerializedGrid,
+    getLeaves,
     VIEW_HEADER_HEIGHT,
     withViewInfo,
     type GridTree,
@@ -9,6 +10,7 @@ import {
     computeEvenSizes,
     computeHeaderChangeSizes,
     computeLayoutSizes,
+    computeViewChangeSizes,
     type SizeRequest,
 } from '@modules/workspace/layout-sizing'
 import type { LayoutChange } from '@modules/workspace/layout-targets'
@@ -132,6 +134,35 @@ export const restoreProportions = (
     applySizeRequests(api, computeLayoutSizes(before, after, change))
 }
 
+/* The layout as it last stood, to size the grid when it changes size */
+const lastLayouts = new WeakMap<DockviewApi, GridTree>()
+
+const viewIdsOf = (tree: GridTree) =>
+    getLeaves(tree.root)
+        .map(({ id }) => id)
+        .join()
+
+/* When the grid itself changes size (the tools strip opens or changes tab,
+ * the window resizes), dockview spreads the change over every line, so
+ * lines of selectors alone would stretch past their content. They keep
+ * their length instead, and the other lines share the change, as after a
+ * layout change. A change of views is left to restoreProportions. */
+export const keepLengthsOnResize = (api: DockviewApi): void => {
+    const layout = isSizingPaused(api) ? null : readGridTree(api)
+    if (!layout) {
+        return
+    }
+    const last = lastLayouts.get(api)
+    lastLayouts.set(api, layout)
+    const isResized =
+        last !== undefined &&
+        viewIdsOf(last) === viewIdsOf(layout) &&
+        (last.width !== layout.width || last.height !== layout.height)
+    if (isResized) {
+        applySizeRequests(api, computeLayoutSizes(last, layout))
+    }
+}
+
 /* Each cell's minimum follows its view's. dockview takes a view's minimum
  * when the view is added, which a header change, or the new cell of a
  * moved view, would miss. */
@@ -168,6 +199,17 @@ export const fitViewSizes = (api: DockviewApi): void => {
             api,
             computeHeaderChangeSizes(tree, headerHeight - sizedFor)
         )
+    }
+}
+
+/* After a view's own sizes changed (a selector's control): its cell takes
+ * its new minimum, then its preferred size (computeViewChangeSizes) */
+export const fitCellToView = (api: DockviewApi, viewId: string): void => {
+    fitViewSizes(api)
+    const tree = readGridTree(api)
+    const cellId = api.getPanel(viewId)?.group.id
+    if (tree && cellId) {
+        applySizeRequests(api, computeViewChangeSizes(tree, cellId))
     }
 }
 

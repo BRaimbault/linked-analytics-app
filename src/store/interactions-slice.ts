@@ -70,6 +70,17 @@ export const interactionsSlice = createSlice({
                 resetFollowersDrills(state, channel, null)
             }
         },
+        /* From a view's badge: a channel with no selector, or one whose
+         * selector is out of sight, can be cleared too */
+        channelValueCleared(state, action: PayloadAction<{ label: string }>) {
+            const channel = state.channels.find(
+                ({ label }) => label === action.payload.label
+            )
+            if (channel) {
+                setValue(channel, [])
+                resetFollowersDrills(state, channel, null)
+            }
+        },
         viewDrilledDown(
             state,
             action: PayloadAction<{ viewId: string; item: LinkItem }>
@@ -158,6 +169,7 @@ export const interactionsSlice = createSlice({
 export const {
     dataClicked,
     selectorValueChanged,
+    channelValueCleared,
     viewChannelChanged,
     viewRolesChanged,
     orgUnitDepthChanged,

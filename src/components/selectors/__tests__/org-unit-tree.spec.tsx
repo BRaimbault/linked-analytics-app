@@ -196,6 +196,69 @@ describe('OrgUnitTree', () => {
             vi.restoreAllMocks()
         })
 
+        /* jsdom has no layout: a resize is reported by hand */
+        const growBox = (rows: number, resizes: ResizeObserverCallback[]) => {
+            fitRows(rows)
+            act(() =>
+                resizes.forEach((callback) =>
+                    callback([], {} as ResizeObserver)
+                )
+            )
+        }
+        const watchResizes = () => {
+            const resizes: ResizeObserverCallback[] = []
+            vi.stubGlobal(
+                'ResizeObserver',
+                class {
+                    constructor(callback: ResizeObserverCallback) {
+                        resizes.push(callback)
+                    }
+                    observe() {}
+                    disconnect() {}
+                }
+            )
+            return resizes
+        }
+
+        it('opens more levels as its box grows, the tree staying in sight', async () => {
+            const resizes = watchResizes()
+            fitRows(10)
+            renderTree()
+            /* Growing while it first opens: it stays hidden until settled */
+            growBox(10.5, resizes)
+            expect(document.querySelector('[data-settling]')).not.toBeNull()
+            await waitFor(() =>
+                expect(document.querySelector('[data-settling]')).toBeNull()
+            )
+            expect(node('Juniper')).toBeUndefined()
+
+            growBox(30, resizes)
+
+            expect(document.querySelector('[data-settling]')).toBeNull()
+            await waitFor(() => expect(node('Juniper')).toBeDefined())
+            vi.restoreAllMocks()
+        })
+
+        it('opens no more as its box grows once the user closed a branch', async () => {
+            const resizes = watchResizes()
+            fitRows(10)
+            renderTree()
+            await waitFor(() =>
+                expect(document.querySelector('[data-settling]')).toBeNull()
+            )
+            await userEvent.click(toggleOf('South'))
+            await waitFor(() => expect(node('Juniper')).toBeDefined())
+            await userEvent.click(toggleOf('South'))
+            await waitFor(() => expect(node('Juniper')).toBeUndefined())
+
+            growBox(30, resizes)
+
+            await new Promise((resolve) => setTimeout(resolve, 400))
+            expect(node('Amber Hills')).toBeUndefined()
+            expect(node('Juniper')).toBeUndefined()
+            vi.restoreAllMocks()
+        })
+
         it('stops once the user opens or closes a branch', async () => {
             fitRows(10)
             renderTree()

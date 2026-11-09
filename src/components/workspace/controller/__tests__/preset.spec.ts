@@ -1,8 +1,13 @@
 import { getViewPanels } from '@components/workspace/controller/panels'
 import {
+    hasChangedSincePreset,
     loadPreset,
+    markPresetLoaded,
     resetToPreset,
 } from '@components/workspace/controller/preset'
+import { createStore } from '@store/store'
+import { viewHeadersHiddenChanged } from '@store/workspace-settings-slice'
+import type { DataEngine } from '@types'
 import { describe, expect, it, vi } from 'vitest'
 import { setup, twoColumns } from './controller-fixtures'
 
@@ -31,6 +36,26 @@ describe('presets', () => {
 
         expect(fake.api.exitMaximizedGroup).toHaveBeenCalled()
         expect(load).toHaveBeenCalledTimes(1)
+    })
+
+    it('tell whether the user changed what a reset would replace, once loaded', () => {
+        const fake = setup()
+        twoColumns(fake)
+        const store = createStore({} as DataEngine)
+        const changed = () =>
+            hasChangedSincePreset(fake.asApi, store.getState())
+        expect(changed()).toBe(false)
+
+        markPresetLoaded(fake.asApi, store.getState())
+        expect(changed()).toBe(false)
+
+        store.dispatch(viewHeadersHiddenChanged(true))
+        expect(changed()).toBe(true)
+        markPresetLoaded(fake.asApi, store.getState())
+
+        const map = fake.asApi.getPanel('map-a') as { params: object }
+        map.params = { ...map.params, text: 'Notes' }
+        expect(changed()).toBe(true)
     })
 
     it('reset without leaving maximize when no view is maximized', () => {

@@ -7,7 +7,7 @@ import {
 } from '@dhis2/ui'
 import type { LinkItem } from '@modules/interactions/apply-links'
 import { getStepIndex, getTimelineIndex } from '@modules/selectors/timeline'
-import type { FC } from 'react'
+import { useRef, type FC, type KeyboardEvent } from 'react'
 import { SelectorHeader } from './selector-header'
 import classes from './styles/period-timeline.module.css'
 import { useTimelinePlay } from './use-timeline-play'
@@ -18,6 +18,13 @@ const IconPlay16: FC = () => (
         <path d="M5 3l8 5-8 5z" fill="currentColor" />
     </svg>
 )
+
+const ARROW_STEPS: Record<string, -1 | 1> = {
+    ArrowLeft: -1,
+    ArrowDown: -1,
+    ArrowRight: 1,
+    ArrowUp: 1,
+}
 
 const IconPause16: FC = () => (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -46,10 +53,22 @@ export const PeriodTimeline: FC<{
         receiverIds,
         select: onSelect,
     })
+    const trackRef = useRef<HTMLInputElement>(null)
     const last = periods.length - 1
     const selectAt = (at: number) => {
         pause()
         onSelect(periods[at])
+    }
+    const stepBy = (step: -1 | 1) =>
+        selectAt(getStepIndex(index, step, periods.length))
+    /* Off the track, the range input still sits at its first period: an
+     * arrow key steps as the buttons do instead */
+    const onTrackKeyDown = (event: KeyboardEvent) => {
+        const step = ARROW_STEPS[event.key]
+        if (index === null && step) {
+            event.preventDefault()
+            stepBy(step)
+        }
     }
 
     return (
@@ -64,9 +83,7 @@ export const PeriodTimeline: FC<{
                     title={i18n.t('Previous period')}
                     disabled={index === 0}
                     dataTest="timeline-previous"
-                    onClick={() =>
-                        selectAt(getStepIndex(index, -1, periods.length))
-                    }
+                    onClick={() => stepBy(-1)}
                 />
                 <Button
                     small
@@ -85,11 +102,10 @@ export const PeriodTimeline: FC<{
                     title={i18n.t('Next period')}
                     disabled={index === last}
                     dataTest="timeline-next"
-                    onClick={() =>
-                        selectAt(getStepIndex(index, 1, periods.length))
-                    }
+                    onClick={() => stepBy(1)}
                 />
                 <input
+                    ref={trackRef}
                     type="range"
                     className={classes.track}
                     min={0}
@@ -102,6 +118,7 @@ export const PeriodTimeline: FC<{
                         index === null ? valueText : periods[index].name
                     }
                     data-test="timeline-track"
+                    onKeyDown={onTrackKeyDown}
                     onChange={(event) => selectAt(Number(event.target.value))}
                 />
                 {value.length > 0 && (
@@ -115,6 +132,8 @@ export const PeriodTimeline: FC<{
                         onClick={() => {
                             pause()
                             onClear()
+                            /* The button goes with the value */
+                            trackRef.current?.focus()
                         }}
                     />
                 )}

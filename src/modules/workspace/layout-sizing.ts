@@ -1,7 +1,11 @@
 import {
     axisOf,
+    findLeafLocation,
     getGridLength,
+    getPreferredAlong,
+    getViewSizes,
     orthogonal,
+    type SplitAxis,
     type GridBranch,
     type GridLeaf,
     type GridNode,
@@ -136,6 +140,42 @@ export const computeLayoutSizes = (
  * So maps and visualizations get equal sizes. */
 export const computeEvenSizes = (tree: GridTree): SizeRequest[] =>
     computeLayoutSizes({ ...tree, root: { ...tree.root, children: [] } }, tree)
+
+/* The sizes after one view's own sizes changed (a selector's control): its
+ * cell takes its new preferred length along each axis it has one, and the
+ * views beside it in its line their preferred length along the line, so a
+ * view with none there (an org unit tree, a map) takes the rest. The lines
+ * around share the rest as when a view leaves. With only views that have a
+ * preferred length in the line, they share it in proportion. The tree's
+ * sizes are the new ones. */
+export const computeViewChangeSizes = (
+    tree: GridTree,
+    cellId: string
+): SizeRequest[] => {
+    const known = getKnownRects(tree, tree, undefined)
+    const location = findLeafLocation(tree, cellId)
+    if (!location) {
+        return sizeLines(tree, known, 0)
+    }
+    const lineAxis = axisOf(location.orientation)
+    const leaves = location.parent.children.filter(
+        (child): child is GridLeaf => child.type === 'leaf'
+    )
+    for (const leaf of leaves) {
+        const axes: SplitAxis[] =
+            leaf.id === cellId ? ['horizontal', 'vertical'] : [lineAxis]
+        /* Known for every view: the layout is its own "before" */
+        const rect = { ...(known.get(leaf.id) as Rect) }
+        for (const axis of axes) {
+            const length = getPreferredAlong(getViewSizes(leaf), axis)
+            if (length !== undefined) {
+                rect[axis === 'horizontal' ? 'width' : 'height'] = length
+            }
+        }
+        known.set(leaf.id, rect)
+    }
+    return sizeLines(tree, known, 0)
+}
 
 /* The sizes after view headers got taller (or shorter) by headerChange:
  * lines of selectors alone follow, to keep fitting their content, and the

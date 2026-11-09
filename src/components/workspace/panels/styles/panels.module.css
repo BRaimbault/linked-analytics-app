@@ -60,9 +60,7 @@
 }
 
 .tool {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacers-dp8);
+    box-sizing: border-box;
     block-size: 100%;
     padding-block: var(--spacers-dp8);
     padding-inline: var(--spacers-dp12);
@@ -70,6 +68,13 @@
     background: var(--colors-white);
     font-size: 13px;
     color: var(--colors-grey800);
+}
+
+/* Its own height is the content's, which the tools strip fits */
+.toolContent {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
 }
 
 .toolHint {

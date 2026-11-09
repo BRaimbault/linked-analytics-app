@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import {
+    channelValueCleared,
     dataClicked,
     interactionsSlice,
     selectChannels,
@@ -258,6 +259,19 @@ describe('links slice', () => {
             value: [{ id: 'DemoWest001' }],
             setBy: null,
         })
+    })
+
+    it('clears a channel’s value from a badge, whoever set it, and ignores a channel that is gone', () => {
+        const store = createTestStore()
+        store.dispatch(viewAdded(map1))
+        store.dispatch(viewAdded(vis1))
+        store.dispatch(clickNorth('map-1'))
+
+        store.dispatch(channelValueCleared({ label: 'A' }))
+        store.dispatch(channelValueCleared({ label: 'Z' }))
+
+        expect(store.channels()).toHaveLength(1)
+        expect(store.channels()[0]).toMatchObject({ value: [], setBy: null })
     })
 
     describe('closing a view', () => {

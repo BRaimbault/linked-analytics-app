@@ -5,6 +5,7 @@ import {
     toolsStrip,
 } from '@components/workspace/__tests__/render-workspace'
 import { getDemoStory } from '@modules/demo/story'
+import { selectorValueChanged } from '@store/interactions-slice'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Config, DriveStep, HookOpts } from 'driver.js'
@@ -82,8 +83,9 @@ const feature = (name: string) =>
 /* A first visit: the story tour starts by itself */
 const startStory = async () => {
     fake.config = null
-    renderWithStore(<DemoWorkspace />)
+    const view = renderWithStore(<DemoWorkspace />)
     await waitFor(() => expect(fake.config).not.toBeNull())
+    return view
 }
 
 const startHowItWorks = async () => {
@@ -127,6 +129,45 @@ describe('the demo tours', () => {
         expect(fake.destroy).toHaveBeenCalled()
     })
 
+    it('asks before replacing a workspace the user changed, and keeps it on Cancel', async () => {
+        fake.config = null
+        localStorage.setItem(SEEN_KEY, 'true')
+        const { store } = renderWithStore(<DemoWorkspace />)
+        await screen.findAllByTestId('selector-view')
+        const tree = store
+            .getState()
+            .workspace.views.find(({ type }) => type === 'org-unit-selector')
+        act(() => {
+            store.dispatch(
+                selectorValueChanged({
+                    viewId: tree?.id as string,
+                    value: [
+                        {
+                            id: 'DemoEast001',
+                            name: 'East',
+                            path: '/DemoLand001/DemoEast001',
+                        },
+                    ],
+                })
+            )
+        })
+
+        await userEvent.click(screen.getByTestId('take-tour-story'))
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Cancel' })
+        )
+        expect(screen.queryByTestId('tour-reset-confirm')).toBeNull()
+        expect(fake.config).toBeNull()
+        await expectDistrict('East')
+
+        await userEvent.click(screen.getByTestId('take-tour-story'))
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'Start the tour' })
+        )
+        await waitFor(() => expect(fake.config).not.toBeNull())
+        await expectNoDistrict()
+    })
+
     it('starts the story on every visit when the browser keeps nothing', async () => {
         const blocked = () => {
             throw new Error('blocked')
@@ -154,7 +195,7 @@ describe('the demo tours', () => {
             `${story.highest.name}'s ${story.highestChiefdoms.count} chiefdoms`
         )
         expect(descriptions()[STORY.drillStep + 2]).toContain(
-            "above the country's rate"
+            `stays above ${Math.round(story.country.incidence)}, the country's rate`
         )
         expect(descriptions()[STORY.drillStep + 3]).toContain(
             `In ${story.coverageQuarter}, none of its ${story.highestChiefdoms.count}`
@@ -178,6 +219,12 @@ describe('the demo tours', () => {
         expect(
             document.querySelector('.dv-edge-group.dv-edge-collapsed')
         ).not.toBeNull()
+
+        /* Its click on the map left nothing that would ask before the next */
+        const storyConfig = fake.config
+        await userEvent.click(screen.getByTestId('take-tour-how-it-works'))
+        await waitFor(() => expect(fake.config).not.toBe(storyConfig))
+        expect(screen.queryByTestId('tour-reset-confirm')).toBeNull()
     })
 
     it('shows how the workspace is set up, following the org unit channel and naming the period one', async () => {
@@ -350,6 +397,35 @@ describe('the demo tours', () => {
         await new Promise((resolve) => setTimeout(resolve, 900))
 
         expect(orgUnitSelector()).toHaveTextContent('Each view shows its own')
+    })
+
+    it('clicks the district as the map shows it when the click lands, and not when it is gone', async () => {
+        const { store } = await startStory()
+        await nextUpTo(STORY.clickStep)
+        await next(STORY.clickStep)
+
+        /* Before the tour's click lands, the tree picks East: the map draws
+         * East's chiefdoms, and the district is no longer there to click */
+        const tree = store
+            .getState()
+            .workspace.views.find(({ type }) => type === 'org-unit-selector')
+        act(() => {
+            store.dispatch(
+                selectorValueChanged({
+                    viewId: tree?.id as string,
+                    value: [
+                        {
+                            id: 'DemoEast001',
+                            name: 'East',
+                            path: '/DemoLand001/DemoEast001',
+                        },
+                    ],
+                })
+            )
+        })
+        await new Promise((resolve) => setTimeout(resolve, 900))
+
+        expect(orgUnitSelector()).toHaveTextContent('East')
     })
 
     it('keeps the workspace scrolled where it was when a step brings its view into view', async () => {

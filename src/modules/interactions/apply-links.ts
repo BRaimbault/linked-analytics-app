@@ -2,6 +2,7 @@ import { getPeriodType, toPeriodType } from '@modules/interactions/periods'
 import type { PluginObject } from '@modules/plugins/contract'
 import {
     findDimension,
+    isOnAxis,
     type Dimension,
     type DimensionItem,
     type MapObject,
@@ -42,11 +43,6 @@ export type ApplyLinksOptions = {
 }
 
 type LaidOut = Pick<VisualizationObject, 'columns' | 'rows' | 'filters'>
-
-const isOnAxis = (object: LaidOut, dimension: string) =>
-    [...object.columns, ...object.rows].some(
-        (entry) => entry.dimension === dimension
-    )
 
 const levelOf = ({ path }: LinkItem) =>
     path ? path.split('/').filter(Boolean).length : null

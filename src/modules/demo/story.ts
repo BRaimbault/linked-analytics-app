@@ -35,7 +35,8 @@ export type DemoStory = {
      * children than Penta 3 in every district */
     malariaVaccineLowerEverywhere: boolean
     /* Whether every chiefdom of the highest district is above the
-     * country's rate: no single hotspot */
+     * country's rate for the year in each month the chart shows: no single
+     * hotspot */
     highestChiefdomsAboveCountry: boolean
     /* Whether the incidence map, drilled down into the highest district,
      * draws every chiefdom in its top class, as for the district: its
@@ -119,8 +120,10 @@ export const getDemoStory = (): DemoStory => {
             count: highestChiefdoms.length,
             belowTarget: highestChiefdoms.filter(isBelowForBoth).length,
         },
-        highestChiefdomsAboveCountry: highestChiefdoms.every(
-            ({ id }) => incidence(id) > incidence(ROOT_ORG_UNIT_ID)
+        highestChiefdomsAboveCountry: months.every((month) =>
+            highestChiefdoms.every(
+                ({ id }) => incidence(id, [month]) > incidence(ROOT_ORG_UNIT_ID)
+            )
         ),
         highestChiefdomsInTopClass: isEveryChiefdomInTopClass(highest.id),
         malariaVaccineLowerEverywhere: districts.every(

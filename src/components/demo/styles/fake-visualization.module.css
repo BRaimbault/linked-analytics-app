@@ -149,6 +149,13 @@
     text-align: start;
 }
 
+/* Long column names ("April - June 2026") wrap, so the columns fit the
+ * view before it has to scroll */
+.table thead th {
+    white-space: normal;
+    vertical-align: bottom;
+}
+
 .table td {
     text-align: end;
 }

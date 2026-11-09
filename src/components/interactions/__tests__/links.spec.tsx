@@ -137,6 +137,76 @@ describe('linked views', () => {
         expect(badges()).toContain('Org unit A. West. Sets the value')
     })
 
+    it('clears a value from a view’s badge, and leaves the channel from it', async () => {
+        await renderLinkedViews()
+        fireEvent.click(feature('North'))
+        await waitFor(() => expect(chartCategories()[0]).toBe('Amber Hills'))
+        /* The map's badge, then the chart's */
+        const menuItems = () =>
+            screen
+                .getAllByRole('menuitem')
+                .map(({ textContent }) => textContent)
+
+        await userEvent.click(screen.getAllByTestId('channel-badge-A')[1])
+        expect(menuItems()).toEqual(['Clear the value', 'Leave the channel'])
+        await userEvent.click(
+            screen.getByRole('menuitem', { name: 'Clear the value' })
+        )
+        await waitFor(() =>
+            expect(chartCategories()).toEqual([
+                'North',
+                'West',
+                'East',
+                'South',
+            ])
+        )
+
+        /* Nothing to clear: leaving is left */
+        await userEvent.click(screen.getAllByTestId('channel-badge-A')[1])
+        expect(menuItems()).toEqual(['Leave the channel'])
+        await userEvent.click(
+            screen.getByRole('menuitem', { name: 'Leave the channel' })
+        )
+        await waitFor(() =>
+            expect(screen.getAllByTestId('channel-badge-A')).toHaveLength(1)
+        )
+
+        fireEvent.click(feature('South'))
+        await waitFor(() =>
+            expect(feature('West').getAttribute('class')).toMatch(/dimmed/)
+        )
+        expect(chartCategories()).toEqual(['North', 'West', 'East', 'South'])
+    })
+
+    it('gives a selector’s own badge a menu only once there is a value to clear', async () => {
+        await renderLinkedViews()
+        await addView('org-unit-selector')
+        const selector = await screen.findByTestId('selector-view')
+        /* The views' badges say how they set or follow it */
+        const selectorBadge = () =>
+            screen
+                .getAllByTestId('channel-badge-A')
+                .find((badge) =>
+                    badge
+                        .getAttribute('aria-label')
+                        ?.endsWith('. Sets the value')
+                ) as HTMLElement
+        expect(selectorBadge()).toHaveAttribute('role', 'img')
+
+        await userEvent.click(
+            within(selector).getByTestId('dhis2-uicore-select-input')
+        )
+        await userEvent.click(await option('West'))
+        await waitFor(() => expect(selector).toHaveTextContent('West'))
+
+        await userEvent.click(selectorBadge())
+        expect(
+            screen
+                .getAllByRole('menuitem')
+                .map(({ textContent }) => textContent)
+        ).toEqual(['Clear the value'])
+    })
+
     it('lists a clicked value outside the selector’s list, and several as its placeholder', async () => {
         await renderLinkedViews()
         await addView('org-unit-selector')

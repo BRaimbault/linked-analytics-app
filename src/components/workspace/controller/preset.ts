@@ -1,5 +1,5 @@
 import type { WorkspacePreset } from '@components/workspace/workspace-preset'
-import type { AppDispatch } from '@store/store'
+import type { AppDispatch, RootState } from '@store/store'
 import type { DockviewApi } from 'dockview-react'
 import { getViewPanels } from './panels'
 import { closeView } from './views'
@@ -16,6 +16,38 @@ export const loadPreset = (
     if (!getViewPanels(api).length) {
         load(api, dispatch)
     }
+}
+
+/* What a reset to the preset would replace: the views with their params
+ * (saved item, control, text), their links and values, and the workspace
+ * settings. Sizes and the open tool tab are left out, and so are the
+ * points a view clicked, which count only while its channels hold them. */
+const describeWorkspace = (api: DockviewApi, state: RootState): string => {
+    const { channels, linkableViews, detached, drills } = state.interactions
+    return JSON.stringify({
+        views: getViewPanels(api).map(({ id, params }) => ({ id, params })),
+        links: { channels, linkableViews, detached, drills },
+        settings: state.workspaceSettings,
+    })
+}
+
+const presetStates = new WeakMap<DockviewApi, string>()
+
+/* Remembers the workspace as the preset left it, once it has loaded */
+export const markPresetLoaded = (api: DockviewApi, state: RootState): void => {
+    presetStates.set(api, describeWorkspace(api, state))
+}
+
+/* Whether the user changed anything a reset would undo */
+export const hasChangedSincePreset = (
+    api: DockviewApi,
+    state: RootState
+): boolean => {
+    const presetState = presetStates.get(api)
+    return (
+        presetState !== undefined &&
+        presetState !== describeWorkspace(api, state)
+    )
 }
 
 /* Closes every view, which takes it out of its channels too, and loads the

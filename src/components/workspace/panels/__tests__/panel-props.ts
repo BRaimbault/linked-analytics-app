@@ -34,6 +34,7 @@ export const createFakeGroup = (collapsed = false) => {
  * change */
 export const createFakePanel = <T extends object>(params: T, id = 'map-a') => {
     const groupChanges = createListeners()
+    const visibilityChanges = createListeners()
     let maximized = false
     const api = {
         id,
@@ -51,6 +52,7 @@ export const createFakePanel = <T extends object>(params: T, id = 'map-a') => {
         }),
         group: createFakeGroup(),
         onDidGroupChange: groupChanges.subscribe,
+        onDidVisibilityChange: visibilityChanges.subscribe,
     }
     const props = {
         params,
@@ -65,6 +67,8 @@ export const createFakePanel = <T extends object>(params: T, id = 'map-a') => {
             api.group = group
             groupChanges.emit()
         },
+        /* Its tab comes to the front, or goes behind another */
+        changeVisibility: visibilityChanges.emit,
     }
 }
 

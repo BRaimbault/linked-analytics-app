@@ -9,9 +9,9 @@ import type { LinkItem } from '@modules/interactions/apply-links'
 import type { LinkDimension } from '@modules/interactions/channels'
 
 /* The short fixed lists the demo's selectors offer: the country and its
- * districts; the years and quarters from 2025, latest first (the data
- * starts in September 2024, so 2024's periods would be partial); every
- * data item */
+ * districts; the years, quarters and weeks from 2025, latest first (the
+ * data starts in September 2024, so 2024's periods would be partial), weeks
+ * being finer than most data; every data item */
 const orgUnitItem = (id: string): LinkItem => {
     const { name, path } = getOrgUnit(id) as { name: string; path: string }
     return { id, name, path }

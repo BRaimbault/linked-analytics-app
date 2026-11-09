@@ -1,3 +1,4 @@
+import type { SelectorControl } from '@modules/selectors/controls'
 import type {
     GridNode,
     GridTree,
@@ -32,6 +33,18 @@ export const selector = (
     id,
     weight,
     sizes: getViewTypeSizes('org-unit-selector', headerHeight),
+    viewKind: 'selector',
+})
+
+/* A selector with the given control, while headers are hidden */
+export const selectorWith = (
+    id: string,
+    weight: number,
+    control: SelectorControl
+): ViewSpec => ({
+    id,
+    weight,
+    sizes: getViewTypeSizes('org-unit-selector', 0, control),
     viewKind: 'selector',
 })
 

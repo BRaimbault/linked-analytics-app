@@ -4,7 +4,10 @@ import {
     getDropOverlayModel,
     getOuterEdgeDropModel,
 } from '@components/workspace/controller/drop-models'
-import { fitViewSizes } from '@components/workspace/controller/grid-layout'
+import {
+    fitViewSizes,
+    keepLengthsOnResize,
+} from '@components/workspace/controller/grid-layout'
 import {
     ADD_VIEWS_PANEL_ID,
     SWAP_SPACER_COMPONENT,
@@ -12,7 +15,10 @@ import {
     VIEW_SETTINGS_COMPONENT,
     WORKSPACE_PANEL_ID,
 } from '@components/workspace/controller/panels'
-import { loadPreset } from '@components/workspace/controller/preset'
+import {
+    loadPreset,
+    markPresetLoaded,
+} from '@components/workspace/controller/preset'
 import {
     keepCloseFromSelecting,
     showSettingsForTarget,
@@ -37,7 +43,7 @@ import {
     type WorkspacePreset,
 } from '@components/workspace/workspace-preset'
 import i18n from '@dhis2/d2-i18n'
-import { useAppDispatch, useAppSelector } from '@hooks'
+import { useAppDispatch, useAppSelector, useAppStore } from '@hooks'
 import { selectViewHeadersMode } from '@store/workspace-settings-slice'
 import { activeViewChanged } from '@store/workspace-slice'
 import {
@@ -82,6 +88,7 @@ export const Workspace: FC<PropsWithChildren<{ preset?: WorkspacePreset }>> = ({
     children,
 }) => {
     const dispatch = useAppDispatch()
+    const store = useAppStore()
     const [api, setApi] = useState<DockviewApi | null>(null)
     const dragFormats = useCurrentDrag()
     const minimumSize = useWorkspaceMinimumSize(api)
@@ -98,6 +105,18 @@ export const Workspace: FC<PropsWithChildren<{ preset?: WorkspacePreset }>> = ({
             api.layout(element.clientWidth, element.clientHeight, true)
         }
     }, [api, viewHeaders])
+
+    /* dockview resizes the grid when the tools strip opens, folds or changes
+     * tab, and with the window, without a layout event */
+    useEffect(() => {
+        const grid = workspaceRef.current?.querySelector('.dv-grid-view')
+        if (!api || !grid) {
+            return
+        }
+        const observer = new ResizeObserver(() => keepLengthsOnResize(api))
+        observer.observe(grid)
+        return () => observer.disconnect()
+    }, [api])
 
     useEffect(() => {
         if (!api) {
@@ -122,8 +141,9 @@ export const Workspace: FC<PropsWithChildren<{ preset?: WorkspacePreset }>> = ({
     useEffect(() => {
         if (api && preset) {
             loadPreset(api, preset.load, dispatch)
+            markPresetLoaded(api, store.getState())
         }
-    }, [api, preset, dispatch])
+    }, [api, preset, dispatch, store])
 
     return (
         <WorkspaceApiContext.Provider value={api}>

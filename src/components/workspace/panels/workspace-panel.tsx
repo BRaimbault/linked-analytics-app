@@ -1,5 +1,8 @@
 import { evenOutSizes } from '@components/workspace/controller/grid-layout'
-import { resetToPreset } from '@components/workspace/controller/preset'
+import {
+    markPresetLoaded,
+    resetToPreset,
+} from '@components/workspace/controller/preset'
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import {
     applyPresetSettings,
@@ -7,7 +10,7 @@ import {
 } from '@components/workspace/workspace-preset'
 import i18n from '@dhis2/d2-i18n'
 import { Button, Checkbox, IconLayoutColumns16, IconSync16 } from '@dhis2/ui'
-import { useAppDispatch, useAppSelector } from '@hooks'
+import { useAppDispatch, useAppSelector, useAppStore } from '@hooks'
 import {
     selectViewHeaders,
     selectViewHeadersHidden,
@@ -27,6 +30,7 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
     const viewHeaders = useAppSelector(selectViewHeaders)
     const viewHeadersHidden = useAppSelector(selectViewHeadersHidden)
     const dispatch = useAppDispatch()
+    const store = useAppStore()
     const canEvenOut = views.length >= 2
     const evenOutLabel = i18n.t('Even out view sizes')
     const evenOut = () => workspaceApi && evenOutSizes(workspaceApi)
@@ -120,12 +124,10 @@ export const WorkspacePanel: FC<IDockviewPanelProps> = ({ api }) => {
                                 dataTest="reset-to-preset"
                                 onClick={() => {
                                     /* The tab shows once the grid is set up */
-                                    resetToPreset(
-                                        workspaceApi as DockviewApi,
-                                        preset.load,
-                                        dispatch
-                                    )
+                                    const api = workspaceApi as DockviewApi
                                     applyPresetSettings(dispatch, preset)
+                                    resetToPreset(api, preset.load, dispatch)
+                                    markPresetLoaded(api, store.getState())
                                 }}
                             />
                             <label

@@ -11,6 +11,7 @@ import {
 import {
     fitViewSizes,
     isSizingPaused,
+    keepLengthsOnResize,
     readGridTree,
     restoreProportions,
 } from './grid-layout'
@@ -47,6 +48,7 @@ export const setupWorkspace = (
                 fitViewSizes(api)
             }
         }),
+        api.onDidLayoutChange(() => keepLengthsOnResize(api)),
         api.onWillDragPanel(keepFixedToolsInPlace),
         api.onUnhandledDragOver((event) => acceptPaletteDrag(api, event)),
         api.onWillShowOverlay((event) => refuseDisallowedDrop(api, event)),

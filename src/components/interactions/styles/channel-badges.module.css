@@ -20,6 +20,14 @@
     cursor: default;
 }
 
+/* A badge with actions opens a menu */
+button.badge {
+    margin: 0;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
 .badge:focus-visible {
     outline: 2px solid var(--colors-blue600);
     outline-offset: 1px;

@@ -2,6 +2,7 @@ import type { DockviewApi, IDockviewPanel } from 'dockview-react'
 import {
     ADD_VIEWS_PANEL_ID,
     WORKSPACE_PANEL_ID,
+    getEdgePosition,
     getPanelKind,
     getSettingsPanelId,
     VIEW_SETTINGS_COMPONENT,
@@ -71,36 +72,48 @@ export const openToolPanel = (api: DockviewApi, panelId: string): void => {
 /* At most this share of the workspace's height, so the views keep room */
 const MAX_TOOLS_SHARE = 0.6
 
-/* Grows the tools strip so a tools tab shows whole, as far as
- * MAX_TOOLS_SHARE of the workspace. Returns the strip's height before, to
- * give back. */
-export const fitToolsToPanel = (api: DockviewApi, panelId: string): number => {
-    const panel = api.getPanel(panelId) as IDockviewPanel
-    const { group } = panel
-    const before = group.api.height
-    const tabs = group.element.querySelector(
+/* The height a tools tab needs: its tab row, and its content within the
+ * panel's padding (the panel itself always fills the strip) */
+const getToolPanelHeight = (panel: IDockviewPanel): number => {
+    const tabs = panel.group.element.querySelector(
         '.dv-tabs-and-actions-container'
     ) as HTMLElement
-    /* The tool panel scrolls within the strip: its scroll height is all
-     * of its content */
-    const content = (
-        panel.view.content.element.querySelector(
-            '[data-tool-panel]'
-        ) as HTMLElement
-    ).scrollHeight
-    group.api.setSize({
-        height: Math.min(
-            tabs.offsetHeight + content,
-            api.height * MAX_TOOLS_SHARE
-        ),
-    })
-    return before
+    const tool = panel.view.content.element.querySelector(
+        '[data-tool-panel]'
+    ) as HTMLElement
+    const { paddingTop, paddingBottom } = getComputedStyle(tool)
+    return (
+        tabs.offsetHeight +
+        (tool.firstElementChild as HTMLElement).offsetHeight +
+        parseFloat(paddingTop) +
+        parseFloat(paddingBottom)
+    )
 }
 
-export const setToolsHeight = (api: DockviewApi, height: number): void =>
-    (api.getPanel(ADD_VIEWS_PANEL_ID) as IDockviewPanel).group.api.setSize({
-        height,
-    })
+/* The tools strip fits the tab in front, as far as MAX_TOOLS_SHARE of the
+ * workspace, when open along the top or the bottom; at a side, it keeps
+ * the width the user gave it */
+export const fitToolsToOpenPanel = (
+    api: DockviewApi,
+    panelId: string
+): void => {
+    const panel = api.getPanel(panelId)
+    if (!panel || panel.group.activePanel !== panel) {
+        return
+    }
+    const position = getEdgePosition(panel.group)
+    const isAlongTheTop = position === 'top' || position === 'bottom'
+    if (isAlongTheTop && !panel.group.api.isCollapsed()) {
+        /* dockview's height is the grid's alone, which the strip takes from */
+        const workspaceHeight = api.height + panel.group.api.height
+        panel.group.api.setSize({
+            height: Math.min(
+                getToolPanelHeight(panel),
+                workspaceHeight * MAX_TOOLS_SHARE
+            ),
+        })
+    }
+}
 
 /* Folds the tools strip to its tabs, the palette in front */
 export const collapseTools = (api: DockviewApi): void => {

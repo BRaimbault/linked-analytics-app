@@ -68,6 +68,18 @@ export const findDimension = (
         (entry) => entry.dimension === dimension
     )
 
+/* Whether the dimension is on an axis (rows or columns), where a view
+ * draws several of its values, not in a filter; for a map, in any layer */
+export const isOnAxis = (
+    object: LaidOut | MapObject,
+    dimension: string
+): boolean =>
+    ('mapViews' in object ? object.mapViews : [object]).some((laidOut) =>
+        [...laidOut.columns, ...laidOut.rows].some(
+            (entry) => entry.dimension === dimension
+        )
+    )
+
 export const getDimensionItemIds = (
     object: LaidOut,
     dimension: string

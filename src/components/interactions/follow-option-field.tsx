@@ -1,4 +1,6 @@
 import { usePluginSources } from '@components/plugins/plugin-sources'
+import { useViewObject } from '@components/workspace/use-view-object'
+import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import i18n from '@dhis2/d2-i18n'
 import { SingleSelectField, SingleSelectOption } from '@dhis2/ui'
 import { useAppDispatch } from '@hooks'
@@ -10,11 +12,13 @@ import type {
     ChannelMember,
     LinkDimension,
 } from '@modules/interactions/channels'
+import { isOnAxis } from '@modules/visualization/analytical-object'
 import type { PluginViewType } from '@modules/workspace/view-types'
 import {
     highlightOnlyChanged,
     orgUnitDepthChanged,
 } from '@store/interactions-slice'
+import type { DockviewApi } from 'dockview-react'
 import type { FC } from 'react'
 
 const HIGHLIGHT_ONLY = 'highlight'
@@ -36,8 +40,10 @@ const HIGHLIGHT_OPTION = {
 
 /* How a view follows its channel's value (docs/interactions.md §5.7): org
  * units at a depth, a period as picked, or either with "Highlight only",
- * which keeps the view's own and marks the value, when its plugin can.
- * None for data, nor for a period with nothing to choose. */
+ * which keeps the view's own and marks the value. That needs a plugin that
+ * can highlight, and the dimension on an axis of its saved item: a map's
+ * period is a filter, with nothing to mark. None for data, nor for a
+ * period with nothing to choose. */
 export const FollowOptionField: FC<{
     viewId: string
     type: PluginViewType
@@ -45,7 +51,13 @@ export const FollowOptionField: FC<{
     member: ChannelMember
 }> = ({ viewId, type, dimension, member }) => {
     const dispatch = useAppDispatch()
-    const canHighlight = usePluginSources().canHighlight[type] === true
+    /* A settings tab shows only once the workspace is set up */
+    const api = useWorkspaceApi() as DockviewApi
+    const object = useViewObject(api, viewId)
+    const canHighlight =
+        usePluginSources().canHighlight[type] === true &&
+        object !== undefined &&
+        isOnAxis(object, dimension)
     const ownOptions = dimension === 'ou' ? ORG_UNIT_OPTIONS : PERIOD_OPTIONS
     const options = canHighlight
         ? [...ownOptions, HIGHLIGHT_OPTION]
