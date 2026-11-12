@@ -16,7 +16,7 @@ import {
     inViewHeader,
 } from './grid-helpers'
 
-/* The placeholder selectors: 96px high at least, 320×120 preferred, and no
+/* The placeholder selectors: 96px high at least, 320×96 preferred, and no
  * maximum */
 describe('selectors', () => {
     it(
@@ -29,7 +29,7 @@ describe('selectors', () => {
                 outerEdge(doc, 'top')
             ).should('deep.equal', INSERT_LINE)
 
-            cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+            cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
             expectLayout({
                 'Period 1': { w: 100 },
                 'Map 1': { w: 70 },
@@ -60,7 +60,7 @@ describe('selectors', () => {
             outerEdge(doc, 'top')
         ).should('deep.equal', INSERT_LINE)
 
-        cellSize('Org unit 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Org unit 1').its('height').should('be.closeTo', 96, 2)
     })
 
     it(
@@ -71,7 +71,7 @@ describe('selectors', () => {
             clickTile('map')
 
             clickTile('period-selector')
-            cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+            cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
             expectLayout({
                 'Period 1': { y: 0, w: 100 },
                 'Map 1': { w: 100 },
@@ -83,7 +83,7 @@ describe('selectors', () => {
                 'Data 1': { x: 50, y: 0, w: 50 },
                 'Map 1': { w: 100 },
             })
-            cellSize('Data 1').its('height').should('be.closeTo', 120, 2)
+            cellSize('Data 1').its('height').should('be.closeTo', 96, 2)
         }
     )
 
@@ -106,7 +106,7 @@ describe('selectors', () => {
             pointIn(doc, 'Map 1', [0.5, 0.9])
         )
 
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
         expectLayout({
             'Map 1': { w: 70 },
             'Period 1': { w: 70 },
@@ -202,7 +202,7 @@ describe('selectors', () => {
         clickTile('map')
         clickTile('period-selector')
         clickTile('org-unit-selector')
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
 
         inViewHeader('Period 1', '[data-test="view-actions-button"]').click()
         cy.contains('Swap with Org unit 1').click()
@@ -212,8 +212,8 @@ describe('selectors', () => {
             'Period 1': { x: 50, y: 0, w: 50 },
             'Map 1': { w: 100 },
         })
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
-        cellSize('Org unit 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
+        cellSize('Org unit 1').its('height').should('be.closeTo', 96, 2)
     })
 
     it('keeps a clicked map out of the selector bar', () => {
@@ -224,7 +224,7 @@ describe('selectors', () => {
 
         clickTile('map')
 
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
         expectLayout({
             'Period 1': { y: 0, w: 100 },
             'Map 1': { w: 50 },
@@ -237,7 +237,7 @@ describe('selectors', () => {
         clickTile('map')
         clickTile('period-selector')
 
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
         /* Measured against the cell, which dockview lays out at once; a
          * view's body follows it on the next animation frame */
         cy.document().should((doc) => {

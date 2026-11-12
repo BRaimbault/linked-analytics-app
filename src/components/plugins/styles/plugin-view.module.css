@@ -1,0 +1,6 @@
+/* Fills the view's body, whose size the plugin takes */
+.pluginView {
+    overflow: hidden;
+    inline-size: 100%;
+    block-size: 100%;
+}

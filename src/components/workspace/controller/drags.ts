@@ -9,7 +9,7 @@ import {
 } from '@modules/workspace/drop-rules'
 import type { GridTree, ViewSizes } from '@modules/workspace/grid-tree'
 import { canAddView } from '@modules/workspace/view-limits'
-import { getViewTypeSizes, type ViewType } from '@modules/workspace/view-types'
+import type { ViewType } from '@modules/workspace/view-types'
 import {
     getPanelData,
     type DockviewApi,
@@ -21,6 +21,7 @@ import {
     getGroupPanel,
     getPanelSizes,
     getViewPanels,
+    getWorkspaceViewSizes,
     isEdgeGroup,
     isToolPanelId,
     isViewPanel,
@@ -208,7 +209,7 @@ export const getDraggedSizes = (
         return view ? getPanelSizes(view) : null
     }
     const type = getAddableDraggedType(api, formats)
-    return type ? getViewTypeSizes(type) : null
+    return type ? getWorkspaceViewSizes(api, type) : null
 }
 
 /* "Workspace" and "Add views" stay first (see isAllowedDrop): a mouse drag

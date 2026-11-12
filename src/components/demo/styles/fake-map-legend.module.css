@@ -1,0 +1,58 @@
+/* A card like the zoom control: same edge, same corners. Its width is
+ * fixed, so it doesn't jump when the classes or the lock change */
+.legend {
+    position: absolute;
+    box-sizing: border-box;
+    inline-size: 156px;
+    inset-block-end: var(--spacers-dp8);
+    inset-inline-start: var(--spacers-dp8);
+    overflow: hidden;
+    border: 1px solid var(--colors-grey400);
+    border-radius: 3px;
+    background: var(--colors-white);
+    box-shadow: 0 1px 3px rgb(33 41 52 / 10%);
+}
+
+.entries {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 0;
+    padding: var(--spacers-dp8);
+    list-style: none;
+}
+
+.entries li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacers-dp8);
+    font-size: 12px;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+    color: var(--colors-grey800);
+}
+
+.swatch {
+    flex: none;
+    inline-size: 18px;
+    block-size: 12px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+}
+
+.unit {
+    padding-block-start: var(--spacers-dp8);
+    padding-inline: var(--spacers-dp8);
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--colors-grey700);
+}
+
+.unit + .entries {
+    padding-block-start: var(--spacers-dp4);
+}
+
+/* The lock and refit, a row along the card's foot */
+.lock {
+    border-block-start: 1px solid var(--colors-grey300);
+}

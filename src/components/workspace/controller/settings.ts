@@ -2,6 +2,7 @@ import type { DockviewApi, IDockviewPanel } from 'dockview-react'
 import {
     ADD_VIEWS_PANEL_ID,
     WORKSPACE_PANEL_ID,
+    getEdgePosition,
     getPanelKind,
     getSettingsPanelId,
     VIEW_SETTINGS_COMPONENT,
@@ -61,12 +62,69 @@ export const showSettingsForTarget = (
     return viewId && showViewSettings(api, viewId) ? viewId : null
 }
 
-/* Closing a view also removes its settings tab (see setupWorkspace) */
-export const openSettings = (api: DockviewApi, viewId: string): void => {
-    const settings = api.getPanel(getSettingsPanelId(viewId))
-    settings?.group.api.expand()
-    settings?.api.setActive()
+/* Shows a tools tab, expanding the tools strip when collapsed */
+export const openToolPanel = (api: DockviewApi, panelId: string): void => {
+    const panel = api.getPanel(panelId)
+    panel?.group.api.expand()
+    panel?.api.setActive()
 }
+
+/* At most this share of the workspace's height, so the views keep room */
+const MAX_TOOLS_SHARE = 0.6
+
+/* The height a tools tab needs: its tab row, and its content within the
+ * panel's padding (the panel itself always fills the strip) */
+const getToolPanelHeight = (panel: IDockviewPanel): number => {
+    const tabs = panel.group.element.querySelector(
+        '.dv-tabs-and-actions-container'
+    ) as HTMLElement
+    const tool = panel.view.content.element.querySelector(
+        '[data-tool-panel]'
+    ) as HTMLElement
+    const { paddingTop, paddingBottom } = getComputedStyle(tool)
+    return (
+        tabs.offsetHeight +
+        (tool.firstElementChild as HTMLElement).offsetHeight +
+        parseFloat(paddingTop) +
+        parseFloat(paddingBottom)
+    )
+}
+
+/* The tools strip fits the tab in front, as far as MAX_TOOLS_SHARE of the
+ * workspace, when open along the top or the bottom; at a side, it keeps
+ * the width the user gave it */
+export const fitToolsToOpenPanel = (
+    api: DockviewApi,
+    panelId: string
+): void => {
+    const panel = api.getPanel(panelId)
+    if (!panel || panel.group.activePanel !== panel) {
+        return
+    }
+    const position = getEdgePosition(panel.group)
+    const isAlongTheTop = position === 'top' || position === 'bottom'
+    if (isAlongTheTop && !panel.group.api.isCollapsed()) {
+        /* dockview's height is the grid's alone, which the strip takes from */
+        const workspaceHeight = api.height + panel.group.api.height
+        panel.group.api.setSize({
+            height: Math.min(
+                getToolPanelHeight(panel),
+                workspaceHeight * MAX_TOOLS_SHARE
+            ),
+        })
+    }
+}
+
+/* Folds the tools strip to its tabs, the palette in front */
+export const collapseTools = (api: DockviewApi): void => {
+    const addViews = api.getPanel(ADD_VIEWS_PANEL_ID) as IDockviewPanel
+    addViews.group.model.openPanel(addViews, { skipSetGroupActive: true })
+    addViews.group.api.collapse()
+}
+
+/* Closing a view also removes its settings tab (see setupWorkspace) */
+export const openSettings = (api: DockviewApi, viewId: string): void =>
+    openToolPanel(api, getSettingsPanelId(viewId))
 
 export type ToolTitles = {
     workspace: string

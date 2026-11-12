@@ -61,9 +61,9 @@ describe('swapping views', () => {
         clickTile('map')
         clickTile('visualization')
         clickTile('period-selector')
-        cellSize('Period 1').its('height').should('be.closeTo', 120, 2)
+        cellSize('Period 1').its('height').should('be.closeTo', 96, 2)
 
-        /* A map needs 160px; the selector bar is 120px */
+        /* A map needs 160px; the selector bar is 96px */
         dragTo({ tab: 'Map 1' }, (doc) =>
             pointIn(doc, 'Period 1', [0.5, 0.5])
         ).should('deep.equal', NO_PREVIEW)

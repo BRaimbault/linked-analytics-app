@@ -1,0 +1,35 @@
+.links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacers-dp8);
+}
+
+.heading {
+    margin-block: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--colors-grey700);
+}
+
+/* A dimension on one line, the select then what the view does, so the
+ * short strip at the top holds the section; wrapping in a narrow strip */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--spacers-dp4) var(--spacers-dp16);
+}
+
+.row > :first-child {
+    flex: 0 1 320px;
+    min-inline-size: 200px;
+}
+
+/* Level with the select, whose label sits above it */
+.roles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacers-dp4) var(--spacers-dp16);
+    min-block-size: 32px;
+}

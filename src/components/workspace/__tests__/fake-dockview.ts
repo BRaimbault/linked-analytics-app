@@ -43,6 +43,7 @@ export type FakeGroup = {
         contains: (node: unknown) => boolean
         querySelector: (selector: string) => HTMLElement | null
         toggleAttribute: (name: string, force: boolean) => void
+        closest: (selector: string) => object | null
     }
     model: { openPanel: Mock<(panel: FakePanel) => void> }
     api: {
@@ -54,6 +55,12 @@ export type FakeGroup = {
         collapse: Mock<() => void>
         expand: Mock<() => void>
         setSize: Mock<(size: { width?: number; height?: number }) => void>
+        setConstraints: Mock<
+            (constraints: {
+                minimumWidth: number
+                minimumHeight: number
+            }) => void
+        >
         moveTo: Mock<(options: { position?: string }) => void>
     }
 }
@@ -82,6 +89,7 @@ type EventName =
     | 'onDidDrop'
     | 'onWillMutateLayout'
     | 'onDidMutateLayout'
+    | 'onDidLayoutChange'
 
 const toSerializedNode = (node: GridNode): SerializedGridNode =>
     node.type === 'leaf'
@@ -114,6 +122,7 @@ export const createFakeDockview = () => {
     let groupCount = 0
     let grid = EMPTY_GRID
     let maximized = false
+    let headersHidden = false
     let mutationDepth = 0
     /* The layout the next change leaves, as dockview would lay it out */
     let nextLayout: (() => GridTree) | null = null
@@ -173,6 +182,11 @@ export const createFakeDockview = () => {
                 contains: () => false,
                 querySelector: () => null,
                 toggleAttribute: vi.fn(),
+                /* The workspace, when it hides view headers */
+                closest: (selector) =>
+                    headersHidden && selector === '[data-view-headers="hidden"]'
+                        ? {}
+                        : null,
             },
             model: {
                 openPanel: vi.fn((panel: FakePanel) => {
@@ -192,6 +206,7 @@ export const createFakeDockview = () => {
                     collapsed = false
                 }),
                 setSize: vi.fn(),
+                setConstraints: vi.fn(),
                 moveTo: vi.fn(),
             },
         }
@@ -262,6 +277,9 @@ export const createFakeDockview = () => {
         minimumHeight: 0,
         get panels() {
             return panels
+        },
+        get groups() {
+            return groups
         },
         getPanel: (id: string) => panels.find((panel) => panel.id === id),
         getGroup: (id: string) => groups.find((group) => group.id === id),
@@ -368,6 +386,7 @@ export const createFakeDockview = () => {
         onDidDrop: on('onDidDrop'),
         onWillMutateLayout: on('onWillMutateLayout'),
         onDidMutateLayout: on('onDidMutateLayout'),
+        onDidLayoutChange: on('onDidLayoutChange'),
     }
 
     /* A view already laid out in its own grid cell, without firing events */
@@ -404,6 +423,9 @@ export const createFakeDockview = () => {
         },
         setMaximized: (value: boolean) => {
             maximized = value
+        },
+        setHeadersHidden: (value: boolean) => {
+            headersHidden = value
         },
         listenerCount: () =>
             [...listeners.values()].reduce((sum, set) => sum + set.size, 0),

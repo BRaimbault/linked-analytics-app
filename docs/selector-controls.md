@@ -1,11 +1,27 @@
 # Selector controls and their sizes
 
-- **Status**: research, September 2026. Decided: selectors have no maximum size.
+- **Status**: research, September 2026. Decided: selectors have no maximum size. Built (November 2026): the drop-down, the period timeline and the org unit tree ([§0](#0-as-built)).
 - **Related**: [interactions.md §5.5](interactions.md#55-selectors-live-in-grid-cells) (what selectors do), [workspace-grid.md](workspace-grid.md#2-view-kinds-and-limits) (the grid's size rules), [view-settings.md](view-settings.md#selectors) (their settings).
 
 The controls a selector can show, how much room each needs, and what that means for a selector's size in the grid. It's about **presentation only**; how a selector is configured, and which channel it drives, is in [interactions.md](interactions.md#55-selectors-live-in-grid-cells).
 
-Every selector type has a minimum of 240×96px and a preferred size of 320×120px (`view-types.ts`), chosen for a one-line summary. **There is no maximum**: a selector can be as big as the user makes it, like any view. So each control must fill, wrap, scroll or collapse to fit its cell.
+Every selector has a minimum and a preferred size per control (`CONTROL_BODY_SIZES` in `modules/selectors/controls.ts`), below its 35px header, which counts only while view headers show. **There is no maximum**: a selector can be as big as the user makes it, like any view. So each control must fill, wrap, scroll or collapse to fit its cell.
+
+## 0. As built
+
+A selector's settings tab has a **Control** field when its dimension offers more than one (`SELECTOR_CONTROLS`); the choice is kept in the view's params (`control`).
+
+| Control                                                    | Dimensions       | Body size (min, preferred)                                                    | Example                                                                                                                              |
+| ---------------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Drop-down                                                  | `pe`, `ou`, `dx` | 240×61, 320×61: its label over its select                                     | the data selector: pick "Penta 3 coverage <1y"                                                                                       |
+| Timeline (`PeriodTimeline`)                                | `pe`             | 320×63, 340×63: its label and period over ◀ ▶ ▶, the track and Clear          | the demo's last 12 months: ▶ steps through them, every view following ([play mode](interactions.md#55-selectors-live-in-grid-cells)) |
+| Tree (`OrgUnitTree`, `@dhis2/ui`'s `OrganisationUnitTree`) | `ou`             | 240×160, 300 wide and **no preferred height**: it takes a share of its column | the demo's Demoland › districts › chiefdoms: click South; Ctrl or Cmd adds Kestrel                                                   |
+
+- The timeline and the tree show the value as text next to their label (`SelectorHeader`), as a track or a tree has no place for it.
+- A change of control resizes the selector's cell at once (`fitCellToView`, `computeViewChangeSizes`): a drop-down or a timeline gets its preferred size, and the selectors beside it in its line go back to their preferred length along it, so a tree or a plugin there takes the rest (a tree never less than its minimum). A height given by hand to a neighbouring selector is lost then. In a column of drop-downs and timelines alone, nothing takes the rest, so they share the column in proportion. Example: in the demo's preset, the org unit tree turned into a drop-down leaves three drop-downs sharing the column; turned back into a tree, the column is the preset's again (timeline 63px, data drop-down 61px, the tree the rest).
+- The tree opens level by level while it fits its cell, down to the deepest level: a level that overflows is closed again, and the tree stays hidden until it has settled. It stops as soon as the user opens, closes or selects, and opens further, in sight, when its cell grows, unless the user has closed a branch. Units set elsewhere (a click on the map, several with Ctrl) are selected in the tree and their branches opened.
+- A period or unit set elsewhere that the control can't show (a quarter on a monthly track, a unit without a path) shows as text only.
+- Without periods or roots from its source (outside the demo, for now), a timeline or tree selector shows the drop-down.
 
 ## 1. The controls
 
@@ -91,7 +107,7 @@ So the step to a drop-down happens late, and the options stay visible in most ce
 ## 6. Where selectors go
 
 - **The selector bar** across the top suits fixed-height controls: drop-downs, sliders and switches share one row, as in every tool above. `@dhis2/ui`'s `SelectorBar` (the compact filter bar of the Capture and Data Entry apps) may suit it.
-- **Tall controls** (trees, long groups) don't belong in a bar: a tree in a 120px row shows two nodes. A clicked selector with a tall control should start or join a **selector column** instead: a stack of selectors along one side of the grid, the vertical counterpart of the bar, where it gets height.
+- **Tall controls** (trees, long groups) don't belong in a bar: a tree in a 96px row shows one node. A clicked selector with a tall control should start or join a **selector column** instead: a stack of selectors along one side of the grid, the vertical counterpart of the bar, where it gets height.
 - Dragged, any selector still goes anywhere; the collapse keeps it usable in any cell.
 
 ## 7. What this means for the code

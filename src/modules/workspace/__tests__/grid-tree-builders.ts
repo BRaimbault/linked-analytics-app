@@ -1,3 +1,4 @@
+import type { SelectorControl } from '@modules/selectors/controls'
 import type {
     GridNode,
     GridTree,
@@ -22,11 +23,28 @@ type Spec = ViewSpec | BranchSpec
 
 export const view = (id: string, weight = 1): ViewSpec => ({ id, weight })
 
-/* A selector view, with its minimum and preferred sizes */
-export const selector = (id: string, weight = 1): ViewSpec => ({
+/* A selector view, with its minimum and preferred sizes, its header
+ * included (headerHeight 0 while the workspace hides headers) */
+export const selector = (
+    id: string,
+    weight = 1,
+    headerHeight?: number
+): ViewSpec => ({
     id,
     weight,
-    sizes: getViewTypeSizes('org-unit-selector'),
+    sizes: getViewTypeSizes('org-unit-selector', headerHeight),
+    viewKind: 'selector',
+})
+
+/* A selector with the given control, while headers are hidden */
+export const selectorWith = (
+    id: string,
+    weight: number,
+    control: SelectorControl
+): ViewSpec => ({
+    id,
+    weight,
+    sizes: getViewTypeSizes('org-unit-selector', 0, control),
     viewKind: 'selector',
 })
 

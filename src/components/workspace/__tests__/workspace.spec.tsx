@@ -177,6 +177,28 @@ describe('Workspace', () => {
         expect(workspace).toHaveAttribute('data-view-headers', 'hover')
     })
 
+    it('hides view headers from the Workspace tab, the hover setting kept but disabled meanwhile', async () => {
+        await renderWorkspace()
+        await userEvent.click(
+            toolsStrip().getByRole('tab', { name: 'Workspace' })
+        )
+        const workspace = screen.getByTestId('workspace')
+        const checkbox = (testId: string) =>
+            screen.getByTestId(testId).querySelector('input') as HTMLElement
+        await userEvent.click(checkbox('view-headers-on-hover'))
+
+        await userEvent.click(checkbox('view-headers-hidden'))
+
+        expect(workspace).toHaveAttribute('data-view-headers', 'hidden')
+        expect(checkbox('view-headers-on-hover')).toBeDisabled()
+        expect(checkbox('view-headers-on-hover')).toBeChecked()
+
+        await userEvent.click(checkbox('view-headers-hidden'))
+
+        expect(workspace).toHaveAttribute('data-view-headers', 'hover')
+        expect(checkbox('view-headers-on-hover')).toBeEnabled()
+    })
+
     it('closes a view from its settings tab', async () => {
         await renderWorkspace()
         await userEvent.click(screen.getByTestId('add-view-map'))

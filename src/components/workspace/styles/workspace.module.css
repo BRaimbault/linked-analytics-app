@@ -99,12 +99,15 @@
 }
 
 /* Every tools tab has the same length, so the strip reads as a row of equal
- * tabs; a longer name is cut short, and its tab's title shows it in full.
- * Logical sizes follow the vertical strip's writing mode too. */
+ * tabs; when they don't fit, they shrink together, as a browser's tabs do,
+ * before the overflow menu takes the rest. A longer name is cut short, and
+ * its tab's title shows it in full. Logical sizes follow the vertical
+ * strip's writing mode too. */
 .workspace :global(.dv-edge-group .dv-tab) {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     box-sizing: border-box;
     inline-size: 160px;
+    min-inline-size: 96px;
 }
 
 .workspace :global(.dv-edge-group .dv-default-tab) {
@@ -231,6 +234,13 @@
     ) {
     max-inline-size: none;
     max-block-size: 4px;
+}
+
+/* Headers hidden: views show their content only, on every device. The
+ * tools strip keeps its tabs. */
+.workspace[data-view-headers='hidden']
+    :global(.dv-grid-view .dv-groupview > .dv-tabs-and-actions-container) {
+    display: none;
 }
 
 /* Headers on hover: a view's header floats over the top of its view

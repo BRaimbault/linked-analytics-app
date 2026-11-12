@@ -33,7 +33,7 @@ describe('computeEvenSizes', () => {
         )
 
         expect(computeEvenSizes(tree)).toEqual([
-            { id: 'w', height: 120 },
+            { id: 'w', height: 96 },
             { id: 'a', width: 600 },
         ])
     })

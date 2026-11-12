@@ -8,7 +8,6 @@ import { canAddView, getNextViewNumber } from '@modules/workspace/view-limits'
 import {
     getViewKind,
     getViewTitle,
-    getViewTypeSizes,
     type ViewType,
 } from '@modules/workspace/view-types'
 import type {
@@ -20,6 +19,7 @@ import { expectLayoutChange, readGridTree } from './grid-layout'
 import {
     getViewGroups,
     getViewPanels,
+    getWorkspaceViewSizes,
     toWorkspaceView,
     VIEW_COMPONENT,
     type ViewPanelParams,
@@ -137,7 +137,7 @@ export const addView = (
         return { status: 'maximized' }
     }
     const kind = getViewKind(type)
-    const sizes = getViewTypeSizes(type)
+    const sizes = getWorkspaceViewSizes(api, type)
     const given: Placement | null = placement
         ? {
               position: placement,

@@ -1,3 +1,10 @@
+import { DemoDataProvider } from '@components/demo/demo-data-provider'
+import { DEMO_PLUGIN_SOURCES } from '@components/demo/demo-plugin-sources'
+import { DEMO_PRESET } from '@components/demo/demo-preset'
+import {
+    NO_PLUGIN_SOURCES,
+    PluginSourcesProvider,
+} from '@components/plugins/plugin-sources'
 import { Workspace } from '@components/workspace/workspace'
 import { CustomDataProvider } from '@dhis2/app-runtime'
 import { CssReset, CssVariables } from '@dhis2/ui'
@@ -17,8 +24,10 @@ export type Point = [number, number]
 const TOLERANCE = 1.5
 
 /* Mounted like the app: a column that scrolls once the views need more
- * room than it has */
-export const mountWorkspace = () => {
+ * room than it has. In demo mode, plugin views draw the fake plugins, and
+ * the demo's preset can fill the grid. */
+export const mountWorkspace = ({ demo = false, preset = false } = {}) => {
+    const sources = demo ? DEMO_PLUGIN_SOURCES : NO_PLUGIN_SOURCES
     cy.mount(
         /* Text views' editor queries users for mentions */
         <CustomDataProvider data={{}}>
@@ -35,13 +44,48 @@ export const mountWorkspace = () => {
                         overflow: 'auto',
                     }}
                 >
-                    <Workspace />
+                    {/* As demo mode does: the org unit tree's requests */}
+                    <DemoDataProvider>
+                        <PluginSourcesProvider sources={sources}>
+                            <Workspace
+                                preset={preset ? DEMO_PRESET : undefined}
+                            />
+                        </PluginSourcesProvider>
+                    </DemoDataProvider>
                 </div>
             </Provider>
         </CustomDataProvider>
     )
-    cy.get('[data-test="add-view-map"]').should('be.visible')
+    /* The demo's preset folds the tools strip */
+    if (preset) {
+        cy.get('[data-test="selector-view"]').should('have.length', 3)
+    } else {
+        cy.get('[data-test="add-view-map"]').should('be.visible')
+    }
+    /* The strip fits its tab a frame or two after it shows, which moves
+     * the grid: a drag started meanwhile would drop where nothing is */
+    cy.document().then((doc) => stripSettled(doc))
 }
+
+/* Resolves once the tools strip keeps its height for a few frames */
+const stripSettled = (doc: Document) =>
+    new Promise<void>((resolve) => {
+        const heightOf = () =>
+            doc.querySelector('.dv-edge-group')?.getBoundingClientRect().height
+        let last = heightOf()
+        let still = 0
+        const step = () => {
+            const height = heightOf()
+            still = height === last ? still + 1 : 0
+            last = height
+            if (still >= 3) {
+                resolve()
+            } else {
+                doc.defaultView?.requestAnimationFrame(step)
+            }
+        }
+        doc.defaultView?.requestAnimationFrame(step)
+    })
 
 /* Waits for the page to render what the last events changed: React and
  * dockview update the page before the next frames, however fast or slow

@@ -1,4 +1,4 @@
-import { PLUGIN_SIZES } from '@modules/workspace/grid-tree'
+import { PLUGIN_SIZES, VIEW_HEADER_HEIGHT } from '@modules/workspace/grid-tree'
 import {
     getViewKind,
     getViewTitle,
@@ -60,10 +60,27 @@ describe('view types', () => {
     })
 
     it('gives plugins a share of the grid and selectors a size of their own', () => {
-        expect(getViewTypeSizes('map')).toBe(PLUGIN_SIZES)
+        expect(getViewTypeSizes('map')).toEqual(PLUGIN_SIZES)
         const selector = getViewTypeSizes('org-unit-selector')
 
         expect(selector.min.height).toBeLessThan(PLUGIN_SIZES.min.height)
-        expect(selector.preferred?.height).toBeGreaterThan(selector.min.height)
+        /* A selector fits its content, with no room to spare */
+        expect(selector.preferred?.height).toBe(selector.min.height)
+        const text = getViewTypeSizes('text')
+        expect(text.preferred?.height).toBeGreaterThan(text.min.height)
+    })
+
+    it('counts the header in a view’s sizes, unless the workspace hides it', () => {
+        const shown = getViewTypeSizes('period-selector')
+        const hidden = getViewTypeSizes('period-selector', 0)
+
+        expect(hidden.min.height).toBe(shown.min.height - VIEW_HEADER_HEIGHT)
+        expect(hidden.preferred?.height).toBe(
+            (shown.preferred?.height as number) - VIEW_HEADER_HEIGHT
+        )
+        expect(hidden.min.width).toBe(shown.min.width)
+        expect(getViewTypeSizes('map', 0).min.height).toBe(
+            PLUGIN_SIZES.min.height - VIEW_HEADER_HEIGHT
+        )
     })
 })

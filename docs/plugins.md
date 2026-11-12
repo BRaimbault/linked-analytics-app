@@ -41,7 +41,7 @@ What the DV, Maps, Line Listing (LL) and Event Visualizer (EV) plugins accept wh
 - **Whether a new object redraws is decided by `didViewsChange`** (`src/util/pluginHelper.js`). It compares only the items of each view's `filters` and `rows`, position by position:
     - **a changed data item isn't seen**, because a thematic layer keeps `dx` in `columns`;
     - **style changes aren't seen**: color scale, classes, opacity, radius, labels…;
-    - Earth Engine layers are skipped, and so are date ranges (`startDate`, `endDate`) and `relativePeriodDate`;
+    - raster layers (saved as `earthEngine`) are skipped, and so are date ranges (`startDate`, `endDate`) and `relativePeriodDate`;
     - **a map that gains a layer crashes the plugin** ("Cannot read properties of undefined (reading 'layer')"); one that loses a layer sees nothing.
 - **When a change is seen, Maps applies the whole new object.** In the spike, changing the data item and the style showed nothing; the next period change then redrew the map with all three changes.
 - **Every accepted change rebuilds the map from scratch.** While layers reload, `plugin/Map.jsx` unmounts `MapView`, so the user's zoom and pan are lost.

@@ -1,12 +1,17 @@
 import {
     axisOf,
+    findLeafLocation,
     getGridLength,
+    getPreferredAlong,
+    getViewSizes,
     orthogonal,
+    type SplitAxis,
     type GridBranch,
     type GridLeaf,
     type GridNode,
     type GridOrientation,
     type GridTree,
+    type Rect,
 } from './grid-tree'
 import {
     getKnownRects,
@@ -39,28 +44,16 @@ const getRestTaker = (handles: (GridLeaf | undefined)[]): number | null => {
     return unsized.length === 1 && unsized[0] >= last - 1 ? unsized[0] : null
 }
 
-/* The sizes that keep the user's proportions after a view is added,
- * moved or closed:
- * - a split cell is halved (or gives a selector its preferred length), the
- *   other cells keep their size;
- * - a line of selectors alone keeps its length, or gets its preferred length
- *   when new; the other lines share the rest;
- * - among those, a new line gets as much room as the lines it joins, one
- *   share per view met along it;
- * - space a view leaves goes to its neighbours in proportion;
- * - no line goes below its views' minimum sizes.
- * Returned in the order to apply them: each branch's children before
- * their own children, the last child of each branch taking what is left.
- * Empty when the layout already matches. */
-export const computeLayoutSizes = (
-    before: GridTree,
+/* Sizes every line of the tree from where its views are known to be (see
+ * computeLayoutSizes) */
+const sizeLines = (
     after: GridTree,
-    change?: LayoutChange
+    known: Map<string, Rect>,
+    headerChange: number
 ): SizeRequest[] => {
     if (after.width <= 0 || after.height <= 0) {
         return []
     }
-    const known = getKnownRects(before, after, change)
     const requests: SizeRequest[] = []
     let changed = false
 
@@ -77,6 +70,7 @@ export const computeLayoutSizes = (
         const sizes = getLineLengths(children, orientation, {
             length,
             known,
+            headerChange,
         })
 
         const handles = children.map(getResizeHandle)
@@ -122,8 +116,73 @@ export const computeLayoutSizes = (
     return changed ? requests : []
 }
 
+/* The sizes that keep the user's proportions after a view is added,
+ * moved or closed:
+ * - a split cell is halved (or gives a selector its preferred length), the
+ *   other cells keep their size;
+ * - a line of selectors alone keeps its length, or gets its preferred length
+ *   when new; the other lines share the rest;
+ * - among those, a new line gets as much room as the lines it joins, one
+ *   share per view met along it;
+ * - space a view leaves goes to its neighbours in proportion;
+ * - no line goes below its views' minimum sizes.
+ * Returned in the order to apply them: each branch's children before
+ * their own children, the last child of each branch taking what is left.
+ * Empty when the layout already matches. */
+export const computeLayoutSizes = (
+    before: GridTree,
+    after: GridTree,
+    change?: LayoutChange
+): SizeRequest[] => sizeLines(after, getKnownRects(before, after, change), 0)
+
 /* Every line sized as if new: lines of selectors alone at their preferred
  * length, the others sharing the rest, one share per view met along them.
  * So maps and visualizations get equal sizes. */
 export const computeEvenSizes = (tree: GridTree): SizeRequest[] =>
     computeLayoutSizes({ ...tree, root: { ...tree.root, children: [] } }, tree)
+
+/* The sizes after one view's own sizes changed (a selector's control): its
+ * cell takes its new preferred length along each axis it has one, and the
+ * views beside it in its line their preferred length along the line, so a
+ * view with none there (an org unit tree, a map) takes the rest. The lines
+ * around share the rest as when a view leaves. With only views that have a
+ * preferred length in the line, they share it in proportion. The tree's
+ * sizes are the new ones. */
+export const computeViewChangeSizes = (
+    tree: GridTree,
+    cellId: string
+): SizeRequest[] => {
+    const known = getKnownRects(tree, tree, undefined)
+    const location = findLeafLocation(tree, cellId)
+    if (!location) {
+        return sizeLines(tree, known, 0)
+    }
+    const lineAxis = axisOf(location.orientation)
+    const leaves = location.parent.children.filter(
+        (child): child is GridLeaf => child.type === 'leaf'
+    )
+    for (const leaf of leaves) {
+        const axes: SplitAxis[] =
+            leaf.id === cellId ? ['horizontal', 'vertical'] : [lineAxis]
+        /* Known for every view: the layout is its own "before" */
+        const rect = { ...(known.get(leaf.id) as Rect) }
+        for (const axis of axes) {
+            const length = getPreferredAlong(getViewSizes(leaf), axis)
+            if (length !== undefined) {
+                rect[axis === 'horizontal' ? 'width' : 'height'] = length
+            }
+        }
+        known.set(leaf.id, rect)
+    }
+    return sizeLines(tree, known, 0)
+}
+
+/* The sizes after view headers got taller (or shorter) by headerChange:
+ * lines of selectors alone follow, to keep fitting their content, and the
+ * other lines share the rest in proportion. The tree's minimum and
+ * preferred sizes are the new ones. */
+export const computeHeaderChangeSizes = (
+    tree: GridTree,
+    headerChange: number
+): SizeRequest[] =>
+    sizeLines(tree, getKnownRects(tree, tree, undefined), headerChange)

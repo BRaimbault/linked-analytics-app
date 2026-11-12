@@ -1,10 +1,29 @@
 import {
     closeView,
     getTargetViewId,
+    getViewObject,
     markHoveredView,
+    onViewParamsChange,
+    setViewObject,
 } from '@components/workspace/controller/views'
-import { describe, expect, it } from 'vitest'
+import { DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
+import { describe, expect, it, vi } from 'vitest'
 import { setup, twoColumns } from './controller-fixtures'
+
+/* A view with a saved item is tested on the real dockview, with the
+ * settings' picker; these are the views that are gone */
+describe('a view’s saved item', () => {
+    it('has none, and ignores changes, for a view that is gone', () => {
+        const fake = setup()
+        const listener = vi.fn()
+
+        setViewObject(fake.asApi, 'gone', DEMO_VISUALIZATIONS[0])
+        onViewParamsChange(fake.asApi, 'gone', listener).dispose()
+
+        expect(getViewObject(fake.asApi, 'gone')).toBeUndefined()
+        expect(listener).not.toHaveBeenCalled()
+    })
+})
 
 describe('closeView', () => {
     it('closes a view, and does nothing for one that is gone', () => {
