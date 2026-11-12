@@ -1,5 +1,5 @@
-import { niceMax } from '@components/demo/fake-chart'
 import { FakeVisualization } from '@components/demo/fake-visualization'
+import { niceMax } from '@components/demo/value-axis'
 import { DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
 import type { VisualizationObject } from '@modules/visualization/analytical-object'
 import { fireEvent, render, screen, within } from '@testing-library/react'

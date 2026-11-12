@@ -5,6 +5,7 @@ import {
 } from '@modules/demo/data-items'
 import { resolveOrgUnits } from '@modules/demo/org-units'
 import { resolvePeriods } from '@modules/demo/periods'
+import { buildDemoRasterLayer } from '@modules/demo/raster-layer'
 import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
 import {
     getDimensionItemIds,
@@ -33,15 +34,35 @@ describe('demo saved items', () => {
             'PIVOT_TABLE',
             'PIVOT_TABLE',
             'LINE',
+            'COLUMN',
+            'PIVOT_TABLE',
+            'LINE',
         ])
     })
 
-    it('builds every map view the same way, with a legend set that exists', () => {
-        for (const view of DEMO_MAPS.flatMap(({ mapViews }) => mapViews)) {
+    it('builds every thematic layer the same way, with a legend set that exists', () => {
+        const views = DEMO_MAPS.flatMap(({ mapViews }) => mapViews)
+        for (const view of views.filter(({ layer }) => layer === 'thematic')) {
             expectToResolve(view)
             if (view.legendSet) {
                 expect(getLegendSet(view.legendSet.id)).toBeDefined()
             }
+        }
+    })
+
+    it('draws every raster layer on a month and on org units the demo has', () => {
+        const views = DEMO_MAPS.flatMap(({ mapViews }) => mapViews).filter(
+            ({ layer }) => layer === 'earthEngine'
+        )
+
+        expect(views).toHaveLength(2)
+        for (const view of views) {
+            expect(
+                resolveOrgUnits(getDimensionItemIds(view, 'ou'))
+            ).not.toEqual([])
+            expect(
+                buildDemoRasterLayer(view)?.raster?.cells.length
+            ).toBeGreaterThan(0)
         }
     })
 

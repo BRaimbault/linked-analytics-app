@@ -7,10 +7,10 @@ import {
 import { useWorkspaceApi } from '@components/workspace/workspace-api-context'
 import {
     applyPresetSettings,
-    useWorkspacePreset,
     type WorkspacePreset,
 } from '@components/workspace/workspace-preset'
 import { useAppDispatch, useAppSelector, useAppStore } from '@hooks'
+import { getDataItem } from '@modules/demo/data-items'
 import { getOrgUnit, type DemoOrgUnit } from '@modules/demo/org-units'
 import type { Channel, LinkDimension } from '@modules/interactions/channels'
 import {
@@ -27,9 +27,12 @@ import {
 import { selectViews, type WorkspaceView } from '@store/workspace-slice'
 import type { DockviewApi } from 'dockview-react'
 import { useCallback, useEffect, useRef, useState, type FC } from 'react'
-import { afterLayout, startDemoTour, type DemoTourHandle } from './run-tour'
+import { startDemoTour, type DemoTourHandle } from './run-tour'
+import { createTemperatureViews } from './temperature-views'
+import { afterLayout } from './tour-dom'
 import { TourResetConfirm } from './tour-reset-confirm'
 import type { TourViews } from './tour-steps'
+import { TOURS } from './tours'
 import type { TourRequest } from './use-tour-request'
 
 /* The preset's views, once they're all in the grid */
@@ -40,18 +43,27 @@ export const findTourViews = (views: WorkspaceView[]): TourViews | null => {
     const [map] = ofType('map')
     const [orgUnitSelector] = ofType('org-unit-selector')
     const [periodSelector] = ofType('period-selector')
-    const ids = { chart, table, map, orgUnitSelector, periodSelector }
+    const [dataSelector] = ofType('data-selector')
+    const ids = {
+        chart,
+        table,
+        map,
+        orgUnitSelector,
+        periodSelector,
+        dataSelector,
+    }
     return Object.values(ids).every(Boolean) ? ids : null
 }
 
-/* Starts the tour asked for, each time a new request comes, from the
- * demo's preset: the steps point at its views */
+/* Starts the tour asked for, each time a new request comes, from its
+ * preset: the steps point at its views. The workspace then keeps that
+ * preset, which "Reset the demo" brings back. */
 export const DemoTour: FC<{
     request: TourRequest | null
     onStart: () => void
-}> = ({ request, onStart }) => {
+    onPresetLoad: (preset: WorkspacePreset) => void
+}> = ({ request, onStart, onPresetLoad }) => {
     const api = useWorkspaceApi()
-    const preset = useWorkspacePreset() as WorkspacePreset
     const views = useAppSelector(selectViews)
     const dispatch = useAppDispatch()
     const store = useAppStore()
@@ -65,12 +77,14 @@ export const DemoTour: FC<{
 
     const startFromPreset = useCallback(
         (workspaceApi: DockviewApi, tourRequest: TourRequest) => {
+            const { preset } = TOURS[tourRequest.kind]
             applyPresetSettings(dispatch, preset)
             resetToPreset(workspaceApi, preset.load, dispatch)
             markPresetLoaded(workspaceApi, store.getState())
+            onPresetLoad(preset)
             setWaiting({ api: workspaceApi, request: tourRequest })
         },
-        [dispatch, preset, store]
+        [dispatch, store, onPresetLoad]
     )
 
     /* A child's effects run before the workspace's own, which connect
@@ -158,6 +172,32 @@ export const DemoTour: FC<{
                     },
                     reset: () => dispatch(viewDrillReset(tourViews.map)),
                 },
+                dataPick: {
+                    get: () => channelOf('dx').value[0]?.id ?? null,
+                    set: (dataItemId) =>
+                        dispatch(
+                            selectorValueChanged({
+                                viewId: tourViews.dataSelector,
+                                value: dataItemId
+                                    ? [
+                                          {
+                                              id: dataItemId,
+                                              name: getDataItem(dataItemId)
+                                                  ?.name,
+                                          },
+                                      ]
+                                    : [],
+                            })
+                        ),
+                },
+                temperatureViews: createTemperatureViews(
+                    waiting.api,
+                    dispatch,
+                    { mapViewId: tourViews.map, tableViewId: tourViews.table }
+                ),
+                /* What the tour left counts as the preset: the next tour
+                 * doesn't ask before replacing it */
+                onFinish: () => markPresetLoaded(waiting.api, store.getState()),
                 viewHeaders: {
                     isHidden: () => selectViewHeadersHidden(store.getState()),
                     setHidden: (hidden) =>

@@ -1,4 +1,8 @@
-import { getPeriodType, toPeriodType } from '@modules/interactions/periods'
+import {
+    getPeriodType,
+    toDateRange,
+    toPeriodType,
+} from '@modules/interactions/periods'
 import type { PluginObject } from '@modules/plugins/contract'
 import {
     findDimension,
@@ -9,6 +13,11 @@ import {
     type MapView,
     type VisualizationObject,
 } from '@modules/visualization/analytical-object'
+import {
+    readRasterLayerConfig,
+    withRasterLayerConfig,
+    type RasterSource,
+} from '@modules/visualization/raster-layer-config'
 
 /* Rewrites a view's object with the values it receives, as the dashboard
  * does for its filters (getFilteredVisualization), with the rules of
@@ -21,7 +30,9 @@ import {
  *   axis's own type within the selection, or the one containing it;
  * - dx replaces a view's one data item (a map layer takes the first); a
  *   view comparing several keeps those of its own that were picked, and
- *   stays as it is when none were.
+ *   stays as it is when none were;
+ * - a raster layer takes ou as a thematic layer does, and pe and dx in its
+ *   config (see rewriteRasterLayer).
  * An org unit or period the object lacks is added to its filters. */
 
 export type LinkItem = DimensionItem & { path?: string }
@@ -40,6 +51,9 @@ export type ApplyLinksOptions = {
     orgUnitDepth: OrgUnitDepth
     /* A data item's own legend set, which a map layer takes with it */
     getLegendSetId: (dataItemId: string) => string | undefined
+    /* The raster layer a data element was imported from, which a raster
+     * layer switches to */
+    getRasterSource: (dataItemId: string) => RasterSource | undefined
 }
 
 type LaidOut = Pick<VisualizationObject, 'columns' | 'rows' | 'filters'>
@@ -190,8 +204,59 @@ const rewriteThematicLayer = (
         : rewritten
 }
 
+/* A raster layer takes org units as a thematic layer does. A period gives
+ * its first and last days, for the plugin to find the image; a data item
+ * switches it to the raster layer the item was imported from, in the
+ * item's style, or else the layer's own. A data item with no raster layer
+ * leaves it as it is. */
+const rewriteRasterLayer = (
+    view: MapView,
+    incoming: IncomingLinks,
+    options: ApplyLinksOptions
+): MapView => {
+    const located = rewrite(view, { ou: incoming.ou }, options)
+    const config = readRasterLayerConfig(view)
+    if (!config) {
+        return located
+    }
+    const [period] = incoming.pe ?? []
+    const [dataItem] = incoming.dx ?? []
+    const dates = period && toDateRange(period.id)
+    const source = dataItem && options.getRasterSource(dataItem.id)
+    const next = { ...config }
+    if (dates) {
+        next.period = dates
+    }
+    if (source) {
+        if (source.style) {
+            next.style = source.style
+        } else if (source.layerId !== config.id) {
+            delete next.style
+        }
+        next.id = source.layerId
+        next.band = source.band
+    }
+    return withRasterLayerConfig(located, next)
+}
+
 const isMap = (object: PluginObject): object is MapObject =>
     'mapViews' in object
+
+const rewriteLayer = (
+    view: MapView,
+    incoming: IncomingLinks,
+    options: ApplyLinksOptions
+): MapView => {
+    switch (view.layer) {
+        case 'thematic':
+            return rewriteThematicLayer(view, incoming, options)
+        /* How Maps saves a raster layer */
+        case 'earthEngine':
+            return rewriteRasterLayer(view, incoming, options)
+        default:
+            return view
+    }
+}
 
 export const applyLinks = <T extends PluginObject>(
     object: T,
@@ -205,9 +270,7 @@ export const applyLinks = <T extends PluginObject>(
         return {
             ...object,
             mapViews: object.mapViews.map((view: MapView) =>
-                view.layer === 'thematic'
-                    ? rewriteThematicLayer(view, incoming, options)
-                    : view
+                rewriteLayer(view, incoming, options)
             ),
         }
     }

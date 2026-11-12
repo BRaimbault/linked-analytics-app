@@ -14,14 +14,28 @@ export const DemoBanner: FC<{ onTakeTour: (kind: TourKind) => void }> = ({
         <IconInfo16 />
         <span>{i18n.t('Demo data. Nothing here comes from the server.')}</span>
         <span className={classes.tours}>
-            {i18n.t('Take a tour')}
+            {/* The colon stays out of the string: i18next reads it as a
+             * namespace separator */}
+            <span>
+                {i18n.t('Take a tour')}
+                <span aria-hidden="true">:</span>
+            </span>
             <button
                 type="button"
                 className={classes.tourLink}
-                data-test="take-tour-story"
-                onClick={() => onTakeTour('story')}
+                data-test="take-tour-malaria"
+                onClick={() => onTakeTour('malaria')}
             >
-                {i18n.t('The story')}
+                {i18n.t('Malaria story')}
+            </button>
+            <span aria-hidden="true">·</span>
+            <button
+                type="button"
+                className={classes.tourLink}
+                data-test="take-tour-climate"
+                onClick={() => onTakeTour('climate')}
+            >
+                {i18n.t('Climate story')}
             </button>
             <span aria-hidden="true">·</span>
             <button

@@ -150,12 +150,14 @@ export const getStorySteps = ({
                 ),
             },
         },
+        /* It ends on the views as they are, for the user to go on from */
         {
-            district: false,
+            district: true,
+            mapDrilled: true,
             popover: {
                 title: i18n.t('From where to why, in two clicks'),
                 description: i18n.t(
-                    "A dashboard filter changes every item the same way. Here the views follow the analyst's questions. <strong>One click moved every view to {{highest}}</strong>, and each kept its role, from context to trend to coverage. With channels, <strong>two districts or two periods can be compared side by side</strong>, which one dashboard filter cannot do. The other tour, <strong>How it works</strong>, explains the links.",
+                    "A dashboard filter changes every item the same way. Here the views follow the analyst's questions. <strong>One click moved every view to {{highest}}</strong>, and each kept its role, from context to trend to coverage. With channels, <strong>two districts or two periods can be compared side by side</strong>, which one dashboard filter cannot do. <strong>How it works</strong> explains the links, and the <strong>Climate story</strong> shows them on climate data.",
                     { highest: highest.name }
                 ),
             },

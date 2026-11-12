@@ -8,11 +8,15 @@ import {
 import type { WorkspacePreset } from '@components/workspace/workspace-preset'
 import i18n from '@dhis2/d2-i18n'
 import { DEMO_MAPS, DEMO_VISUALIZATIONS } from '@modules/demo/saved-items'
+import type { OrgUnitDepth } from '@modules/interactions/apply-links'
 import type { LinkDimension } from '@modules/interactions/channels'
 import type { PluginObject } from '@modules/plugins/contract'
 import type { SelectorControl } from '@modules/selectors/controls'
 import type { ViewType } from '@modules/workspace/view-types'
-import { highlightOnlyChanged } from '@store/interactions-slice'
+import {
+    highlightOnlyChanged,
+    orgUnitDepthChanged,
+} from '@store/interactions-slice'
 import type { AppDispatch } from '@store/store'
 import type { DockviewApi, IDockviewPanel } from 'dockview-react'
 
@@ -22,6 +26,9 @@ const savedItem = <T extends PluginObject>(items: T[], id: string) =>
 const incidenceByDistrict = savedItem(DEMO_VISUALIZATIONS, 'DemoVisInc1')
 const malariaVaccineByChiefdom = savedItem(DEMO_VISUALIZATIONS, 'DemoVisCov1')
 const incidenceMap = savedItem(DEMO_MAPS, 'DemoMapInc1')
+const climateByMonth = savedItem(DEMO_VISUALIZATIONS, 'DemoVisClm1')
+const climateByArea = savedItem(DEMO_VISUALIZATIONS, 'DemoVisClm2')
+const climateMap = savedItem(DEMO_MAPS, 'DemoMapClm1')
 
 type PresetView = {
     type: ViewType
@@ -29,6 +36,8 @@ type PresetView = {
     control?: SelectorControl
     /* Dimensions it follows with "Highlight only", keeping its own */
     highlightsOnly?: LinkDimension[]
+    /* "When it follows" for org units, when not the sub-units */
+    orgUnitDepth?: OrgUnitDepth
     /* Next to a view added before it; without it, where a click adds it */
     beside?: { index: number; direction: 'left' | 'right' | 'below' }
 }
@@ -76,54 +85,110 @@ const DEMO_VIEWS: PresetView[] = [
     },
 ]
 
+/* The climate app's Explore in linked views, laid out as the story's: the
+ * data item picked in the data selector (Explore's tabs), at the top where
+ * it shows, and the place in the tree (its left panel) show in a raster
+ * map, a chart by month right of it, and a table of the place's areas by
+ * month under the chart. The map keeps every district and marks the place;
+ * the chart shows the place itself, the table its areas; both keep their
+ * months, marking the one picked. Added in the order of their channels'
+ * letters: data A, period B, org unit C. */
+const CLIMATE_VIEWS: PresetView[] = [
+    { type: 'map', object: climateMap, highlightsOnly: ['ou'] },
+    {
+        type: 'visualization',
+        object: climateByMonth,
+        highlightsOnly: ['pe'],
+        orgUnitDepth: 0,
+        beside: { index: 0, direction: 'right' },
+    },
+    {
+        type: 'visualization',
+        object: climateByArea,
+        highlightsOnly: ['pe'],
+        beside: { index: 1, direction: 'below' },
+    },
+    {
+        type: 'data-selector',
+        beside: { index: 0, direction: 'left' },
+    },
+    {
+        type: 'period-selector',
+        control: 'timeline',
+        beside: { index: 3, direction: 'below' },
+    },
+    {
+        type: 'org-unit-selector',
+        control: 'tree',
+        beside: { index: 4, direction: 'below' },
+    },
+]
+
+/* How a view follows its channels, once every view has joined them */
+const applyLinkSettings = (
+    { highlightsOnly = [], orgUnitDepth }: PresetView,
+    viewId: string,
+    dispatch: AppDispatch
+) => {
+    for (const dimension of highlightsOnly) {
+        dispatch(
+            highlightOnlyChanged({ viewId, dimension, highlightOnly: true })
+        )
+    }
+    if (orgUnitDepth !== undefined) {
+        dispatch(orgUnitDepthChanged({ viewId, depth: orgUnitDepth }))
+    }
+}
+
 /* The tools strip starts folded, so the views have the room: the tour
  * opens it where it shows the tools. The views are placed first, then
  * sized again in the room the folded strip leaves. */
-const loadDemoViews = (api: DockviewApi, dispatch: AppDispatch): void => {
-    const viewIds: string[] = []
-    for (const { type, object, control, beside } of DEMO_VIEWS) {
-        const result = addView(
-            api,
-            type,
-            beside && {
-                placement: {
-                    referenceGroup: (
-                        api.getPanel(viewIds[beside.index]) as IDockviewPanel
-                    ).group,
-                    direction: beside.direction,
-                },
-            }
-        )
-        /* An empty grid has room for every view of the preset */
-        const { viewId } = result as { status: 'added'; viewId: string }
-        viewIds.push(viewId)
-        if (object) {
-            setViewObject(api, viewId, object)
-        }
-        if (control) {
-            setViewControl(api, viewId, control)
-        }
-    }
-    /* Once every view has joined the selectors' channels */
-    DEMO_VIEWS.forEach(({ highlightsOnly = [] }, index) => {
-        for (const dimension of highlightsOnly) {
-            dispatch(
-                highlightOnlyChanged({
-                    viewId: viewIds[index],
-                    dimension,
-                    highlightOnly: true,
-                })
+const loadViews =
+    (views: PresetView[]) =>
+    (api: DockviewApi, dispatch: AppDispatch): void => {
+        const viewIds: string[] = []
+        for (const { type, object, control, beside } of views) {
+            const result = addView(
+                api,
+                type,
+                beside && {
+                    placement: {
+                        referenceGroup: (
+                            api.getPanel(
+                                viewIds[beside.index]
+                            ) as IDockviewPanel
+                        ).group,
+                        direction: beside.direction,
+                    },
+                }
             )
+            /* An empty grid has room for every view of the preset */
+            const { viewId } = result as { status: 'added'; viewId: string }
+            viewIds.push(viewId)
+            if (object) {
+                setViewObject(api, viewId, object)
+            }
+            if (control) {
+                setViewControl(api, viewId, control)
+            }
         }
-    })
-    collapseTools(api)
-    evenOutSizes(api)
-}
+        views.forEach((view, index) =>
+            applyLinkSettings(view, viewIds[index], dispatch)
+        )
+        collapseTools(api)
+        evenOutSizes(api)
+    }
 
 export const DEMO_PRESET: WorkspacePreset = {
-    load: loadDemoViews,
+    load: loadViews(DEMO_VIEWS),
     name: () => i18n.t('Demo'),
     resetLabel: () => i18n.t('Reset the demo'),
     /* Less on screen for a first look; "How it works" shows them */
     viewHeadersHidden: true,
+}
+
+/* The climate tour's: the demo still, which Reset brings back */
+export const CLIMATE_PRESET: WorkspacePreset = {
+    ...DEMO_PRESET,
+    load: loadViews(CLIMATE_VIEWS),
 }

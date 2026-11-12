@@ -20,4 +20,7 @@ declare module '@dhis2/analytics' {
         children?: ReactNode
         style?: CSSProperties
     }>
+
+    /* DV's color sets, by name; the demo's copies are checked against them */
+    export const colorSets: Record<string, { colors: string[] }>
 }

@@ -1,6 +1,7 @@
 import type { LinkItem } from '@modules/interactions/apply-links'
 import type { LinkDimension } from '@modules/interactions/channels'
 import type { PluginObject, PluginProps } from '@modules/plugins/contract'
+import type { RasterSource } from '@modules/visualization/raster-layer-config'
 import type { PluginViewType } from '@modules/workspace/view-types'
 import {
     createContext,
@@ -29,6 +30,9 @@ export type PluginSources = {
     getOrgUnitName: (id: string) => string | undefined
     /* A data item's own legend set, which a map layer takes with it */
     getLegendSetId: (dataItemId: string) => string | undefined
+    /* The raster layer a data element was imported from, which a raster
+     * layer switches to */
+    getRasterSource: (dataItemId: string) => RasterSource | undefined
     /* The plugins that take the contract's `highlight`, so a view can
      * follow a value with "Highlight only" */
     canHighlight: Partial<Record<PluginViewType, boolean>>
@@ -43,6 +47,7 @@ export const NO_PLUGIN_SOURCES: PluginSources = {
     orgUnitLevelCount: 0,
     getOrgUnitName: () => undefined,
     getLegendSetId: () => undefined,
+    getRasterSource: () => undefined,
     canHighlight: {},
 }
 

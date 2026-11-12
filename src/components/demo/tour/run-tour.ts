@@ -3,21 +3,52 @@ import {
     openToolPanel,
 } from '@components/workspace/controller/settings'
 import i18n from '@dhis2/d2-i18n'
+import { getDataItem } from '@modules/demo/data-items'
 import { getDemoStory } from '@modules/demo/story'
 import type { DockviewApi } from 'dockview-react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { CLICK_DELAY, showClickAt } from './click-ring'
-import { getHowItWorksSteps } from './how-it-works-steps'
-import { getStorySteps } from './story-steps'
 import classes from './styles/demo-tour.module.css'
-import type { StepContext, TourKind, TourStep, TourViews } from './tour-steps'
+import {
+    afterLayout,
+    click,
+    closeDrillMenu,
+    closeSelectMenu,
+    findDistrict,
+    findDrillDownItem,
+    findPlayButton,
+    findSelectInput,
+    findSelectOption,
+    findTreeLabel,
+    isPlaying,
+    keepingScroll,
+    MENU_DELAY,
+    rightClick,
+} from './tour-dom'
+import {
+    removeArea,
+    type StepContext,
+    type TourKind,
+    type TourStep,
+    type TourViews,
+} from './tour-steps'
+import { TOURS } from './tours'
 
 export type DemoTourHandle = { close: () => void; closeQuietly: () => void }
 
 /* What the tour clicks for the user: the district, its drill (the
- * right-click, then the menu item), or "Hide view headers" */
-type PendingKind = 'district' | 'drill' | 'headers'
+ * right-click, then the menu item), a data item or a saved item (the
+ * drop-down, then its option), the map it adds, play, or "Hide view
+ * headers" */
+type PendingKind =
+    'district' | 'drill' | 'data' | 'map' | 'chart' | 'play' | 'headers'
+
+/* Drop-downs a pending click leaves open, closed if it's dropped */
+const OPENS_MENU = new Set<PendingKind>(['data', 'chart'])
+
+/* An optional piece of the workspace a step shows or not */
+type Shown = { isShown: () => boolean; show: () => void; hide: () => void }
 
 /* What a step needs done on the map: a drill sets the district too */
 const getMapClick = (step: TourStep): PendingKind | null => {
@@ -27,71 +58,20 @@ const getMapClick = (step: TourStep): PendingKind | null => {
     return step.district ? 'district' : null
 }
 
-const STEPS: Record<TourKind, (context: StepContext) => TourStep[]> = {
-    story: getStorySteps,
-    'how-it-works': getHowItWorksSteps,
-}
-
-/* Dockview places view bodies and tools on the next frame */
-export const afterLayout = (run: () => void) =>
-    requestAnimationFrame(() => requestAnimationFrame(run))
-
-/* driver.js scrolls a step's element into view when it isn't wholly on
- * screen. The workspace is a scroll area of its own, and scrolling it
- * hides the selectors and view headers above: every scroll around the
- * element stays where it was, and the user can still scroll by hand. */
-const keepingScroll = (element: Element | undefined, run: () => void) => {
-    const ancestors: Element[] = []
-    for (let node = element?.parentElement; node; node = node.parentElement) {
-        ancestors.push(node)
+/* Whether a click the tour has yet to make still serves the step */
+const stillNeeded = (step: TourStep, kind: PendingKind) => {
+    switch (kind) {
+        case 'data':
+            return Boolean(step.dataPick)
+        case 'map':
+            return Boolean(step.temperatureMap)
+        case 'chart':
+            return Boolean(step.temperatureChart)
+        case 'play':
+            return Boolean(step.playsTimeline)
+        default:
+            return kind === getMapClick(step)
     }
-    const positions = ancestors.map(({ scrollTop, scrollLeft }) => ({
-        scrollTop,
-        scrollLeft,
-    }))
-    run()
-    ancestors.forEach((node, index) => {
-        node.scrollTop = positions[index].scrollTop
-        node.scrollLeft = positions[index].scrollLeft
-    })
-}
-
-/* The district's shape on the map, as a user would click it */
-const findDistrict = (mapId: string, name: string): Element =>
-    [
-        ...document.querySelectorAll(
-            `[data-view-id="${mapId}"] [data-test="fake-feature"]`
-        ),
-    ].find((path) => path.textContent?.startsWith(`${name}:`)) as Element
-
-const DRILL_MENU = '[data-test="drill-menu"] [data-test="dhis2-uicore-menu"]'
-
-/* The drill menu's popover places itself a render after it opens */
-const MENU_DELAY = 100
-
-/* A DHIS2 menu item takes clicks on its link, not its list item */
-const findDrillDownItem = (): HTMLElement | null =>
-    document.querySelector(
-        `${DRILL_MENU} [data-test="drill-down"] [role="menuitem"]`
-    )
-
-/* Escape sent to the menu itself: bubbling up, it would close the tour */
-const closeDrillMenu = () =>
-    document
-        .querySelector(DRILL_MENU)
-        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-
-/* A right-click at the shape's centre, where the map opens its menu */
-const rightClick = (element: Element) => {
-    const { left, top, width, height } = element.getBoundingClientRect()
-    element.dispatchEvent(
-        new MouseEvent('contextmenu', {
-            bubbles: true,
-            cancelable: true,
-            clientX: left + width / 2,
-            clientY: top + height / 2,
-        })
-    )
 }
 
 type TourContext = {
@@ -112,6 +92,16 @@ type TourContext = {
         drillInto: (orgUnitId: string) => void
         reset: () => void
     }
+    /* The data item the data selector holds */
+    dataPick: {
+        get: () => string | null
+        set: (dataItemId: string | null) => void
+    }
+    /* The temperature map the tour adds, and the chart it puts in the
+     * table's place; the table's saved item names the chart */
+    temperatureViews: { map: Shown; chart: Shown & { name: string } }
+    /* Called when the tour ends on its last step, the workspace kept */
+    onFinish: () => void
     /* The "Hide view headers" setting */
     viewHeaders: {
         isHidden: () => boolean
@@ -129,10 +119,14 @@ export const startDemoTour = ({
     clearDistrict,
     clearSelections,
     mapDrill,
+    dataPick,
+    temperatureViews,
+    onFinish,
     viewHeaders,
 }: TourContext): DemoTourHandle => {
     const story = getDemoStory()
-    const steps = STEPS[kind]({ api, views, story, channels })
+    const { getSteps, picksDistrictIn } = TOURS[kind]
+    const steps = getSteps({ api, views, story, channels })
     const headersHiddenAtStart = viewHeaders.isHidden()
     let activeIndex = 0
     let isOpen = true
@@ -166,17 +160,26 @@ export const startDemoTour = ({
             if (pending.kind === 'drill') {
                 closeDrillMenu()
             }
+            if (OPENS_MENU.has(pending.kind)) {
+                closeSelectMenu()
+            }
             pending = null
         }
     }
 
-    const runLater = (kind: PendingKind, delay: number, click: () => void) => {
+    /* Once a click lands, the step's next one, if it needs another */
+    const runLater = (
+        kind: PendingKind,
+        delay: number,
+        landing: () => void
+    ) => {
         pending = {
             kind,
-            click,
+            click: landing,
             timer: setTimeout(() => {
                 pending = null
-                click()
+                landing()
+                afterLayout(nextClick)
             }, delay),
         }
     }
@@ -185,29 +188,39 @@ export const startDemoTour = ({
     const clickLater = (
         kind: PendingKind,
         element: Element,
-        click: () => void
+        landing: () => void
     ) => {
         showClickAt(element)
-        runLater(kind, CLICK_DELAY, click)
+        runLater(kind, CLICK_DELAY, landing)
     }
 
     /* Found again when the click lands: the map may have drawn new shapes
      * meanwhile (another period), and the old one takes no clicks */
-    const clickDistrict = () =>
-        clickLater(
-            'district',
-            findDistrict(views.map, story.highest.name),
-            () =>
-                findDistrict(views.map, story.highest.name)?.dispatchEvent(
-                    new MouseEvent('click', { bubbles: true })
-                )
-        )
+    const findDistrictToClick = () =>
+        picksDistrictIn === 'tree'
+            ? findTreeLabel(views.orgUnitSelector, story.highest.name)
+            : findDistrict(views.map, story.highest.name)
+
+    /* Not while another place is drawn without it: the steps after clear
+     * that place, and the district is clicked once it's back */
+    const clickDistrict = () => {
+        const target = findDistrictToClick()
+        if (target) {
+            clickLater('district', target, () => click(findDistrictToClick()))
+        }
+    }
 
     /* As the user would: a right-click on the district opens the map's
-     * drill menu, then "Drill down into" */
-    const drillMap = () =>
-        clickLater('drill', findDistrict(views.map, story.highest.name), () => {
-            rightClick(findDistrict(views.map, story.highest.name))
+     * drill menu, then "Drill down into". The map shows the district, as a
+     * drill elsewhere is undone first (prepare); found again when the
+     * click lands, the map may have redrawn meanwhile. */
+    const drillMap = () => {
+        const district = () => findDistrict(views.map, story.highest.name)
+        clickLater('drill', district(), () => {
+            const shape = district()
+            if (shape) {
+                rightClick(shape)
+            }
             runLater('drill', MENU_DELAY, () => {
                 const item = findDrillDownItem()
                 if (item) {
@@ -218,6 +231,103 @@ export const startDemoTour = ({
                 }
             })
         })
+    }
+
+    /* As the user would: the drop-down opens, then its option, brought
+     * into view in a long list. Without the option, `fallback` sets it. */
+    const pickOption = (
+        kind: PendingKind,
+        input: Element,
+        { label, fallback }: { label: string; fallback: () => void }
+    ) =>
+        clickLater(kind, input, () => {
+            click(input)
+            runLater(kind, MENU_DELAY, () => {
+                const option = findSelectOption(label)
+                if (option) {
+                    option.scrollIntoView?.({ block: 'nearest' })
+                    clickLater(kind, option, () => click(option))
+                } else {
+                    fallback()
+                }
+            })
+        })
+
+    const pickData = (dataItemId: string) =>
+        pickOption(
+            'data',
+            findSelectInput(`[data-view-id="${views.dataSelector}"]`),
+            {
+                label: getDataItem(dataItemId)?.name as string,
+                fallback: () => dataPick.set(dataItemId),
+            }
+        )
+
+    /* In the table's settings tab, its saved item */
+    const pickChart = () =>
+        pickOption(
+            'chart',
+            findSelectInput(
+                `[data-test="settings-panel-${views.table}"] [data-test="saved-item-picker"]`
+            ),
+            {
+                label: temperatureViews.chart.name,
+                fallback: temperatureViews.chart.show,
+            }
+        )
+
+    /* From the Map tile, as a click on it adds a map. Once per visit to
+     * the steps that show it: a full workspace refuses it. */
+    let mapTried = false
+    const addMap = () => {
+        mapTried = true
+        clickLater(
+            'map',
+            document.querySelector('[data-test="add-view-map"]') as Element,
+            temperatureViews.map.show
+        )
+    }
+
+    /* Play, from the start; once per visit, so the year plays through.
+     * Found again when the click lands: the timeline may have drawn anew. */
+    let played = false
+    const play = () => {
+        played = true
+        clickLater('play', findPlayButton(views.periodSelector), () =>
+            click(findPlayButton(views.periodSelector))
+        )
+    }
+    const pause = () => {
+        const button = findPlayButton(views.periodSelector)
+        if (isPlaying(button)) {
+            click(button)
+        }
+    }
+
+    /* The next click the active step needs, one at a time */
+    const nextClick = () => {
+        const step = steps[activeIndex]
+        if (!isOpen || pending) {
+            return
+        }
+        if (step.mapDrilled && !isMapDrilled()) {
+            drillMap()
+        } else if (step.district && !isDistrictSelected()) {
+            clickDistrict()
+        } else if (step.dataPick && dataPick.get() !== step.dataPick) {
+            pickData(step.dataPick)
+        } else if (
+            step.temperatureMap &&
+            !temperatureViews.map.isShown() &&
+            !mapTried
+        ) {
+            addMap()
+        } else if (step.temperatureChart && !temperatureViews.chart.isShown()) {
+            pickChart()
+        } else if (step.playsTimeline && !played) {
+            play()
+        }
+    }
 
     /* A step that shows its tools tab ticks or unticks "Hide view headers"
      * in front of the user; elsewhere, as when going back, it just sets it */
@@ -238,6 +348,25 @@ export const startDemoTour = ({
         }
     }
 
+    /* What a step shows that the tour sets at once, going back included:
+     * no data item, no temperature views, and the timeline at rest */
+    const undo = (step: TourStep) => {
+        if (step.dataPick === null && dataPick.get() !== null) {
+            dataPick.set(null)
+        }
+        if (!step.temperatureMap) {
+            mapTried = false
+            temperatureViews.map.hide()
+        }
+        if (!step.temperatureChart) {
+            temperatureViews.chart.hide()
+        }
+        if (!step.playsTimeline) {
+            played = false
+            pause()
+        }
+    }
+
     /* Each step says what it needs shown; moving to it shows that, from
      * what is shown now, which the user may have clicked meanwhile */
     const prepare = (step: TourStep) => {
@@ -245,17 +374,19 @@ export const startDemoTour = ({
          * steps need the headers. A district click left behind is dropped
          * below, as those steps clear it anyway. */
         if (pending?.kind === 'headers') {
-            const { click } = pending
+            const { click: landing } = pending
             cancelPending()
-            click()
+            landing()
         }
         /* A click still waiting that this step doesn't need is dropped */
-        if (pending && pending.kind !== getMapClick(step)) {
+        if (pending && !stillNeeded(step, pending.kind)) {
             cancelPending()
         }
         /* Undrilling the map clears the district it set, which a district
-         * step clicks again */
-        if (!step.mapDrilled && mapDrill.getDrilledId() !== null) {
+         * step clicks again. A drill into another place is undone too, so
+         * the district shows to drill into. */
+        const keepsDrill = step.mapDrilled && isMapDrilled()
+        if (!keepsDrill && mapDrill.getDrilledId() !== null) {
             mapDrill.reset()
         }
         /* Another org unit the user picked has redrawn the map without the
@@ -265,6 +396,7 @@ export const startDemoTour = ({
         if (!keepsSelection && getSelectedOrgUnitIds().length) {
             clearDistrict()
         }
+        undo(step)
         if (step.toolPanelId) {
             openToolPanel(api, step.toolPanelId)
             toolsShown = true
@@ -277,7 +409,9 @@ export const startDemoTour = ({
         const step = steps[activeIndex]
         if (
             (step.advancesOnDistrictClick && isDistrictSelected()) ||
-            (step.advancesOnMapDrill && isMapDrilled())
+            (step.advancesOnMapDrill && isMapDrilled()) ||
+            (step.advancesOnDataPick &&
+                dataPick.get() === step.advancesOnDataPick)
         ) {
             moveTo(activeIndex + 1)
         }
@@ -308,9 +442,10 @@ export const startDemoTour = ({
         onDestroyStarted: () => close(true),
     })
 
-    /* Leaves the demo as the tour found it, unless the workspace is going
-     * away. Not in driver.js's onDestroyed: it runs only once a step's
-     * animation has ended, which a quick close skips. */
+    /* Closed on the way, leaves the demo as the tour found it, unless the
+     * workspace is going away or the tour has ended. Not in driver.js's
+     * onDestroyed: it runs only once a step's animation has ended, which a
+     * quick close skips. */
     const close = (restore: boolean) => {
         if (!isOpen) {
             return
@@ -319,18 +454,44 @@ export const startDemoTour = ({
         cancelPending()
         unsubscribe()
         tour.destroy()
+        removeArea()
         if (restore) {
-            /* The tour's click, and any the user made along the way */
+            /* The tour's clicks, and any the user made along the way; the
+             * timeline first, or it plays on */
+            pause()
             clearSelections()
+            temperatureViews.map.hide()
+            temperatureViews.chart.hide()
             viewHeaders.setHidden(headersHiddenAtStart)
             foldTools()
             collapseTools(api)
         }
     }
 
+    /* At the end, the workspace stays as the last step shows it, for the
+     * user to go on from there. Done before the tour's clicks have landed
+     * sets what the last steps show at once. */
+    const finish = () => {
+        const step = steps[activeIndex]
+        cancelPending()
+        if (step.mapDrilled && !isMapDrilled()) {
+            mapDrill.drillInto(story.highest.id)
+        } else if (step.district && !isDistrictSelected()) {
+            click(findDistrictToClick())
+        }
+        if (step.temperatureMap && !temperatureViews.map.isShown()) {
+            temperatureViews.map.show()
+        }
+        if (step.temperatureChart && !temperatureViews.chart.isShown()) {
+            temperatureViews.chart.show()
+        }
+        close(false)
+        onFinish()
+    }
+
     const moveTo = (index: number) => {
         if (index === steps.length) {
-            close(true)
+            finish()
             return
         }
         activeIndex = index
@@ -340,11 +501,7 @@ export const startDemoTour = ({
             if (!isOpen) {
                 return
             }
-            if (!pending && step.mapDrilled && !isMapDrilled()) {
-                drillMap()
-            } else if (!pending && step.district && !isDistrictSelected()) {
-                clickDistrict()
-            }
+            nextClick()
             if (step.showsViewHeaders !== undefined) {
                 showHeaders(step, step.showsViewHeaders)
             }

@@ -1,10 +1,14 @@
+import { getAreaMean } from './climate'
 import {
     collectionTypeOf,
     getDataItem,
+    isClimateElement,
+    type ClimateAggregationType,
+    type DemoClimateElement,
     type DemoDataElement,
     type DemoIndicator,
 } from './data-items'
-import { getLeafIds, getOrgUnit } from './org-units'
+import { getLeafIds, getOrgUnit, type DemoOrgUnit } from './org-units'
 import {
     getPeriod,
     lengthOf,
@@ -23,7 +27,8 @@ import { districtOf, getLeafValue } from './values'
  * - an average over time (AVERAGE_SUM_ORG_UNIT) weighs each stored value
  *   by the days it shares with the periods asked, so a yearly value
  *   repeats into every shorter period;
- * - places add up in every case;
+ * - places add up in every case, except climate data, stored at every
+ *   level (see climateTotal);
  * - an indicator divides its numerator's total by its denominator's, and
  *   scales the result to a year (the demo's are annualized). */
 
@@ -87,6 +92,36 @@ const elementTotal = (
         : null
 }
 
+const COMBINE: Record<ClimateAggregationType, (values: number[]) => number> = {
+    SUM: (values) => values.reduce((sum, value) => sum + value, 0),
+    AVERAGE: (values) =>
+        values.reduce((sum, value) => sum + value, 0) / values.length,
+    MAX: (values) => Math.max(...values),
+    MIN: (values) => Math.min(...values),
+}
+
+/* Climate data is stored at every level: each org unit reads its own
+ * values, its area's mean, not its chiefdoms' total. The aggregation type
+ * combines the months counted, then the org units asked together. */
+const climateTotal = (
+    element: DemoClimateElement,
+    orgUnits: DemoOrgUnit[],
+    periods: DemoPeriod[]
+): number | null => {
+    const months = countedPeriods(element.collectedIn, periods)
+    if (!months.length) {
+        return null
+    }
+    const combine = COMBINE[element.aggregationType]
+    const { band } = element.importedFrom
+    const total = combine(
+        orgUnits.map((orgUnit) =>
+            combine(months.map((month) => getAreaMean(band, orgUnit, month)))
+        )
+    )
+    return Math.round(total * 10) / 10
+}
+
 const DAYS_PER_YEAR = 365
 
 const indicatorTotal = (
@@ -121,10 +156,11 @@ export const getTotal = (
     periodIds: string[]
 ): number | null => {
     const dataItem = getDataItem(dataItemId)
+    const orgUnits = [
+        ...new Set(orgUnitIds.flatMap((id) => getOrgUnit(id) ?? [])),
+    ]
     const chiefdomIds = [
-        ...new Set(
-            orgUnitIds.filter((id) => getOrgUnit(id)).flatMap(getLeafIds)
-        ),
+        ...new Set(orgUnits.flatMap(({ id }) => getLeafIds(id))),
     ]
     const periods = [
         ...new Map(
@@ -134,11 +170,14 @@ export const getTotal = (
             })
         ).values(),
     ]
-    if (!dataItem || !chiefdomIds.length || !periods.length) {
+    if (!dataItem || !orgUnits.length || !periods.length) {
         return null
     }
-    return dataItem.dimensionItemType === 'INDICATOR'
-        ? indicatorTotal(dataItem, chiefdomIds, periods)
+    if (dataItem.dimensionItemType === 'INDICATOR') {
+        return indicatorTotal(dataItem, chiefdomIds, periods)
+    }
+    return isClimateElement(dataItem)
+        ? climateTotal(dataItem, orgUnits, periods)
         : elementTotal(dataItem, chiefdomIds, periods)
 }
 

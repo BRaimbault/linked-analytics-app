@@ -34,14 +34,20 @@ export type VisualizationObject = LaidOut & {
     legend?: VisualizationLegend
     /* Org units named with their ancestors, from the top of the hierarchy */
     showHierarchy?: boolean
+    /* DV's color set for the series, by name; DEFAULT without it */
+    colorSet?: 'DEFAULT' | 'DARK'
 }
 
 /* A map view is one layer; a thematic layer keeps dx in columns, ou in
- * rows and pe in filters */
+ * rows and pe in filters, a raster layer ou in rows and the rest in its
+ * config */
 export type MapView = LaidOut & {
     id?: string
-    /* The demo draws thematic layers only; links rewrite only those */
+    /* 'earthEngine' is how Maps saves a raster layer. The demo draws
+     * thematic and raster layers; links rewrite those. */
     layer: 'thematic' | 'orgUnit' | 'facility' | 'earthEngine' | 'event'
+    /* A layer's own settings as a JSON string, as Maps saves them */
+    config?: string
     name?: string
     /* A color scale as DHIS2 stores it: colors joined by commas */
     colorScale?: string

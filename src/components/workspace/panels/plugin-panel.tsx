@@ -22,7 +22,8 @@ export const PluginPanel: FC<{
     type: PluginViewType
     object: PluginObject
 }> = ({ viewId, type, object }) => {
-    const { orgUnitLevelCount, getLegendSetId } = usePluginSources()
+    const { orgUnitLevelCount, getLegendSetId, getRasterSource } =
+        usePluginSources()
     const { incoming, orgUnitDepth, highlight, onDataClick } =
         useViewLinks(viewId)
     const linkedObject = useMemo(
@@ -31,8 +32,16 @@ export const PluginPanel: FC<{
                 orgUnitLevelCount,
                 orgUnitDepth,
                 getLegendSetId,
+                getRasterSource,
             }),
-        [object, incoming, orgUnitLevelCount, orgUnitDepth, getLegendSetId]
+        [
+            object,
+            incoming,
+            orgUnitLevelCount,
+            orgUnitDepth,
+            getLegendSetId,
+            getRasterSource,
+        ]
     )
 
     const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null)

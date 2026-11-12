@@ -1,51 +1,15 @@
 import type { AxisItem, DemoTable } from '@modules/demo/analytics'
 import type { FC, MouseEvent } from 'react'
 import classes from './styles/fake-visualization.module.css'
-
-/* DV's default color set (`colorSets` in @dhis2/analytics), copied: that
- * module imports Highcharts, which the demo doesn't need */
-export const SERIES_COLORS = [
-    '#a8bf24',
-    '#518cc3',
-    '#d74554',
-    '#ff9e21',
-    '#968f8f',
-    '#ba3ba1',
-    '#ffda54',
-    '#45beae',
-    '#b98037',
-    '#676767',
-    '#6b2dd4',
-    '#47792c',
-    '#fcbdbd',
-    '#830000',
-    '#a5ffc0',
-    '#000078',
-    '#817c00',
-    '#bdf023',
-    '#fffac4',
-]
+import { fitAxis } from './value-axis'
 
 const MARGIN = { top: 8, right: 12, left: 52 }
 /* Room below the plot for the category names, more when they're turned */
 const BOTTOM = { upright: 24, turned: 64 }
-/* Five steps divide every nice top (NICE_STEPS) into round values */
+/* Five steps divide every nice top (value-axis.ts) into round values */
 const TICK_COUNT = 5
 /* Beyond this many categories, their names are turned to fit */
 const UPRIGHT_LABELS = 8
-
-/* The round values the value axis may top out at, times a power of ten */
-const NICE_STEPS = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]
-
-/* A round top for the value axis, just above the largest value */
-export const niceMax = (value: number): number => {
-    if (value <= 0) {
-        return 1
-    }
-    const power = 10 ** Math.floor(Math.log10(value))
-    const step = NICE_STEPS.find((factor) => factor * power >= value)
-    return (step as number) * power
-}
 
 /* The click handlers take right-clicks too; the event tells them apart. A
  * label (a category on the axis, a table's row or column header) is a
@@ -62,6 +26,15 @@ export type PointHandlers = {
     isMarked: (category: AxisItem) => boolean
 }
 
+/* Where a value goes past a fixed axis: a small arrow at the top */
+const OverflowMark: FC<{ x: number; top: number }> = ({ x, top }) => (
+    <path
+        className={classes.overflow}
+        d={`M${x - 5},${top + 6} L${x},${top} L${x + 5},${top + 6} Z`}
+        data-test="fake-overflow"
+    />
+)
+
 /* A column or line chart in plain SVG: plainly not DV, so a demo can't be
  * mistaken for the real app. With a highlight, what it leaves out fades: a
  * line chart fades the whole line of a series left out, and marks a
@@ -71,12 +44,18 @@ export const FakeChart: FC<
     PointHandlers & {
         table: DemoTable
         kind: 'COLUMN' | 'LINE'
+        /* A series' color, by its place among the series */
+        colorOf: (index: number) => string
+        /* The top of a fixed value axis; without it, it fits the values */
+        axisMax?: number
         width: number
         height: number
     }
 > = ({
     table,
     kind,
+    colorOf,
+    axisMax,
     width,
     height,
     onPointClick,
@@ -89,11 +68,10 @@ export const FakeChart: FC<
     const bottom = turned ? BOTTOM.turned : BOTTOM.upright
     const plotWidth = Math.max(0, width - MARGIN.left - MARGIN.right)
     const plotHeight = Math.max(0, height - MARGIN.top - bottom)
-    const values = series.flatMap((item) =>
-        categories.map((category) => valueOf(item, category) ?? 0)
-    )
-    const max = niceMax(Math.max(0, ...values))
-    const y = (value: number) => MARGIN.top + plotHeight * (1 - value / max)
+    const max = axisMax ?? fitAxis(table)
+    /* A value above a fixed axis stops at its top, and is marked there */
+    const y = (value: number) =>
+        MARGIN.top + plotHeight * (1 - Math.min(value, max) / max)
     const band = plotWidth / Math.max(1, categories.length)
     const bandLeft = (index: number) => MARGIN.left + band * index
     const barWidth = (band * 0.8) / Math.max(1, series.length)
@@ -164,7 +142,7 @@ export const FakeChart: FC<
                 </text>
             ))}
             {series.map((item, seriesIndex) => {
-                const color = SERIES_COLORS[seriesIndex % SERIES_COLORS.length]
+                const color = colorOf(seriesIndex)
                 const points = categories.map((category, index) => ({
                     category,
                     x: bandLeft(index) + band / 2,
@@ -219,19 +197,27 @@ export const FakeChart: FC<
                                     {...point(item, category)}
                                 />
                             ))}
+                            {known.map(
+                                ({ category, x, value }) =>
+                                    value > max && (
+                                        <OverflowMark
+                                            key={category.id}
+                                            x={x}
+                                            top={MARGIN.top}
+                                        />
+                                    )
+                            )}
                         </g>
                     )
                 }
+                const barLeft = (index: number) =>
+                    bandLeft(index) + band * 0.1 + barWidth * seriesIndex
                 return (
                     <g key={item.id} data-test="fake-series">
                         {points.map(({ category, value }, index) => (
                             <rect
                                 key={category.id}
-                                x={
-                                    bandLeft(index) +
-                                    band * 0.1 +
-                                    barWidth * seriesIndex
-                                }
+                                x={barLeft(index)}
                                 y={y(value)}
                                 width={Math.max(0, barWidth - 1)}
                                 height={MARGIN.top + plotHeight - y(value)}
@@ -240,6 +226,16 @@ export const FakeChart: FC<
                                 {...point(item, category)}
                             />
                         ))}
+                        {points.map(
+                            ({ category, value }, index) =>
+                                value > max && (
+                                    <OverflowMark
+                                        key={category.id}
+                                        x={barLeft(index) + barWidth / 2}
+                                        top={MARGIN.top}
+                                    />
+                                )
+                        )}
                     </g>
                 )
             })}

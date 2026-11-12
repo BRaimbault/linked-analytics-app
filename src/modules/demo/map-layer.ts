@@ -55,9 +55,22 @@ export type LegendEntry = { color: string; label: string }
 /* The values an automatic legend's classes span */
 export type ClassRange = { min: number; max: number }
 
+/* A raster layer's month: land cells by their centres, colored by value;
+ * masked ones are left out */
+export type DemoRaster = {
+    cellSize: number
+    cells: { at: Point; color: string }[]
+}
+
 export type DemoMapLayer = {
+    /* A thematic layer's data item, which its clicks carry */
     dataItem: { id: string; name: string } | null
+    /* What the layer shows: its data item, or a raster layer's dataset */
+    name: string | null
     periodNames: string[]
+    /* A raster layer's unit and month, drawn under its features */
+    unit?: string
+    raster?: DemoRaster | null
     features: MapFeature[]
     /* The outlines of the units the features lie in, drawn over them */
     outlines: Shape[]
@@ -138,6 +151,7 @@ export const buildDemoMapLayer = (
 
     return {
         dataItem: dataItem ? { id: dataItem.id, name: dataItem.name } : null,
+        name: dataItem?.name ?? null,
         periodNames: periodItems.flatMap(
             (item) => getPeriodItemName(item) ?? []
         ),

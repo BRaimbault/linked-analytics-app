@@ -1,6 +1,7 @@
 import {
     getPeriodType,
     parsePeriod,
+    toDateRange,
     toPeriodType,
 } from '@modules/interactions/periods'
 import { describe, expect, it } from 'vitest'
@@ -48,5 +49,21 @@ describe('link periods', () => {
 
     it('keeps a period it can’t convert as it is', () => {
         expect(toPeriodType('2026W4', 'MONTHLY')).toEqual(['2026W4'])
+    })
+
+    it('gives a period’s first and last days, a leap February included', () => {
+        expect(toDateRange('202402')).toEqual({
+            startDate: '2024-02-01',
+            endDate: '2024-02-29',
+        })
+        expect(toDateRange('2025Q4')).toEqual({
+            startDate: '2025-10-01',
+            endDate: '2025-12-31',
+        })
+        expect(toDateRange('2026')).toEqual({
+            startDate: '2026-01-01',
+            endDate: '2026-12-31',
+        })
+        expect(toDateRange('2026W4')).toBeNull()
     })
 })

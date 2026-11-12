@@ -125,7 +125,7 @@ describe('the demo tours', () => {
         expect(steps()).toHaveLength(HOW_IT_WORKS.count)
         const first = fake.config
 
-        await userEvent.click(screen.getByTestId('take-tour-story'))
+        await userEvent.click(screen.getByTestId('take-tour-malaria'))
 
         await waitFor(() => expect(fake.config).not.toBe(first))
         expect(steps()).toHaveLength(STORY.count)
@@ -155,7 +155,7 @@ describe('the demo tours', () => {
             )
         })
 
-        await userEvent.click(screen.getByTestId('take-tour-story'))
+        await userEvent.click(screen.getByTestId('take-tour-malaria'))
         await userEvent.click(
             await screen.findByRole('button', { name: 'Cancel' })
         )
@@ -163,7 +163,7 @@ describe('the demo tours', () => {
         expect(fake.config).toBeNull()
         await expectDistrict('East')
 
-        await userEvent.click(screen.getByTestId('take-tour-story'))
+        await userEvent.click(screen.getByTestId('take-tour-malaria'))
         await userEvent.click(
             await screen.findByRole('button', { name: 'Start the tour' })
         )
@@ -392,6 +392,52 @@ describe('the demo tours', () => {
             await expectMapDrilled(true)
         })
 
+        it('undoes the user’s drill into another district, and drills into its own', async () => {
+            await startStory()
+            await nextUpTo(STORY.drillStep)
+            await expectDistrict(story.highest.name)
+            fireEvent.contextMenu(feature('East'), { clientX: 10, clientY: 10 })
+            await userEvent.click(
+                within(await screen.findByTestId('drill-menu')).getByText(
+                    'Drill down into East'
+                )
+            )
+
+            await next(STORY.drillStep)
+
+            await expectMapDrilled(true)
+        })
+
+        it('drills all the same when the map draws another place as its click lands', async () => {
+            const { store } = await startStory()
+            await nextUpTo(STORY.drillStep)
+            await expectDistrict(story.highest.name)
+            await next(STORY.drillStep)
+
+            /* Before the right-click lands, the tree picks East */
+            const tree = store
+                .getState()
+                .workspace.views.find(
+                    ({ type }) => type === 'org-unit-selector'
+                )
+            act(() => {
+                store.dispatch(
+                    selectorValueChanged({
+                        viewId: tree?.id as string,
+                        value: [
+                            {
+                                id: 'DemoEast001',
+                                name: 'East',
+                                path: '/DemoLand001/DemoEast001',
+                            },
+                        ],
+                    })
+                )
+            })
+
+            await expectMapDrilled(true)
+        })
+
         it('drills down at once when moving on before the district click lands', async () => {
             await startStory()
             await nextUpTo(STORY.clickStep + 1)
@@ -401,6 +447,21 @@ describe('the demo tours', () => {
 
             await expectMapDrilled(true)
             await expectDistrict(story.highest.name)
+        })
+
+        it('ends drilled down into the district when Done comes before its clicks land', async () => {
+            await startStory()
+            await nextUpTo(STORY.count - 1)
+
+            const last = STORY.count - 1
+            act(() => {
+                config().onNextClick?.(undefined, steps()[last], hookOpts(last))
+            })
+
+            expect(fake.destroy).toHaveBeenCalled()
+            await expectMapDrilled(true)
+            await expectDistrict(story.highest.name)
+            expect(screen.queryByTestId('drill-menu')).toBeNull()
         })
 
         it('closes the menu it opened when going back before the drill lands', async () => {

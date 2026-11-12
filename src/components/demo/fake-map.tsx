@@ -1,8 +1,7 @@
 import i18n from '@dhis2/d2-i18n'
-import { IconAdd16, IconHome16, IconSubtract16 } from '@dhis2/ui'
 import { withRelatedItems } from '@modules/demo/highlight'
 import type { MapFeature } from '@modules/demo/map-layer'
-import { getHierarchyName } from '@modules/demo/org-units'
+import { getHierarchyName, getOrgUnit } from '@modules/demo/org-units'
 import type { Shape } from '@modules/demo/shapes'
 import {
     isHighlighted,
@@ -21,10 +20,13 @@ import {
 import { toClickOptions } from './click-options'
 import { FakeBasemap } from './fake-basemap'
 import { FakeMapLegend } from './fake-map-legend'
+import { FakeMapZoom } from './fake-map-zoom'
+import { FakeRaster } from './fake-raster'
 import { PeriodNotices } from './period-notices'
 import classes from './styles/fake-map.module.css'
 import { useLegendLock } from './use-legend-lock'
 import { useMapView } from './use-map-view'
+import { useRasterLayer } from './use-raster-layer'
 
 /* The demo's shapes lie in a 0-100 plane; the map shows it all at first */
 const PLANE = 100
@@ -54,11 +56,11 @@ const toDataClick = (
 })
 
 /* Stands in for Maps, with the props of the proposed plugin contract: it
- * draws the map's thematic layer from the demo's data, with a legend,
- * sends a clicked feature's org unit (and the layer's data item) through
- * onDataClick, dims what highlight leaves out, and calls onLoadingComplete
- * once drawn. It keeps its own zoom and pan, also when the map object
- * changes, as the proposed contract asks. */
+ * draws the map's thematic or raster layer from the demo's data, with a
+ * legend, sends a clicked feature's org unit (and a thematic layer's data
+ * item) through onDataClick, dims what highlight leaves out, and calls
+ * onLoadingComplete once drawn. It keeps its own zoom and pan, also when
+ * the map object changes, as the proposed contract asks. */
 export const FakeMap: FC<PluginProps<MapObject>> = ({
     visualization,
     width,
@@ -70,7 +72,16 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
     const thematic = visualization.mapViews.find(
         ({ layer }) => layer === 'thematic'
     )
-    const { layer, ...legendLock } = useLegendLock(thematic, visualization.id)
+    /* How Maps saves a raster layer */
+    const rasterView = visualization.mapViews.find(
+        ({ layer }) => layer === 'earthEngine'
+    )
+    const { layer: thematicLayer, ...legendLock } = useLegendLock(
+        thematic,
+        visualization.id
+    )
+    const rasterLayer = useRasterLayer(rasterView)
+    const layer = thematicLayer ?? rasterLayer
     const [hoveredId, setHoveredId] = useState<string | null>(null)
     const shownHighlight = useMemo(
         () => withRelatedItems(highlight),
@@ -107,15 +118,20 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
         (feature) => feature.orgUnit.id === hoveredId
     )
 
-    /* With a highlight, the features it keeps are the selection */
-    const selectedFeatures = shownHighlight
-        ? layer.features.filter((feature) =>
-              isHighlighted(
-                  shownHighlight,
-                  toDataClick(feature, layer.dataItem)
-              )
-          )
-        : []
+    /* The units the highlight names are the selection, outlined as they
+     * are: a chiefdom picked on a map of districts is outlined itself,
+     * within its district */
+    const selection = (highlight?.ou ?? []).flatMap((id) => {
+        const unit = getOrgUnit(id)
+        const isOnMap =
+            unit &&
+            layer.features.some(
+                ({ orgUnit }) =>
+                    orgUnit.path.startsWith(unit.path) ||
+                    unit.path.startsWith(orgUnit.path)
+            )
+        return isOnMap ? [unit] : []
+    })
 
     /* Centred, then zoomed about the centre and panned */
     const scale = fit * view.zoom
@@ -130,7 +146,7 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
             <div className={classes.header}>
                 <div className={classes.title}>{visualization.name}</div>
                 <div className={classes.subtitle}>
-                    {[layer.dataItem?.name, ...layer.periodNames]
+                    {[layer.name, ...layer.periodNames]
                         .filter(Boolean)
                         .join(' · ')}
                 </div>
@@ -150,19 +166,31 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
             >
                 <g transform={transform} data-test="fake-map-plane">
                     <FakeBasemap />
+                    {layer.raster && (
+                        <FakeRaster
+                            raster={layer.raster}
+                            area={layer.features.map(({ orgUnit }) =>
+                                toPath(orgUnit.shape)
+                            )}
+                            focus={selection.map(({ shape }) => toPath(shape))}
+                        />
+                    )}
                     {layer.features.map((feature) => (
                         <path
                             key={feature.orgUnit.id}
                             d={toPath(feature.orgUnit.shape)}
                             fill={feature.color}
-                            className={
-                                isHighlighted(
+                            className={[
+                                layer.raster
+                                    ? classes.boundary
+                                    : classes.feature,
+                                !isHighlighted(
                                     shownHighlight,
                                     toDataClick(feature, layer.dataItem)
-                                )
-                                    ? classes.feature
-                                    : `${classes.feature} ${classes.dimmed}`
-                            }
+                                ) && classes.dimmed,
+                            ]
+                                .filter(Boolean)
+                                .join(' ')}
                             data-test="fake-feature"
                             onClick={(event) => onFeatureClick(feature, event)}
                             onContextMenu={(event) =>
@@ -189,10 +217,10 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                         />
                     ))}
                     {/* Last, so neighbours and outlines don't cover them */}
-                    {selectedFeatures.map((feature) => (
+                    {selection.map((unit) => (
                         <path
-                            key={feature.orgUnit.id}
-                            d={toPath(feature.orgUnit.shape)}
+                            key={unit.id}
+                            d={toPath(unit.shape)}
                             className={classes.selection}
                             data-test="fake-feature-selection"
                         />
@@ -224,41 +252,12 @@ export const FakeMap: FC<PluginProps<MapObject>> = ({
                     )}
                 </g>
             </svg>
-            <FakeMapLegend entries={layer.legend} {...legendLock} />
-            <div className={classes.zoom}>
-                {[
-                    {
-                        label: i18n.t('Zoom in'),
-                        icon: <IconAdd16 />,
-                        dataTest: 'fake-map-zoom-in',
-                        onClick: zoom.zoomIn,
-                    },
-                    {
-                        label: i18n.t('Zoom out'),
-                        icon: <IconSubtract16 />,
-                        dataTest: 'fake-map-zoom-out',
-                        onClick: zoom.zoomOut,
-                    },
-                    {
-                        label: i18n.t('Whole map'),
-                        icon: <IconHome16 />,
-                        dataTest: 'fake-map-reset',
-                        onClick: zoom.showWholeMap,
-                    },
-                ].map(({ label, icon, dataTest, onClick }) => (
-                    <button
-                        key={dataTest}
-                        type="button"
-                        className={classes.zoomButton}
-                        aria-label={label}
-                        title={label}
-                        data-test={dataTest}
-                        onClick={onClick}
-                    >
-                        {icon}
-                    </button>
-                ))}
-            </div>
+            <FakeMapLegend
+                entries={layer.legend}
+                unit={layer.unit}
+                {...legendLock}
+            />
+            <FakeMapZoom {...zoom} />
         </div>
     )
 }

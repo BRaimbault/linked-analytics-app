@@ -29,5 +29,11 @@ export const DEMO_PLUGIN_SOURCES: PluginSources = {
     orgUnitLevelCount: ORG_UNIT_LEVELS.length,
     getOrgUnitName: (id) => getOrgUnit(id)?.name,
     getLegendSetId: (id) => getDataItem(id)?.legendSetId,
+    getRasterSource: (id) => {
+        const item = getDataItem(id)
+        return item?.dimensionItemType === 'DATA_ELEMENT'
+            ? item.importedFrom
+            : undefined
+    },
     canHighlight: { visualization: true, map: true },
 }

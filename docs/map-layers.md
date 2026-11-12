@@ -9,13 +9,13 @@ In both options, **saved maps that don't fit still open and render**. The plugin
 
 ## 1. What the dev server holds
 
-93 saved maps, September 2026 (GET `/api/maps`, each multi-layer map then read by id). The app can edit 3 layer types: thematic, org unit (boundary) and facility. Earth Engine, event and external layers are edited in Maps ([view-settings.md §5](view-settings.md#5-the-map-editor)).
+93 saved maps, September 2026 (GET `/api/maps`, each multi-layer map then read by id). The app can edit 3 layer types: thematic, org unit (boundary) and facility. Raster, event and external layers are edited in Maps ([view-settings.md §5](view-settings.md#5-the-map-editor)).
 
-- **75 maps have one layer**: 53 thematic, 12 event, 5 facility, 3 org unit and 2 Earth Engine. So 61 are single-layer maps of a type the app can edit.
-- **18 have 2 or 3 layers.** The most common are 2 thematic layers (7 maps) and thematic with boundaries (2); the rest mix facility, Earth Engine, event and external layers. 12 of them use only types the app can edit.
+- **75 maps have one layer**: 53 thematic, 12 event, 5 facility, 3 org unit and 2 raster. So 61 are single-layer maps of a type the app can edit.
+- **18 have 2 or 3 layers.** The most common are 2 thematic layers (7 maps) and thematic with boundaries (2); the rest mix facility, raster, event and external layers. 12 of them use only types the app can edit.
 - **In all 18, the layers share one period.**
 - **In 17 of the 18, the layers with org units share one area but not one level.** Every layer starts from the same root (Sierra Leone), and each shows its own level: districts in one layer, facilities in another. Only one map (SL fac and measles) uses a different root for one of its layers.
-- Earth Engine layers use org units only to aggregate their values; external layers have none.
+- Raster layers (saved as `earthEngine`) use org units only to aggregate their values; external layers have none.
 
 ## 2. Option A: one layer per map
 
@@ -63,18 +63,18 @@ Each layer keeps its own **level** (or group), which is how 17 of the 18 multi-l
 
 ## 4. Comparison
 
-|                                    | A: one layer             | B: shared period and area                 |
-| ---------------------------------- | ------------------------ | ----------------------------------------- |
-| Saved maps editable in the app     | 61 of 93 (66%)           | 72 of 93 (77%)                            |
-| Layer list in the editor           | no                       | yes                                       |
-| Remounts for a changed layer count | never                    | on add or remove                          |
-| Period and org unit pickers        | one, in the layer        | one, at map level                         |
-| What a `pe` or `ou` link rewrites  | the layer                | every layer, each keeping its level       |
-| What a `dx` link rewrites          | the layer                | to decide (e.g. the first thematic layer) |
-| Click payload                      | feature `ou`, layer `dx` | the same, plus which layer                |
-| Fake map in demo mode              | one thematic layer       | thematic plus boundaries or facilities    |
+|                                    | A: one layer                 | B: shared period and area                 |
+| ---------------------------------- | ---------------------------- | ----------------------------------------- |
+| Saved maps editable in the app     | 61 of 93 (66%)               | 72 of 93 (77%)                            |
+| Layer list in the editor           | no                           | yes                                       |
+| Remounts for a changed layer count | never                        | on add or remove                          |
+| Period and org unit pickers        | one, in the layer            | one, at map level                         |
+| What a `pe` or `ou` link rewrites  | the layer                    | every layer, each keeping its level       |
+| What a `dx` link rewrites          | the layer                    | to decide (e.g. the first thematic layer) |
+| Click payload                      | feature `ou`, layer `dx`     | the same, plus which layer                |
+| Fake map in demo mode              | one thematic or raster layer | thematic plus boundaries or facilities    |
 
-In both options, the other 21 saved maps (Earth Engine, event and external layers, and the one map with a different root) stay read-only; that part only changes with editors for those layer types.
+In both options, the other 21 saved maps (raster, event and external layers, and the one map with a different root) stay read-only; that part only changes with editors for those layer types.
 
 ## 5. Recommendation
 

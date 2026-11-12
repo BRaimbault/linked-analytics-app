@@ -47,6 +47,29 @@ const idOf = (type: LinkPeriodType, month: number) => {
     }
 }
 
+const isoDate = (year: number, month: number, day: number) =>
+    `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+/* A fixed period's first and last days, as ISO dates, e.g. for a raster
+ * layer to find its image; null for a type links can't convert */
+export const toDateRange = (
+    id: string
+): { startDate: string; endDate: string } | null => {
+    const span = parsePeriod(id)
+    if (!span) {
+        return null
+    }
+    const startYear = Math.floor(span.first / 12)
+    const endYear = Math.floor(span.last / 12)
+    const endMonth = (span.last % 12) + 1
+    /* Day 0 of the next month is this month's last */
+    const lastDay = new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate()
+    return {
+        startDate: isoDate(startYear, (span.first % 12) + 1, 1),
+        endDate: isoDate(endYear, endMonth, lastDay),
+    }
+}
+
 /* The type of a period item, fixed or relative (LAST_12_MONTHS is
  * monthly); null for a type links can't convert */
 export const getPeriodType = (id: string): LinkPeriodType | null => {

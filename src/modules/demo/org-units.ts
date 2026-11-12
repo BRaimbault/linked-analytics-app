@@ -4,7 +4,7 @@
  * look like DHIS2 UIDs (11 characters), so objects built on them look real
  * to the pickers. */
 
-import { createLandGrid, type Point } from './land-grid'
+import { createLandGrid, getCellCentres, type Point } from './land-grid'
 import { createShapes, type Shape } from './shapes'
 
 export type DemoOrgUnitLevel = { id: string; level: number; name: string }
@@ -19,6 +19,8 @@ export type DemoOrgUnit = {
     path: string
     parentId: string | null
     shape: Shape
+    /* The centres of the land cells it covers, where a raster is read */
+    cells: Point[]
 }
 
 export type DemoOrgUnitGroup = { id: string; name: string; memberIds: string[] }
@@ -90,12 +92,11 @@ const STRAIGHT_BORDERS: [string, string][] = [
 const CHIEFDOMS = DISTRICTS.flatMap(({ chiefdoms }) => chiefdoms)
 const indicesOf = (ids: string[]) =>
     ids.map((id) => CHIEFDOMS.findIndex(([chiefdomId]) => chiefdomId === id))
-const shapeOf = createShapes(
-    createLandGrid(
-        CHIEFDOMS.map(([, , seed]) => seed),
-        STRAIGHT_BORDERS.map((pair) => indicesOf(pair) as [number, number])
-    )
+const LAND_GRID = createLandGrid(
+    CHIEFDOMS.map(([, , seed]) => seed),
+    STRAIGHT_BORDERS.map((pair) => indicesOf(pair) as [number, number])
 )
+const shapeOf = createShapes(LAND_GRID)
 const shapeOfChiefdoms = (ids: string[]) => shapeOf(indicesOf(ids))
 
 type Placed = {
@@ -142,6 +143,7 @@ export const ORG_UNITS: DemoOrgUnit[] = PLACED.reduce<DemoOrgUnit[]>(
                 path: `${parent?.path ?? ''}/${id}`,
                 parentId,
                 shape: shapeOfChiefdoms(chiefdomIds),
+                cells: getCellCentres(LAND_GRID, indicesOf(chiefdomIds)),
             },
         ]
     },

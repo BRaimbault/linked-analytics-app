@@ -24,13 +24,13 @@ The dimension pickers that DV, Maps and Line Listing show in their dialogs all c
     - LL: `Dialogs/DialogManager.jsx`.
 - **They fetch their own items** through app-runtime (`useDataQuery`, `useDataEngine`, `useConfig`), so they only need the app shell's providers. Our RTK Query rule covers our own code, not the library's. `PeriodDimension` reads the system calendar from `useConfig`, so non-Gregorian calendars work.
 
-| Picker             | DV                             | Maps                                                                                                            | LL                                |
-| ------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `DataDimension`    | data (`dx`)                    | thematic layer, with `maxSelections={1}`                                                                        | —                                 |
-| `PeriodDimension`  | periods (`pe`)                 | thematic and event layers                                                                                       | period dimensions                 |
-| `OrgUnitDimension` | org units (`ou`)               | every layer with org units (`OrgUnitSelect`): thematic, event, facility, tracked entity, org unit, Earth Engine | org unit dimension and conditions |
-| `DynamicDimension` | other dimensions               | —                                                                                                               | other dimensions                  |
-| `DimensionsPanel`  | the list of dimensions to drag | picking a dimension for a filter                                                                                | —                                 |
+| Picker             | DV                             | Maps                                                                                                      | LL                                |
+| ------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `DataDimension`    | data (`dx`)                    | thematic layer, with `maxSelections={1}`                                                                  | —                                 |
+| `PeriodDimension`  | periods (`pe`)                 | thematic and event layers                                                                                 | period dimensions                 |
+| `OrgUnitDimension` | org units (`ou`)               | every layer with org units (`OrgUnitSelect`): thematic, event, facility, tracked entity, org unit, raster | org unit dimension and conditions |
+| `DynamicDimension` | other dimensions               | —                                                                                                         | other dimensions                  |
+| `DimensionsPanel`  | the list of dimensions to drag | picking a dimension for a filter                                                                          | —                                 |
 
 Their main props (from their `propTypes`):
 
@@ -55,7 +55,7 @@ So the selectors in [interactions.md](interactions.md) get their pickers from th
     - the layout panel (dragging dimensions between columns, rows and filter, `src/components/Layout/`);
     - the vis type selector (`VisualizationTypeSelector`);
     - the options themselves: every section and control of the options modal (`src/modules/options/`, `src/components/VisualizationOptions/`).
-- **Maps**: the layer dialogs (`ThematicDialog`, the Earth Engine, event and facility dialogs, `LayerEdit`), and around the pickers: the start and end dates, the classification and legend, the style, and the associated geometry and selection mode of `OrgUnitSelect`. The pickers inside the dialogs are the library's.
+- **Maps**: the layer dialogs (`ThematicDialog`, the raster, event and facility dialogs, `LayerEdit`), and around the pickers: the start and end dates, the classification and legend, the style, and the associated geometry and selection mode of `OrgUnitSelect`. The pickers inside the dialogs are the library's.
 
 ### Handing off to the full apps
 
@@ -71,7 +71,7 @@ So the selectors in [interactions.md](interactions.md) get their pickers from th
 - **93 maps**. Their layer counts, and what their layers share, are in [map-layers.md §1](map-layers.md#1-what-the-dev-server-holds). Layers are named:
     - `thematic`, plus legacy numbered names (`thematic1`, `thematic2`);
     - `boundary` (the old name of `orgUnit`) and `orgUnit`;
-    - `facility`, `earthEngine`, `event` and `external`;
+    - `facility`, `earthEngine` (raster layers), `event` and `external`;
     - so the editor must recognize the legacy names.
 - The admin user has `F_VISUALIZATION_PUBLIC_ADD` and `F_MAP_PUBLIC_ADD`, so saving public items is possible there.
 
@@ -129,7 +129,7 @@ One row of layer chips, top layer first. How many layers the first version allow
 ```
 
 - A layer chip opens that layer's editor ([§5](#5-the-map-editor)) in a modal. Its menu also has show/hide, move up/down and remove.
-- Layers the app can't edit (Earth Engine, event, external) show as read-only chips with "Edit in Maps".
+- Layers the app can't edit (raster, event, external) show as read-only chips with "Edit in Maps".
 - The ⋯ menu matches the visualization's; "Open in Maps" needs the map to be saved ([§1](#handing-off-to-the-full-apps)).
 
 ### Selectors
@@ -163,7 +163,7 @@ Which layers a map may combine depends on [map-layers.md](map-layers.md).
     - a classification (equal intervals, equal counts, or a predefined legend set) and a color scale.
 - **Org unit (boundary) layer**: org units with levels, and the line color and label.
 - **Facility layer**: org units, a group set for icons, and labels.
-- **Earth Engine**: saved maps only in the first version; the dataset, band, period and aggregation settings are edited in Maps. It's a candidate for a later editor.
+- **Raster layers**: saved maps only in the first version; the dataset, band, period and aggregation settings are edited in Maps. It's a candidate for a later editor.
 - **Event layers**: out of scope (aggregate data first).
 - **Timelines and split views** are not offered ([interactions.md §2](interactions.md#period-pe)); the period selector's play mode replaces them.
 - **New map**: OSM Light basemap and no layers. "+ Add layer" opens a short list (Thematic, Boundaries, Facilities).
@@ -185,7 +185,7 @@ Which layers a map may combine depends on [map-layers.md](map-layers.md).
 3. **Visualization editor** with local objects, then Save as. Includes the DV hand-off of a local object through `currentAnalyticalObject`.
 4. **Map editor**: thematic, boundaries, facilities, within the scope chosen in [map-layers.md](map-layers.md).
 5. **Modified saved items**: Save, Revert.
-6. **Later**: an Earth Engine editor, event layers, and Line Listing and Event Visualizer items. EV fetches by id, so saved items only; LL uses the object passed, but unsaved LL objects are untested ([plugins.md](plugins.md#line-listing-and-event-visualizer)).
+6. **Later**: a raster layer editor, event layers, and Line Listing and Event Visualizer items. EV fetches by id, so saved items only; LL uses the object passed, but unsaved LL objects are untested ([plugins.md](plugins.md#line-listing-and-event-visualizer)).
 
 In demo mode the pickers get their items from synthetic data ([demo-mode.md §6](demo-mode.md#6-running-without-a-server)).
 

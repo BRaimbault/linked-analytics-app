@@ -130,6 +130,28 @@
     opacity: 0.25;
 }
 
+/* A raster layer's cells, at Maps' default opacity; crisp edges, so no
+ * seams show between them */
+.raster {
+    opacity: 0.9;
+    shape-rendering: crispEdges;
+    pointer-events: none;
+}
+
+/* The raster outside the selection */
+.rasterFaded {
+    opacity: 0.25;
+}
+
+/* A raster layer's org units: outlines over the raster, which take clicks
+ * across their whole area */
+.boundary {
+    stroke: var(--colors-grey900);
+    stroke-width: 0.35;
+    stroke-linejoin: round;
+    cursor: pointer;
+}
+
 /* The edges of the feature under the pointer and of the selected ones,
  * drawn over everything else: a feature's own stroke would sit under
  * its neighbours and the outlines */

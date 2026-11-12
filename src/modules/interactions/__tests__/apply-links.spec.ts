@@ -12,6 +12,7 @@ const OPTIONS = {
     orgUnitLevelCount: 3,
     orgUnitDepth: 1,
     getLegendSetId: (id: string) => getDataItem(id)?.legendSetId,
+    getRasterSource: () => undefined,
 } as const
 const [ancLine, malariaByDistrict, , , , pentaTable] = DEMO_VISUALIZATIONS
 const [pentaMap] = DEMO_MAPS

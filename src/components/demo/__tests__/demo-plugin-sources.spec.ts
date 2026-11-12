@@ -14,4 +14,18 @@ describe('DEMO_PLUGIN_SOURCES', () => {
             NO_PLUGIN_SOURCES.getLegendSetId(DATA_ITEM_IDS.penta3)
         ).toBeUndefined()
     })
+
+    it('looks up the raster layer a data element was imported from', () => {
+        const { getRasterSource } = DEMO_PLUGIN_SOURCES
+
+        expect(getRasterSource(DATA_ITEM_IDS.temperature)).toMatchObject({
+            band: 'temperature_2m',
+        })
+        expect(getRasterSource(DATA_ITEM_IDS.malaria)).toBeUndefined()
+        expect(getRasterSource(DATA_ITEM_IDS.penta3)).toBeUndefined()
+        expect(getRasterSource('nope')).toBeUndefined()
+        expect(
+            NO_PLUGIN_SOURCES.getRasterSource(DATA_ITEM_IDS.temperature)
+        ).toBeUndefined()
+    })
 })

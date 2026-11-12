@@ -87,6 +87,22 @@ const isOnIsland = ([x, y]: Point) => {
     return Math.hypot(x - ISLAND[0], y - ISLAND[1]) < radius
 }
 
+/* A cell's width and height in the plane */
+export const CELL_SIZE = PLANE / GRID_SIZE
+
+/* The centres of the cells that belong to some seeds (by index) */
+export const getCellCentres = (
+    grid: LandGrid,
+    seedIndices: number[]
+): Point[] =>
+    grid.flatMap((cells, row) =>
+        cells.flatMap((seed, column): Point[] =>
+            seedIndices.includes(seed)
+                ? [[(column + 0.5) * CELL_SIZE, (row + 0.5) * CELL_SIZE]]
+                : []
+        )
+    )
+
 /* Each seed's land around it, in a GRID_SIZE × GRID_SIZE grid. The seed
  * nearest the island has all of it, and nothing on the mainland. Pairs of
  * seeds in straightBorders (by index) meet along a straight line. */
@@ -94,14 +110,16 @@ export const createLandGrid = (
     seeds: Point[],
     straightBorders: [number, number][]
 ): LandGrid => {
-    const cell = PLANE / GRID_SIZE
     const islandSeed = nearestSeed(ISLAND, seeds)
     const mainlandSeeds = seeds.map((seed, index): Point =>
         index === islandSeed ? [Infinity, Infinity] : seed
     )
     return Array.from({ length: GRID_SIZE }, (_, row) =>
         Array.from({ length: GRID_SIZE }, (__, column) => {
-            const centre: Point = [(column + 0.5) * cell, (row + 0.5) * cell]
+            const centre: Point = [
+                (column + 0.5) * CELL_SIZE,
+                (row + 0.5) * CELL_SIZE,
+            ]
             if (isOnIsland(centre)) {
                 return islandSeed
             }

@@ -1,10 +1,13 @@
 import type {
     Dimension,
     MapObject,
+    MapView,
     VisualizationObject,
 } from '@modules/visualization/analytical-object'
-import { DATA_ITEM_IDS, getDataItem } from './data-items'
+import type { RasterLayerConfig } from '@modules/visualization/raster-layer-config'
+import { DATA_ITEM_IDS, getDataItem, RASTER_LAYER_IDS } from './data-items'
 import { DEFAULT_COLOR_SCALE } from './map-layer'
+import { TROPICAL_TEMPERATURE_STYLE } from './raster-styles'
 
 /* A few saved-looking visualizations and maps on the demo's data, so that
  * "Open a saved item" has something to open. Shaped as DHIS2 stores them,
@@ -104,7 +107,59 @@ export const DEMO_VISUALIZATIONS: VisualizationObject[] = [
         filters: [data(DATA_ITEM_IDS.malariaIncidence)],
         showHierarchy: true,
     },
+    /* The climate app's Explore charts, on the data it imports: one place's
+     * months, the data item a pick replaces, in DV's dark colors (a blue
+     * first) */
+    {
+        id: 'DemoVisClm1',
+        name: 'Climate by month, last 12 months',
+        type: 'COLUMN',
+        columns: [data(DATA_ITEM_IDS.precipitation)],
+        rows: [periods('LAST_12_MONTHS')],
+        filters: [orgUnits('USER_ORGUNIT')],
+        colorSet: 'DARK',
+    },
+    /* The same months for each area of the place */
+    {
+        id: 'DemoVisClm2',
+        name: 'Climate by area and month, last 12 months',
+        type: 'PIVOT_TABLE',
+        columns: [orgUnits('USER_ORGUNIT_CHILDREN')],
+        rows: [periods('LAST_12_MONTHS')],
+        filters: [data(DATA_ITEM_IDS.precipitation)],
+    },
+    /* As the climate app's Temperature tab, the lowest, mean and highest:
+     * blue, green and red in DV's dark colors */
+    {
+        id: 'DemoVisTmp1',
+        name: 'Temperature by month, last 12 months',
+        type: 'LINE',
+        columns: [
+            data(
+                DATA_ITEM_IDS.temperatureMin,
+                DATA_ITEM_IDS.temperature,
+                DATA_ITEM_IDS.temperatureMax
+            ),
+        ],
+        rows: [periods('LAST_12_MONTHS')],
+        filters: [orgUnits('USER_ORGUNIT')],
+        colorSet: 'DARK',
+    },
 ]
+
+/* A raster layer as Maps saves it, on a month, under the districts'
+ * boundaries */
+const rasterLayer = (
+    id: string,
+    config: Omit<RasterLayerConfig, 'period'>
+): MapView => ({
+    id,
+    layer: 'earthEngine',
+    columns: [],
+    rows: [orgUnits('USER_ORGUNIT', 'LEVEL-2')],
+    filters: [],
+    config: JSON.stringify({ ...config, period: { id: '202607' } }),
+})
 
 export const DEMO_MAPS: MapObject[] = [
     {
@@ -152,6 +207,29 @@ export const DEMO_MAPS: MapObject[] = [
                 classes: 5,
                 labels: true,
             },
+        ],
+    },
+    /* Precipitation with Maps' default style; a data pick switches it */
+    {
+        id: 'DemoMapClm1',
+        name: 'Climate by district',
+        mapViews: [
+            rasterLayer('DemoMvClm01', {
+                id: RASTER_LAYER_IDS.precipitation,
+                band: 'total_precipitation_sum',
+            }),
+        ],
+    },
+    /* Temperature on a range that fits the tropics, Maps' reds */
+    {
+        id: 'DemoMapTmp1',
+        name: 'Temperature by district',
+        mapViews: [
+            rasterLayer('DemoMvTmp01', {
+                id: RASTER_LAYER_IDS.temperature,
+                band: 'temperature_2m',
+                style: TROPICAL_TEMPERATURE_STYLE,
+            }),
         ],
     },
 ]

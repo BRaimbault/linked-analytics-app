@@ -39,7 +39,7 @@ Aggregate analytics share one dimensional model: `dx` (data), `pe` (period), `ou
 - **Rule per receiving view, depending on where `ou` sits in it:**
     - on an axis (a bar per district, a choropleth map) → the children of the selection (`id` + `LEVEL-next`) by default. Each view can choose, in its Links section: the selected org unit itself, its sub-units, or its sub-x2-units (`LEVEL-next+1`), as the org unit picker names them. It stops at the deepest level;
     - only as a filter (a trend line, a single value) → the selection itself (`id`).
-- Earth Engine, facility and org unit layers take `ou` links too (aggregation, boundaries).
+- Raster, facility and org unit layers take `ou` links too (aggregation, boundaries).
 - A received unit can leave a view empty or short, as a period can: data entered at facilities only, a data set assigned to some districts, a unit with no geometry on a map. A follow-up to the period helpers proposes the same checks for places: [data-org-units.md](data-org-units.md).
 
 ### Period (`pe`)
@@ -58,18 +58,21 @@ Aggregate analytics share one dimensional model: `dx` (data), `pe` (period), `ou
 - **Event layers**: a received period sets the layer's `startDate`/`endDate` to the period's start and end. The Maps plugin doesn't redraw for dates, so this needs a remount until the [Maps PR](#maps-pr-maps-app).
 - **Maps timeline and split views are not supported.** The map settings tab won't offer them, and a saved map that uses them is shown with one period. Stepping through periods is done by the **period selector's play mode** instead ([§5.5](#55-selectors-live-in-grid-cells)), which animates every receiver, not only one map.
 
-#### Earth Engine periods
+#### Raster layer periods
 
-Earth Engine layers have their own period types: `EE_DAILY`, `EE_WEEKLY`, `EE_MONTHLY`, `YEARLY`, plus legacy `BY_YEAR` (16-day, pentad). Each EE period has a start and end date (`system:time_start` / `system:time_end`), and the image is picked by its id (`system:index`). See maps-app `src/util/earthEngine.js` `getPeriods` and the layer configs in `src/constants/earthEngineLayers/`.
+Raster layers (precipitation, temperature, population…) have their own period types: `EE_DAILY`, `EE_WEEKLY`, `EE_MONTHLY`, `YEARLY`, plus legacy `BY_YEAR` (16-day, pentad). Each raster period has a start and end date (`system:time_start` / `system:time_end`), and the image is picked by its id (`system:index`, e.g. `202608`). Maps saves such a layer as `layer: 'earthEngine'`, its dataset, band, style and period in the map view's `config`. See maps-app `src/util/earthEngine.js` `getPeriods` and the layer configs in `src/constants/earthEngineLayers/`.
 
 Conversion rule:
 
-- same type (DHIS2 month → EE monthly, week → weekly, day → daily, year → yearly): the EE period with the same dates;
-- EE type longer than the selection (a month into a yearly population layer): the EE period that contains it;
-- EE type shorter than the selection (a year into a monthly layer): not applied. The view keeps its period and shows "Can't show a year on this layer";
+- same type (DHIS2 month → monthly raster, week → weekly, day → daily, year → yearly): the raster period with the same dates;
+- raster type longer than the selection (a month into a yearly population layer): the raster period that contains it;
+- raster type shorter than the selection (a year into a monthly layer): not applied. The view keeps its period and shows "Can't show a year on this layer";
 - no image for that period yet (dataset lag): the same notice.
 
-Only the Maps plugin can look up EE image ids, through its EE worker. So the host passes the DHIS2 period's start and end dates, and the plugin resolves the image. This is part of the [Maps PR](#maps-pr-maps-app).
+Only the Maps plugin can look up image ids. So the host passes the DHIS2 period's start and end dates (`period: { startDate, endDate }` in the layer's config), and the plugin resolves the image. This is part of the [Maps PR](#maps-pr-maps-app).
+
+- As built in demo mode (`applyLinks`, `modules/demo/raster-layer.ts`): monthly layers take a month, or the month holding most of a week's days. The raster is drawn within the layer's org units, as Maps clips it to the boundaries. A quarter or a year keeps the month shown, with the notice "No quarterly values for Precipitation monthly ERA5, which is collected monthly."
+- A raster layer also takes `dx`, as a proposal: a data element the climate app imported from a raster layer would name that layer, its band and a style to show it in (DHIS2 keeps no such link today; the climate app could write it on import). A picked data element then switches the layer to its source, in its style or else the layer's default. A data item with no source leaves the layer as it is.
 
 ### Data (`dx`)
 
@@ -91,6 +94,7 @@ A `dx` link means "show this data item instead". Unlike `ou` and `pe`, the data 
 - **Settings tied to the old item must be reset:**
     - Map thematic layer: `legendSet`. Use the new item's legend set whenever it has one, so an item has the same colors on a map as in a table that colors by data item; without one, automatic classes on the layer's own color scale. The demo looks the new item's legend set up through the plugin sources (`getLegendSetId`); the real app gets it with the item's metadata, which the compatibility check needs anyway. The legend lock starts again for the new item, on its own classes.
     - DV: per-series options (the `series` option keyed by `dx` id: axis, chart type), `targetLineValue`, `baseLineValue`, fixed axis ranges, and the visualization's legend set.
+    - Chart type and color, as a proposal: a data element would name how to chart it (an amount such as precipitation in columns, a level such as temperature in a line) and its color, which DHIS2 doesn't keep. A chart of one data item then takes its type from the new item, and its color when the item is the only series (series of org units or periods keep their colors, to tell them apart); a chart of several data items keeps its type, and each series takes its item's color. The demo's climate data elements carry one (`chartStyle` in `modules/demo/data-items.ts`), in the colors of their raster layer.
     - Titles: see [Titles after a rewrite](#titles-after-a-rewrite-all-dimensions).
 - **The data selector is a short list, not the full picker.** In the selector's settings tab, the author chooses candidate items with `DataDimension` (e.g. ANC 1, ANC 4, Penta 3). The selector then shows them as a simple select: a "parameter" in Tableau's sense.
 - Later: drilling a data element into its disaggregations (category option combos). This is the `dx` version of "children on an axis".
@@ -119,7 +123,7 @@ Two ways for a receiver to react:
     - for periods, the containing or contained periods on the axis.
 - **What each plugin would do:**
     - DV charts: dim the Highcharts points that don't match. Pivot tables: a CSS class on the matching headers and cells.
-    - Maps: style the matching features (outline, others faded).
+    - Maps: style the matching features (outline, others faded). On a raster layer, outline the matching boundaries and fade the raster outside them, so the place stands out without hiding the rest of the country. The demo's fake map does this (`components/demo/fake-raster.tsx`).
     - Both must apply it **without refetching**. DV's `VisualizationPluginWrapper` refetches when `visualization`, `filters` or `forDashboard` change, so the new prop must stay out of that dependency list.
 - **Contract**: one more optional prop in the same PRs as `onDataClick` ([§6](#6-upstream-prs)): `highlight?: { ou?: string[]; pe?: string[]; dx?: string[] }`.
 - **In the app**: each receiving member gets a mode, `filter` or `highlight` (Power BI's two icons), as one of its follow options per dimension ([§5.7](#57-follow-options)). A sender always gets `highlight` for its own clicks, when the plugin supports it. The default for receivers is `filter` until the plugins support highlight; it's a workspace setting ([§5.1](#51-zero-configuration-by-default)).
@@ -140,11 +144,11 @@ What each plugin accepts, checked live and in the code, is in [plugins.md §2](p
 
 ### Target scenarios
 
-| Scenario                                             | Click side                           | Receiving side                                                                                  |
-| ---------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Click a period bar in DV → the map shows that period | Missing: needs `onDataClick` in DV   | Works: rewrite `pe` in each thematic layer. EE layers need the period conversion in the Maps PR |
-| Click an org unit on the map → the chart shows it    | Missing: needs `onDataClick` in Maps | Works: rewrite `ou`, with the axis rule                                                         |
-| Click a district bar in DV → the map drills into it  | Exists: DV `onDrill` (interim)       | Works, but EE layers need the `didViewsChange` fix                                              |
+| Scenario                                             | Click side                           | Receiving side                                                                                      |
+| ---------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Click a period bar in DV → the map shows that period | Missing: needs `onDataClick` in DV   | Works: rewrite `pe` in each thematic layer. Raster layers need the period conversion in the Maps PR |
+| Click an org unit on the map → the chart shows it    | Missing: needs `onDataClick` in Maps | Works: rewrite `ou`, with the axis rule                                                             |
+| Click a district bar in DV → the map drills into it  | Exists: DV `onDrill` (interim)       | Works, but raster layers need the `didViewsChange` fix                                              |
 
 ## 4. Model: channels
 
@@ -468,17 +472,17 @@ onLoadingComplete?: (result?: { empty: boolean }) => void // DV's wrapper must f
 
 1. `Plugin.jsx`: forward `onDataClick` and `filters` through `MapContainer` to `Map.jsx`.
 2. `Map.jsx`: when `onDataClick` is set, a feature click calls it instead of opening `ContextMenu`. Say which click it takes over: left click opens the feature popup, right click the drill menu. Payload:
-    - `ou` from `feature.properties` (`id`, `name`, `level`, and `path` from `parentGraph`), for thematic, org unit, facility and EE layers;
+    - `ou` from `feature.properties` (`id`, `name`, `level`, and `path` from `parentGraph`), for thematic, org unit, facility and raster layers;
     - `dx` for thematic layers;
     - event layers: not in this PR.
 3. Apply `filters.relativePeriodDate` on the plugin path. `thematicLoader.js` and `util/event.js` already accept it.
 4. `didViewsChange` (`src/util/pluginHelper.js`):
-    - stop skipping EE layers, and compare their `period`;
+    - stop skipping raster layers, and compare their `period`;
     - compare `startDate`/`endDate`;
     - handle a changed number of map views (`oldViews[i]` is then undefined and the plugin crashes);
     - compare `columns` (the thematic data item), `relativePeriodDate` and the style fields, or simply compare whole views;
     - keep `MapView` mounted while layers reload, so a linked change keeps the user's zoom and pan.
-5. **EE period from dates**: when an EE layer's `period` has `startDate`/`endDate` but no `id`, resolve the image with `getPeriods`, using the [Earth Engine conversion rule](#earth-engine-periods). Report "not available" when there is no match. `earthEngineLoader.js` builds its filter from `period.id` only.
+5. **Raster period from dates**: when a raster layer's `period` has `startDate`/`endDate` but no `id`, resolve the image with `getPeriods`, using the [conversion rule](#raster-layer-periods). Report "not available" when there is no match. `earthEngineLoader.js` builds its filter from `period.id` only.
 6. `highlight` prop: style matching features without reloading layers.
 7. `onLoadingComplete` prop: called when `mapIsLoaded` becomes true in `Map.jsx`.
 8. **A lock for automatic legends.** A saved thematic layer keeps how to classify (`method`, `classes`, `colorScale`), not the class breaks: `getAutomaticLegendItems` (`thematicLoader.js`) recomputes them on every load. Linked, a map reloads at every step (a district, a period, a drill, play mode), so its colors change meaning from one step to the next, and can't be compared across them. A timeline map avoids this by classifying all its periods together; links cut the steps into separate loads. Only a legend set gives fixed classes, and it's metadata an administrator creates, not something a user can do while exploring.
@@ -487,7 +491,7 @@ onLoadingComplete?: (result?: { empty: boolean }) => void // DV's wrapper must f
     - Another data item (from a data channel) starts locked again, on its own classes: the old ones mean nothing for it.
     - Other tools: most offer fitted-to-the-view or author-fixed ranges (Power BI, Tableau, Datawrapper); ArcGIS and Kibana compute them over the whole dataset rather than the view; QGIS classifies only on demand, and Tableau (2025.2) lets ranges follow selections. The design above is the MSF Dashboard's colorlock (one click refits, a double-click toggles).
     - How it looks, and whether it's a plugin option or a prop the app can set (e.g. locked while play mode runs), is the maintainers' call. The demo's fake map shows it: the padlock and "fit" buttons over its legend.
-9. Unit tests for the payload builder, `didViewsChange` and the EE period resolution.
+9. Unit tests for the payload builder, `didViewsChange` and the raster period resolution.
 
 ### DV PR (@dhis2/analytics + data-visualizer-app)
 
@@ -495,7 +499,8 @@ onLoadingComplete?: (result?: { empty: boolean }) => void // DV's wrapper must f
 2. **analytics** `dhis_highcharts/plotOptions.js`: point clicks are only wired for column and bar charts, and send only names. Also wire line and area charts, and send the point index.
 3. **data-visualizer-app** `VisualizationPluginWrapper.jsx`: pass through `onDataClick` and `highlight`, and forward the host's `onLoadingComplete` (the wrapper uses it for its own loading state). `VisualizationPlugin.jsx`: accept `onDataClick`, map the click to `{ dx, pe, ou }` ids through `responses[0].metaData`, extending the existing org unit lookup, and call it.
 4. **Highlight**: analytics charts dim non-matching points, and pivot tables add a class to matching headers and cells. DV passes `highlight` through without adding it to the refetch dependencies in `VisualizationPluginWrapper`.
-5. Tests in both repos, and bump analytics in DV.
+5. **A lock for the value axis**, as the Maps PR's legend lock: linked, a chart reloads at every step, and Highcharts fits its axis to each one, so a district with fewer cases looks as high as one with more. Proposed: a toggle that keeps the axis range of the chart as shown, kept in the plugin's state through rewrites, and a button to fit it to the data shown. Values over a kept range are marked at the top. The demo's fake chart shows it ("Follows data", "Fixed" and "Refit" in its header), off by default. Whether it starts on, and how it sits with a saved chart's own range, is the maintainers' call.
+6. Tests in both repos, and bump analytics in DV.
 
 ### This app's side
 
@@ -523,7 +528,7 @@ In the browser, with the plugins served locally:
     - **Next on the fakes: follow options and selector marking** ([§5.7](#57-follow-options)–[5.9](#59-how-the-checks-are-used)): _Highlight only_ first, with the demo's check as the stand-in; then the selector marking. They switch to the `@dhis2/analytics` checks once those exist.
 3. **On the real plugins** (plan step 4): `ou` and `pe` receivers in DV and Maps, DV `onDrill` as the interim `ou` sender, and Maps remounts for the changes `didViewsChange` misses, including a `relativePeriodDate` set per map view ([plugins.md §4](plugins.md#4-what-this-means-for-the-app)).
 4. Link mode, the Links button, the link settings in the Workspace tab and the settings tab's Links section.
-5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, EE periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
+5. The two upstream PRs (`onDataClick`, `highlight`, `onLoadingComplete`, raster periods), then click senders and sender highlight on the real plugins. Share the contract with the maintainers as soon as the demo runs: the PRs have the longest lead time.
 6. Period selector play mode (on a fixed delay with the real plugins until the PRs add `onLoadingComplete`).
 7. `dx` channels and the data selector; the full `@dhis2/analytics` pickers in the selectors. On the fake plugins, `dx` channels and the data selector (a short fixed list) are **done** ([history.md §5](history.md#5-in-progress-demo-mode-plan-step-3), item 8); the compatibility check, the reset of DV's per-item options, and the real plugins remain.
 8. LL receivers by remounting, and EV `relativePeriodDate` receivers.

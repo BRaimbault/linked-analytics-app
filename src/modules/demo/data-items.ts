@@ -1,15 +1,26 @@
+import type { RasterSource } from '@modules/visualization/raster-layer-config'
+import type { ClimateBand } from './climate'
 import type { PeriodType } from './periods'
+import {
+    PRECIPITATION_STYLE,
+    TEMPERATURE_STYLE,
+    TROPICAL_TEMPERATURE_STYLE,
+} from './raster-styles'
 
 /* The demo's data items, collected and aggregated as DHIS2 does it, so the
  * demo shows what linking periods runs into: counts collected monthly, or
  * weekly in some districts and monthly in others; a yearly population,
  * which analytics repeats into shorter periods; a stock, whose value for a
- * quarter is its last month's; and a coverage indicator worked out from
- * two of them. Names follow the dev server's demo database, so the demo
- * reads like the real one; the numbers are made up. */
+ * quarter is its last month's; a coverage indicator worked out from two of
+ * them; and climate data the climate app imports. Names follow the dev
+ * server's demo database, so the demo reads like the real one; the numbers
+ * are made up. */
 
-/* The aggregation types the demo uses, as DHIS2 names them */
-export type DemoAggregationType = 'SUM' | 'AVERAGE_SUM_ORG_UNIT' | 'LAST'
+/* The aggregation types the demo uses, as DHIS2 names them; climate data
+ * takes the ones the climate app advises */
+export type ClimateAggregationType = 'SUM' | 'AVERAGE' | 'MAX' | 'MIN'
+export type DemoAggregationType =
+    ClimateAggregationType | 'AVERAGE_SUM_ORG_UNIT' | 'LAST'
 
 export type DemoDataElement = {
     id: string
@@ -21,7 +32,33 @@ export type DemoDataElement = {
     collectedIn: PeriodType
     collectedInByDistrict?: Record<string, PeriodType>
     legendSetId?: string
+    /* Climate data the climate app imported from a raster layer */
+    importedFrom?: ClimateSource
+    chartStyle?: ChartStyle
 }
+
+/* How to chart a data element: DHIS2 keeps no such hint, the demo proposes
+ * it, so a chart that a data pick switches to it shows it as it should be
+ * read (an amount in columns, a level in a line), in the colors of its
+ * map. A chart of several takes their colors, and keeps its own type. */
+export type ChartStyle = { type: 'COLUMN' | 'LINE'; color: string }
+
+/* The raster layer and band a data element was imported from, and the
+ * style to show it in. DHIS2 keeps no such link on a data element: the
+ * demo proposes it, so a raster can follow a data pick. */
+export type ClimateSource = RasterSource & { band: ClimateBand }
+
+/* Imported at every aggregation level, as the climate app advises: each org
+ * unit holds its own values, its area's mean, rather than the sum of the
+ * units below it */
+export type DemoClimateElement = DemoDataElement & {
+    aggregationType: ClimateAggregationType
+    importedFrom: ClimateSource
+}
+
+export const isClimateElement = (
+    element: DemoDataElement
+): element is DemoClimateElement => element.importedFrom !== undefined
 
 export type DemoIndicator = {
     id: string
@@ -59,6 +96,16 @@ export const DATA_ITEM_IDS = {
     malariaIncidence: 'DemoMalInc1',
     population: 'DemoPopTot1',
     actStock: 'DemoActStk1',
+    precipitation: 'DemoPrecip1',
+    temperature: 'DemoTemp001',
+    temperatureMax: 'DemoTempMx1',
+    temperatureMin: 'DemoTempMn1',
+} as const
+
+/* Maps' layer ids for ERA5-Land's monthly precipitation and temperature */
+export const RASTER_LAYER_IDS = {
+    precipitation: 'ECMWF/ERA5_LAND/MONTHLY_AGGR/total_precipitation_sum',
+    temperature: 'ECMWF/ERA5_LAND/MONTHLY_AGGR/temperature_2m',
 } as const
 
 /* The bands WHO AFRO reports immunization coverage in, around the targets
@@ -184,12 +231,72 @@ export const DATA_ITEMS: DemoDataItem[] = [
         aggregationType: 'LAST',
         collectedIn: 'MONTHLY',
     },
+    /* Imported monthly by the climate app, named after its datasets */
+    {
+        id: DATA_ITEM_IDS.precipitation,
+        name: 'Precipitation (ERA5-Land)',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'SUM',
+        collectedIn: 'MONTHLY',
+        importedFrom: {
+            layerId: RASTER_LAYER_IDS.precipitation,
+            band: 'total_precipitation_sum',
+        },
+        chartStyle: { type: 'COLUMN', color: PRECIPITATION_STYLE.palette[6] },
+    },
+    {
+        id: DATA_ITEM_IDS.temperature,
+        name: 'Air temperature (ERA5-Land)',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'AVERAGE',
+        collectedIn: 'MONTHLY',
+        importedFrom: {
+            layerId: RASTER_LAYER_IDS.temperature,
+            band: 'temperature_2m',
+            style: TROPICAL_TEMPERATURE_STYLE,
+        },
+        chartStyle: { type: 'LINE', color: TEMPERATURE_STYLE.palette[5] },
+    },
+    {
+        id: DATA_ITEM_IDS.temperatureMax,
+        name: 'Max air temperature (ERA5-Land)',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'MAX',
+        collectedIn: 'MONTHLY',
+        importedFrom: {
+            layerId: RASTER_LAYER_IDS.temperature,
+            band: 'temperature_2m_max',
+            style: TROPICAL_TEMPERATURE_STYLE,
+        },
+        chartStyle: { type: 'LINE', color: TEMPERATURE_STYLE.palette[7] },
+    },
+    {
+        id: DATA_ITEM_IDS.temperatureMin,
+        name: 'Min air temperature (ERA5-Land)',
+        dimensionItemType: 'DATA_ELEMENT',
+        aggregationType: 'MIN',
+        collectedIn: 'MONTHLY',
+        importedFrom: {
+            layerId: RASTER_LAYER_IDS.temperature,
+            band: 'temperature_2m_min',
+            style: TROPICAL_TEMPERATURE_STYLE,
+        },
+        chartStyle: { type: 'LINE', color: TEMPERATURE_STYLE.palette[3] },
+    },
 ]
 
 const byId = new Map(DATA_ITEMS.map((item) => [item.id, item]))
 
 export const getDataItem = (id: string): DemoDataItem | undefined =>
     byId.get(id)
+
+/* A data item's chart style, if it has one */
+export const getChartStyle = (dataItemId: string): ChartStyle | undefined => {
+    const item = byId.get(dataItemId)
+    return item?.dimensionItemType === 'DATA_ELEMENT'
+        ? item.chartStyle
+        : undefined
+}
 
 /* The data items an analytics request's dx items stand for; unknown ids
  * are dropped */

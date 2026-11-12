@@ -24,6 +24,17 @@ const HOW_IT_WORKS = {
     playStep: 11,
 }
 
+const CLIMATE = {
+    count: 10,
+    targetless: [1, 10],
+    /* "Click South in the org unit tree", "Pick Air temperature", the step
+     * that turns the table into a chart, and "Play through the year" */
+    placeStep: 2,
+    pickStep: 5,
+    chartStep: 8,
+    playStep: 9,
+}
+
 const mountDemo = () => {
     cy.mount(
         <CustomDataProvider data={{}}>
@@ -83,7 +94,7 @@ const clickSouth = () => south().click()
 const next = () => cy.get('.driver-popover-next-btn').click()
 
 describe('the demo tours', () => {
-    it('tells the story, takes the user’s click, and leaves the demo as it was', () => {
+    it('tells the story, takes the user’s click, and ends on the views as they are', () => {
         mountDemo()
 
         for (let step = 1; step <= STORY.count; step++) {
@@ -118,7 +129,11 @@ describe('the demo tours', () => {
         }
 
         popover().should('not.exist')
-        orgUnitSelector().should('contain.text', 'Each view shows its own')
+        /* The workspace stays as the tour left it, to go on from */
+        orgUnitSelector().should('contain.text', 'South')
+        cy.get('[data-test="fake-feature"]')
+            .first()
+            .should('contain.text', 'South / ')
     })
 
     it('shows how it works, with each tools tab whole, then folds the tools again', () => {
@@ -177,9 +192,67 @@ describe('the demo tours', () => {
 
         popover().should('not.exist')
         cy.get('.dv-edge-group.dv-edge-collapsed').should('exist')
-        /* The selections made along the way are cleared */
-        periodSelector().should('contain.text', 'Each view shows its own')
+        /* The last steps clear the org unit; the month played stays */
+        periodSelector().should('not.contain.text', 'Each view shows its own')
         orgUnitSelector().should('contain.text', 'Each view shows its own')
+    })
+
+    it('explores the climate on its own layout, takes the user’s picks, and shows two maps', () => {
+        mountDemo()
+        cy.get('.driver-popover-close-btn').click()
+        cy.get('[data-test="take-tour-climate"]').click()
+
+        for (let step = 1; step <= CLIMATE.count; step++) {
+            expectStep(step, CLIMATE.count)
+            popover().should('be.visible')
+            if (!CLIMATE.targetless.includes(step)) {
+                expectPopoverByTarget()
+            }
+            if (step === CLIMATE.placeStep) {
+                /* The tree takes the user's click, and moves on */
+                cy.contains(
+                    '.driver-active-element [data-test$="-node-label"] span',
+                    /^South$/
+                ).click()
+                orgUnitSelector().should('have.text', 'South')
+                continue
+            }
+            if (step === CLIMATE.pickStep) {
+                /* The data selector takes the user's pick, and moves on */
+                cy.get(
+                    '.driver-active-element [data-test="dhis2-uicore-select-input"]'
+                ).click()
+                cy.contains(
+                    '[data-test="dhis2-uicore-singleselectoption"]',
+                    'Air temperature (ERA5-Land)'
+                ).click()
+                continue
+            }
+            if (step === CLIMATE.chartStep) {
+                cy.contains(
+                    '[data-test="fake-visualization"]',
+                    'Temperature by month, last 12 months'
+                ).should('exist')
+            }
+            if (step === CLIMATE.playStep) {
+                cy.get('[data-test="fake-map"]').should('have.length', 2)
+                cy.get('[data-test="fake-raster"]').each((raster) => {
+                    expect(raster.find('rect').length).to.be.greaterThan(0)
+                })
+                /* It plays by itself, with the charts in view */
+                cy.get('[data-test="timeline-play"]').should(
+                    'have.attr',
+                    'aria-label',
+                    'Pause'
+                )
+            }
+            next()
+        }
+
+        popover().should('not.exist')
+        /* The workspace stays as the tour left it, to go on from */
+        cy.get('[data-test="fake-map"]').should('have.length', 2)
+        orgUnitSelector().should('contain.text', 'South')
     })
 
     it('shows where it clicks, clears it when closed, and starts again from the banner', () => {
@@ -198,7 +271,7 @@ describe('the demo tours', () => {
 
         popover().should('not.exist')
         orgUnitSelector().should('contain.text', 'Each view shows its own')
-        cy.get('[data-test="take-tour-story"]').click()
+        cy.get('[data-test="take-tour-malaria"]').click()
         expectStep(1, STORY.count)
     })
 })

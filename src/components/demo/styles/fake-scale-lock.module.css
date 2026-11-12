@@ -1,0 +1,41 @@
+/* The lock and refit, side by side */
+.tools {
+    display: flex;
+    background: var(--colors-grey050);
+}
+
+.button {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--spacers-dp4);
+    padding-block: var(--spacers-dp4);
+    padding-inline: var(--spacers-dp8);
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--colors-grey700);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.button + .button {
+    border-inline-start: 1px solid var(--colors-grey300);
+}
+
+.button:hover {
+    background: var(--colors-grey200);
+    color: var(--colors-grey900);
+}
+
+.button[aria-pressed='true'] {
+    color: var(--colors-blue700);
+}
+
+.button:focus-visible {
+    outline: 2px solid var(--theme-focus);
+    outline-offset: -2px;
+}

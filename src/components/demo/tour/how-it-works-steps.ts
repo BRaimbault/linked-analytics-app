@@ -176,7 +176,7 @@ export const getHowItWorksSteps = ({
             popover: {
                 title: i18n.t('Over to you'),
                 description: i18n.t(
-                    'Add a view, link it in its settings tab, and click to explore. The other tour, <strong>The story</strong>, shows what these links reveal in the data.'
+                    'Add a view, link it in its settings tab, and click to explore. The <strong>Malaria story</strong> and the <strong>Climate story</strong> show what these links reveal in the data.'
                 ),
             },
         },

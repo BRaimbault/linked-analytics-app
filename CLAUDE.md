@@ -12,7 +12,7 @@ View DHIS2 Maps, Data Visualizer and other analytics plugins side by side in a d
 
 ### Frame of reference
 
-- **Aggregate data first**: DV visualizations, and Maps with thematic, org unit (boundary), facility and Earth Engine layers.
+- **Aggregate data first**: DV visualizations, and Maps with thematic, org unit (boundary), facility and raster layers.
 - **Create and edit inside the app**: each view has a settings tab (like DV's ribbon) where a saved item is picked or a new one is configured.
 - **Interactions between views are the new part.**
 
@@ -85,7 +85,7 @@ What each plugin accepts, with sources, is in [docs/plugins.md](docs/plugins.md)
     - synthetic data, and the **plugin adapter** mounting fake DV and Maps plugins with the proposed upstream contract (`onDataClick`, `highlight`, `onLoadingComplete`);
     - the core of the interactions on them: channels, a pure, unit-tested `applyLinks` for `ou`, `pe` and `dx`, period, org unit and data selectors with a short fixed list, and click-driven links ([docs/interactions.md §7](docs/interactions.md#7-order-of-work), items 2 and 7);
     - the `?demo` switch, a banner, and a preset workspace that one click loads or resets;
-    - a public health story in the data, two guided tours (the story, and how it works), and a basemap ([docs/demo-mode.md §5 and §7](docs/demo-mode.md#5-synthetic-data)).
+    - a public health story in the data, three guided tours (the story, how it works, and the climate app's Explore in linked views, on climate data and raster maps), and a basemap ([docs/demo-mode.md §5 and §7](docs/demo-mode.md#5-synthetic-data)).
     - All of this is built (http://localhost:3000/?demo; progress in [docs/history.md §5](docs/history.md#5-in-progress-demo-mode-plan-step-3)).
     - Once it runs, share the demo and the contract ([docs/interactions.md §6](docs/interactions.md#6-upstream-prs)) with the DV and Maps maintainers: the upstream PRs have the longest lead time.
 4. **Real plugins** (planned): the same adapter mounts the DV and Maps plugins, with a saved item picked through `OpenFileDialog`. Check performance with 4 at once first, including memory and main-thread cost on a deployed build: it can change how many plugins the app allows. Keep iframes alive across moves (`renderer: 'always'`), and turn off their pointer events during any drag. Links reach them within the released plugins' limits (DV `onDrill`, Maps remounts). See [docs/plugins.md](docs/plugins.md). Place the new code as planned in [docs/code-structure.md §4](docs/code-structure.md#4-rules-for-new-code).

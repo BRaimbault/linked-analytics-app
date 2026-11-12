@@ -1,6 +1,7 @@
-/* driver.js's popover, in DHIS2 UI's type, colors and buttons */
+/* driver.js's popover, in DHIS2 UI's type, colors and buttons; narrow
+ * enough to sit beside a column of selectors */
 .popover {
-    max-inline-size: 360px;
+    max-inline-size: 320px;
     padding: var(--spacers-dp16);
     border-radius: 4px;
     box-shadow: var(--elevations-e300);

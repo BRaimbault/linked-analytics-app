@@ -7,10 +7,12 @@
     color: var(--colors-grey900);
 }
 
-/* 60px, as HEADER_HEIGHT in fake-visualization.tsx */
+/* At least 60px, HEADER_HEIGHT in fake-visualization.tsx; more when the
+ * legend wraps */
 .header {
+    flex-shrink: 0;
     box-sizing: border-box;
-    block-size: 60px;
+    min-block-size: 60px;
     padding-block: var(--spacers-dp8) var(--spacers-dp4);
     padding-inline: var(--spacers-dp8);
     overflow: hidden;
@@ -123,6 +125,26 @@
     font-weight: 600;
 }
 
+/* A value past a fixed axis, cut at its top */
+.overflow {
+    fill: var(--colors-grey900);
+    pointer-events: none;
+}
+
+/* The axis lock, at the header's end, over the series legend */
+.header {
+    position: relative;
+}
+
+.axisLock {
+    position: absolute;
+    inset-block-start: var(--spacers-dp4);
+    inset-inline-end: var(--spacers-dp4);
+    border: 1px solid var(--colors-grey300);
+    border-radius: 3px;
+    background: var(--colors-white);
+}
+
 .tableScroller {
     flex: 1;
     overflow: auto;
@@ -187,4 +209,11 @@
 
 .notices {
     margin-inline: var(--spacers-dp8);
+}
+
+/* The room the header and the notices leave */
+.chart {
+    flex: 1;
+    min-block-size: 0;
+    overflow: hidden;
 }
