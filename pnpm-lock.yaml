@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@dhis2/analytics':
-        specifier: ^29.8.2
-        version: 29.8.2(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(@dhis2/ui@10.20.0(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1)))(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1))
+        specifier: ^29.10.1
+        version: 29.10.1(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(@dhis2/ui@10.20.0(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1)))(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1))
       '@dhis2/app-runtime':
         specifier: ^3.17.6
         version: 3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -834,10 +834,6 @@ packages:
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/runtime@7.29.10':
-    resolution: {integrity: sha512-NpugTzbKgGrNe45Ui32cN8vCFFMxVtP/9rtfwv0nP5FRDAjvYBxJcLVpYA9mr1jxP6cnIT7x9LUzuDTbWYYNRA==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/runtime@7.29.14':
     resolution: {integrity: sha512-Y5tqevQaUAZhhj82BpYMNC1ssvLQTVAfwKdm8iy8qwmhvC2/CpcAu8OC+QEtjM7pMk7knx83u1Qj8gzkicyelw==}
     engines: {node: '>=6.9.0'}
@@ -1376,8 +1372,8 @@ packages:
       react-dom: ^16.13 || ^18
       styled-jsx: ^4
 
-  '@dhis2/analytics@29.8.2':
-    resolution: {integrity: sha512-F8ZjprcWHxFzZ+5Q1O8uQTr76WqLSunYLM4SLMbTv86wCinMKk2M/cgui0k+a8TDYZ8aAJpBJly8jleKMNKrzg==}
+  '@dhis2/analytics@29.10.1':
+    resolution: {integrity: sha512-7pZ0U8GEi23jvCJTdLSY9R3COzNVSGAe1xI7ihdp6IGjkJc8sgrxpytetdOU/ygp3mHUKOEliE9fiR53CGjbRQ==}
     peerDependencies:
       '@dhis2/app-runtime': ^3
       '@dhis2/d2-i18n': ^1.1
@@ -8795,8 +8791,6 @@ snapshots:
 
   '@babel/runtime@7.28.4': {}
 
-  '@babel/runtime@7.29.10': {}
-
   '@babel/runtime@7.29.14': {}
 
   '@babel/template@7.29.7':
@@ -9645,7 +9639,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       styled-jsx: 4.0.1(@babel/core@7.29.13)(react@18.3.1)
 
-  '@dhis2/analytics@29.8.2(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(@dhis2/ui@10.20.0(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1)))(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1))':
+  '@dhis2/analytics@29.10.1(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(@dhis2/ui@10.20.0(@dhis2/app-runtime@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@dhis2/d2-i18n@1.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1)))(prop-types@15.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-jsx@4.0.1(@babel/core@7.29.13)(react@18.3.1))':
     dependencies:
       '@dhis2/app-runtime': 3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dhis2/d2-i18n': 1.2.0
@@ -14714,7 +14708,7 @@ snapshots:
 
   mathjs@9.5.2:
     dependencies:
-      '@babel/runtime': 7.29.10
+      '@babel/runtime': 7.29.14
       complex.js: 2.4.3
       decimal.js: 10.6.0
       escape-latex: 1.2.0
