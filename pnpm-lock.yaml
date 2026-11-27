@@ -46,8 +46,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0(@babel/core@7.29.13)(cypress@16.3.0)(supports-color@10.2.2)
       '@dhis2/app-service-data':
-        specifier: ^3.17.4
-        version: 3.17.4(@dhis2/app-service-config@3.17.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^3.17.6
+        version: 3.17.6(@dhis2/app-service-config@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dhis2/cli-app-scripts':
         specifier: ^12.11.9
         version: 12.11.9(@types/babel__core@7.20.5)(@types/node@26.6.6)(bare-buffer@3.7.3)(esbuild@0.27.2)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.32)(react@18.3.1)(sass@1.107.1)(stylus@0.62.0)(supports-color@10.2.2)(terser@5.51.2)(type-fest@4.41.0)(typescript@6.0.3)
@@ -1377,22 +1377,9 @@ packages:
       react: ^16.8.6 || ^18
       react-dom: ^16.8.6 || ^18
 
-  '@dhis2/app-service-config@3.17.4':
-    resolution: {integrity: sha512-TIgkyFOp2m7APCbXXAMaj0iLF3EXqB2k3biNDclIvilt0p8xhJGLSy1nU2nqkDFlLg460PGgcissKP02FL7umw==}
-    peerDependencies:
-      react: ^16.8.6 || ^18
-      react-dom: ^16.8.6 || ^18
-
   '@dhis2/app-service-config@3.17.6':
     resolution: {integrity: sha512-s05uy9R1MLREb7O92AuH/ty+o+J2fyMExsg4gaWVsrwuMb6dr/pePdxt45zsOf0u/96Vc8S6xg/H25LuIXQoWw==}
     peerDependencies:
-      react: ^16.8.6 || ^18
-      react-dom: ^16.8.6 || ^18
-
-  '@dhis2/app-service-data@3.17.4':
-    resolution: {integrity: sha512-awyWdVwLx9kZlcb36i+olzKZTqC2lgVKclvZ6IXq20ciX8BdtlpfL3ymyTi8Jvp88X2qj0rt6fQL68m/bu079Q==}
-    peerDependencies:
-      '@dhis2/app-service-config': 3.17.4
       react: ^16.8.6 || ^18
       react-dom: ^16.8.6 || ^18
 
@@ -1449,9 +1436,6 @@ packages:
 
   '@dhis2/d2-i18n@1.2.0':
     resolution: {integrity: sha512-bpJggHy5dyuS9DHCQuLbStccsHIRGj4WjZh10wk7jmctOpzKHBTsm5ZgKYYLTN2JjtiCPqPFYIxKeVQEZWOhkA==}
-
-  '@dhis2/data-engine@3.17.4':
-    resolution: {integrity: sha512-4mlLwnxhVdiUncd77d2ZW7FEyLlehDNjPCrpXPHiaxoMSsScDD0cX7FAtBb08Xsq3TWr5vK36kQHGBdYAZ2CjQ==}
 
   '@dhis2/data-engine@3.17.6':
     resolution: {integrity: sha512-+UJ3H+PFWPpUDlOkmzxw749Dv6lGjdJJfLTYS/cJQXjMnBH6PndtDAFKqEWY06ISizd9MI7Q1FAMSZpsBq5kzg==}
@@ -2545,23 +2529,8 @@ packages:
     resolution: {integrity: sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==}
     engines: {node: '>=6'}
 
-  '@tanstack/query-core@4.41.0':
-    resolution: {integrity: sha512-193R4Jp9hjvlij6LryxrB5Mpbffd2L9PeWh3KlIy/hJV4SkBOfiQZ+jc5qAZLDCrdbkA5FjGj+UoDYw6TcNnyA==}
-
   '@tanstack/query-core@4.44.0':
     resolution: {integrity: sha512-swSgb7OiPRR3UuIL7NuDrZNSMGmQD+wdtHxPD7j60SvBEnxbXurl5XOirtGEX2gm2hbK6mC8kMV1I+uO3l0UOw==}
-
-  '@tanstack/react-query@4.42.0':
-    resolution: {integrity: sha512-j0tiofkzE3CSrYKmVRaKuwGgvCE+P2OOEDlhmfjeZf5ufcuFHwYwwgw3j08n4WYPVZ+OpsHblcFYezhKA3jDwg==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-native: '*'
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-      react-native:
-        optional: true
 
   '@tanstack/react-query@4.44.0':
     resolution: {integrity: sha512-RuIqHYrS98LrK/8kJJOJMMSQ/BCpojwsXDh7p0fBmp38ZOz6dlk+uyFRRusH+V+t3POoCsDOQ2zhomEYOeReXw==}
@@ -9651,28 +9620,11 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@dhis2/app-service-config@3.17.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      prop-types: 15.8.1
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-
   '@dhis2/app-service-config@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       prop-types: 15.8.1
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-
-  '@dhis2/app-service-data@3.17.4(@dhis2/app-service-config@3.17.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@dhis2/app-service-config': 3.17.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@dhis2/data-engine': 3.17.4
-      '@tanstack/react-query': 4.42.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      prop-types: 15.8.1
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-    transitivePeerDependencies:
-      - react-native
 
   '@dhis2/app-service-data@3.17.6(@dhis2/app-service-config@3.17.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -9866,8 +9818,6 @@ snapshots:
       '@types/i18next': 11.9.3
       i18next: 10.6.0
       moment: 2.31.0
-
-  '@dhis2/data-engine@3.17.4': {}
 
   '@dhis2/data-engine@3.17.6': {}
 
@@ -10829,17 +10779,7 @@ snapshots:
     dependencies:
       defer-to-connect: 1.1.3
 
-  '@tanstack/query-core@4.41.0': {}
-
   '@tanstack/query-core@4.44.0': {}
-
-  '@tanstack/react-query@4.42.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@tanstack/query-core': 4.41.0
-      react: 18.3.1
-      use-sync-external-store: 1.7.0(react@18.3.1)
-    optionalDependencies:
-      react-dom: 18.3.1(react@18.3.1)
 
   '@tanstack/react-query@4.44.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
